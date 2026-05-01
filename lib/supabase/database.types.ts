@@ -1,0 +1,160 @@
+// Hand-written Supabase Database types for the tables this app
+// touches. Lightweight alternative to running `supabase gen types`
+// — generate proper types from your schema once you have a project
+// connected, and replace this file.
+//
+// Why this exists: without a Database generic, Supabase infers
+// `Insert<>`, `Update<>` and `Upsert<>` as `never`, which makes
+// every write produce a TypeScript error.
+
+export type Database = {
+  public: {
+    Tables: {
+      categories: {
+        Row: {
+          id: string;
+          slug: string;
+          name_ka: string;
+          name_en: string;
+          description_ka: string;
+          description_en: string;
+          sort_order: number;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          slug: string;
+          name_ka: string;
+          name_en: string;
+          description_ka?: string;
+          description_en?: string;
+          sort_order?: number;
+          created_at?: string;
+        };
+        Update: Partial<Database["public"]["Tables"]["categories"]["Insert"]>;
+        Relationships: [];
+      };
+      products: {
+        Row: {
+          id: string;
+          slug: string;
+          category_id: string;
+          name_ka: string;
+          name_en: string;
+          description_ka: string;
+          description_en: string;
+          price: number;
+          currency: string;
+          is_featured: boolean;
+          is_published: boolean;
+          sort_order: number;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          id?: string;
+          slug: string;
+          category_id: string;
+          name_ka: string;
+          name_en: string;
+          description_ka?: string;
+          description_en?: string;
+          price: number;
+          currency?: string;
+          is_featured?: boolean;
+          is_published?: boolean;
+          sort_order?: number;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: Partial<Database["public"]["Tables"]["products"]["Insert"]>;
+        Relationships: [
+          {
+            foreignKeyName: "products_category_id_fkey";
+            columns: ["category_id"];
+            isOneToOne: false;
+            referencedRelation: "categories";
+            referencedColumns: ["id"];
+          }
+        ];
+      };
+      product_images: {
+        Row: {
+          id: string;
+          product_id: string;
+          storage_path: string;
+          alt_ka: string;
+          alt_en: string;
+          sort_order: number;
+          is_primary: boolean;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          product_id: string;
+          storage_path: string;
+          alt_ka?: string;
+          alt_en?: string;
+          sort_order?: number;
+          is_primary?: boolean;
+          created_at?: string;
+        };
+        Update: Partial<
+          Database["public"]["Tables"]["product_images"]["Insert"]
+        >;
+        Relationships: [
+          {
+            foreignKeyName: "product_images_product_id_fkey";
+            columns: ["product_id"];
+            isOneToOne: false;
+            referencedRelation: "products";
+            referencedColumns: ["id"];
+          }
+        ];
+      };
+      admin_users: {
+        Row: {
+          id: string;
+          user_id: string;
+          role: "admin" | "editor";
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          user_id: string;
+          role?: "admin" | "editor";
+          created_at?: string;
+        };
+        Update: Partial<
+          Database["public"]["Tables"]["admin_users"]["Insert"]
+        >;
+        Relationships: [];
+      };
+      redirects: {
+        Row: {
+          id: string;
+          from_path: string;
+          to_path: string;
+          status_code: number;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          from_path: string;
+          to_path: string;
+          status_code?: number;
+          created_at?: string;
+        };
+        Update: Partial<Database["public"]["Tables"]["redirects"]["Insert"]>;
+        Relationships: [];
+      };
+    };
+    Views: Record<string, never>;
+    // is_admin() lives in the `private` schema (not exposed via the
+    // Data API) and is invoked from RLS policies only — so it does
+    // not appear in the public Functions map.
+    Functions: Record<string, never>;
+    Enums: Record<string, never>;
+    CompositeTypes: Record<string, never>;
+  };
+};

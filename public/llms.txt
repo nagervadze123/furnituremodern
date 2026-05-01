@@ -1,0 +1,49 @@
+# Furnituremodern
+
+> Modern, hand-finished furniture made in Tbilisi, Georgia. Sofas, bedrooms, dining and workspace pieces in solid white oak, European walnut, Belgian linen, and full-grain leather.
+
+Furnituremodern is a Tbilisi-based furniture studio. Every piece is produced in small batches in our own workshop, hand-finished, and inspected for fit before shipping. We sell direct, with a 5-year structural warranty on every item.
+
+## Site sections
+
+- Home: `/` — brand introduction, featured categories, story, FAQ.
+- Sofas: `/sofas` — two-seaters, three-seaters, modular corners, club chairs, leather daybeds.
+- Bedrooms: `/bedrooms` — platform beds, upholstered headboards, dressers, wardrobes, bedside tables, end-of-bed benches.
+- Tables & Chairs: `/tables-chairs` — dining tables, dining chairs, writing desks, coffee tables, counter stools.
+
+## Languages
+
+- Georgian (ka) — primary market, default locale, served at `/ka/...`
+- English (en) — secondary, served at `/en/...`
+
+## Materials we use
+
+- Solid white oak (kiln-dried, FSC-certified)
+- European walnut
+- Belgian linen and Italian wool for upholstery
+- Full-grain leather from a single tannery
+- Removable, dry-cleanable, replaceable cushion covers
+
+## Production and shipping
+
+- Small-batch production in our Tbilisi workshop.
+- In-stock items: ship within 5–7 business days inside Georgia.
+- Made-to-order items: 4–6 weeks lead time.
+- International shipping available across the EU and Caucasus region; quoted individually.
+
+## Warranty
+
+- 5-year structural warranty on the frame, joinery and mechanisms of every piece.
+- Cushion covers and upholstery: 2-year warranty against manufacturing defects.
+
+## Contact
+
+- Email: hello@furnituremodern.ge
+- Phone: +995 32 200 0000
+- Showroom: Aghmashenebeli Avenue 100, Tbilisi 0102, Georgia
+- Hours: Mon–Fri 10:00–19:00, Sat 11:00–17:00
+
+## Site map
+
+- /sitemap.xml — full machine-readable site map.
+- /robots.txt — crawler policy.

@@ -1,0 +1,48 @@
+{
+  "site": {
+    "tagline": "Modern furniture for your home",
+    "skipToContent": "Skip to main content"
+  },
+  "nav": {
+    "home": "Home",
+    "sofas": "Sofas",
+    "bedrooms": "Bedrooms",
+    "tablesChairs": "Tables & Chairs",
+    "openMenu": "Open menu",
+    "closeMenu": "Close menu",
+    "switchLanguage": "Switch language"
+  },
+  "home": {
+    "heroTitle": "Modern furniture, handcrafted to last",
+    "heroSubtitle": "Sofas, bedrooms and dining pieces built in warm, minimal forms — every detail considered for the way you actually live.",
+    "heroCtaPrimary": "Explore sofas",
+    "heroCtaSecondary": "See all categories",
+    "categoriesTitle": "Our categories",
+    "categoriesSubtitle": "Find the right piece for every room",
+    "storyTitle": "Our story",
+    "storyBody": "Furnituremodern is a Tbilisi-based studio building modern, long-lasting furniture from solid oak, walnut and natural fabrics. Every piece is produced in small batches, hand-finished, and inspected for fit before it leaves the workshop.",
+    "faqTitle": "Frequently asked questions"
+  },
+  "category": {
+    "viewMore": "View details",
+    "browseOther": "Browse other categories",
+    "from": "From",
+    "productCount": "{count} products"
+  },
+  "footer": {
+    "rights": "All rights reserved",
+    "address": "Address",
+    "contact": "Contact",
+    "explore": "Explore",
+    "languages": "Languages"
+  },
+  "breadcrumbs": {
+    "home": "Home"
+  },
+  "consent": {
+    "title": "Cookies",
+    "body": "We only set cookies that are strictly necessary for the site to work. Optional analytics are loaded only after you give consent.",
+    "accept": "Accept",
+    "decline": "Decline"
+  }
+}
