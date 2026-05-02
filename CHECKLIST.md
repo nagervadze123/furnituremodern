@@ -151,6 +151,35 @@ A snapshot of what's already done versus what to do before you go live.
 - [ ] Run `supabase db advisors` and resolve any warnings
 - [ ] Rotate the `service_role` key after launch and confirm it lives only in server env (never `NEXT_PUBLIC_`)
 
+### Structured-data confirmations
+
+These are real placeholder values in `lib/site-config.ts` — confirm with the business and update them before launch. Each one is read by Product/Offer JSON-LD on every product page, so wrong values mean wrong rich results.
+
+- [ ] **Return policy** — `siteConfig.returnPolicy`. Today: 14-day FiniteReturnWindow, ReturnByMail, FreeReturn, applicable in Georgia. Confirm window length, return method, and who pays return shipping.
+- [ ] **Shipping policy** — `siteConfig.shipping`. Today: 0 GEL flat rate, 1–3 days handling + 2–7 days transit, Georgia only. Confirm the actual rate (or rate matrix), realistic handling/transit ranges, and any region-specific shipping outside Georgia.
+- [ ] **Payment methods** — `siteConfig.paymentAccepted`. Today: Cash, CreditCard, DebitCard, BankTransfer. Confirm which the business actually takes; remove any not supported.
+- [ ] **Opening hours** — `siteConfig.contact.openingHours`. Confirm against the showroom schedule.
+- [ ] **Geo coordinates** — `siteConfig.contact.geo.{latitude,longitude}`. Confirm they point at the actual showroom door, not Tbilisi center.
+- [ ] **Product SKU / MPN strategy** — decide whether `id` (UUID) is acceptable as `sku` or whether the admin should issue a human SKU. If human, populate `products.sku` (and optional `mpn`) in the admin form + DB.
+- [ ] **Product availability strategy** — confirm that "published = InStock" holds. If made-to-order pieces should signal `PreOrder` or `BackOrder`, surface a per-row `availability` column and pass it through.
+
+### Rich Results validation
+
+Run Google Rich Results Test on the three highest-value pages once a real domain is up. Record results below.
+
+- [ ] **Home** — `/${locale}` — expect Organization, FurnitureStore, WebSite + SearchAction, WebPage, FAQPage with Speakable.
+- [ ] **Category** — pick `/${locale}/sofas` — expect BreadcrumbList, CollectionPage, ItemList.
+- [ ] **Product** — pick `/${locale}/sofas/<a-slug>` — expect Product with Offer, hasMerchantReturnPolicy, shippingDetails, BreadcrumbList.
+
+For each page: record date tested, tool URL used, pass/fail, and any warnings the validator flags. Acceptable warnings (because data is genuinely unavailable today): missing dimensions, weight, color, material, mpn — these only emit when a row in the catalog actually carries the value.
+
+### Verification — manual
+
+- [ ] View source on home / category / product pages and confirm exactly one of each schema block, no duplicates, no `null` leakage.
+- [ ] Confirm every `<script type="application/ld+json">` carries a `nonce=` attribute.
+- [ ] `/${locale}/search?q=test` returns 200 (not 404).
+- [ ] Search engine console verifications: Google, Bing, Yandex, Facebook (env vars in `.env.example`).
+
 ## Scheduled maintenance
 
 - [ ] **2026-05-16 (2 weeks after Plan 2 ship date 2026-05-02):** A scheduled agent will open a cleanup PR.

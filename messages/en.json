@@ -37,7 +37,15 @@
     "languages": "Languages"
   },
   "breadcrumbs": {
-    "home": "Home"
+    "home": "Home",
+    "search": "Search"
+  },
+  "search": {
+    "title": "Search",
+    "comingSoonHeading": "Search is coming soon",
+    "comingSoonBody": "We're still wiring up the catalogue search. In the meantime, browse the categories below.",
+    "queryLabel": "You searched for",
+    "backHome": "Back to home"
   },
   "consent": {
     "title": "Cookies",

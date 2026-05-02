@@ -134,6 +134,45 @@ export const siteConfig = {
   // schema generators do not need to import the routing file directly.
   locales: ["ka", "en"] as const,
   defaultLocale: "ka" as const,
+
+  // ---------------------------------------------------------------------------
+  // Commerce / structured-data facts
+  // ---------------------------------------------------------------------------
+  // These shape the LocalBusiness + Product/Offer JSON-LD blocks. Where
+  // a value is genuinely unknown today, leave the placeholder marked
+  // and confirm before launch (CHECKLIST §"Structured data confirmations").
+  // schema.org accepts $ count for priceRange — "$$" reads as "moderate"
+  // for a furniture store.
+  priceRange: "$$",
+  currenciesAccepted: ["GEL"] as const,
+  // PLACEHOLDER — confirm with the business before launch.
+  paymentAccepted: ["Cash", "CreditCard", "DebitCard", "BankTransfer"] as const,
+  areaServed: { country: "GE" as const },
+
+  // schema.org MerchantReturnPolicy. Ships inside every Product offer.
+  // PLACEHOLDER values — confirm with the business before launch.
+  returnPolicy: {
+    applicableCountry: "GE" as const,
+    // FiniteReturnWindow + 14 days = standard EU/Georgia distance-selling
+    // baseline. Adjust if the business actually accepts longer returns.
+    returnPolicyCategory: "MerchantReturnFiniteReturnWindow" as const,
+    merchantReturnDays: 14,
+    returnMethod: "ReturnByMail" as const,
+    returnFees: "FreeReturn" as const,
+  },
+
+  // schema.org OfferShippingDetails. Ships inside every Product offer.
+  // PLACEHOLDER values — confirm with the business before launch.
+  shipping: {
+    destinationCountry: "GE" as const,
+    rate: { value: 0, currency: "GEL" as const }, // 0 = free shipping placeholder
+    deliveryTime: {
+      handlingTimeDaysMin: 1,
+      handlingTimeDaysMax: 3,
+      transitTimeDaysMin: 2,
+      transitTimeDaysMax: 7,
+    },
+  },
 } as const;
 
 export type SiteConfig = typeof siteConfig;

@@ -26,6 +26,16 @@ export type Product = {
   price: number;
   currency: "GEL";
   images: ProductImage[];
+
+  // ---- Optional ecommerce fields (mirror lib/data/types.DataProduct) ----
+  // We populate `material` for placeholders where the description names
+  // a real material. Other fields stay undefined here so we don't ship
+  // fabricated dimensions/weights — admins fill these in via Supabase
+  // when real catalog data arrives.
+  sku?: string;
+  mpn?: string;
+  color?: string;
+  material?: string;
 };
 
 // picsum.photos returns a different image for every seed/dimension

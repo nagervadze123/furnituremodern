@@ -12,7 +12,11 @@ import { ProductGrid } from "./product-grid";
 import { CategoryCrossLinks } from "./category-cross-links";
 import { JsonLd } from "@/components/json-ld";
 import { ViewItemListTracker } from "@/components/analytics/view-item-list-tracker";
-import { breadcrumbListJsonLd, itemListJsonLd } from "@/lib/schema";
+import {
+  breadcrumbListJsonLd,
+  itemListJsonLd,
+  collectionPageJsonLd,
+} from "@/lib/schema";
 import type { CategorySlug } from "@/lib/site-config";
 import { getCategoryBySlug } from "@/lib/data/categories";
 import { getProducts } from "@/lib/data/products";
@@ -56,6 +60,17 @@ export async function CategoryPage({ slug, locale, intro }: Props) {
       <JsonLd
         id={`ld-breadcrumbs-${slug}`}
         data={breadcrumbListJsonLd(breadcrumbsForLd)}
+        nonce={nonce}
+      />
+      <JsonLd
+        id={`ld-collection-${slug}`}
+        data={collectionPageJsonLd({
+          locale,
+          categorySlug: slug,
+          name: category.name[locale],
+          description: category.description[locale],
+          numberOfItems: products.length,
+        })}
         nonce={nonce}
       />
       <JsonLd

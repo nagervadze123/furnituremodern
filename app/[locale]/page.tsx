@@ -8,7 +8,11 @@ import { FeaturedCategories } from "@/components/sections/featured-categories";
 import { BrandStory } from "@/components/sections/brand-story";
 import { Faq } from "@/components/sections/faq";
 import { JsonLd } from "@/components/json-ld";
-import { localBusinessJsonLd, faqPageJsonLd } from "@/lib/schema";
+import {
+  localBusinessJsonLd,
+  faqPageJsonLd,
+  webPageJsonLd,
+} from "@/lib/schema";
 import { getFaqEntries } from "@/content/faq";
 import { siteConfig, absoluteUrl } from "@/lib/site-config";
 import { routing, type Locale } from "@/i18n/routing";
@@ -75,7 +79,18 @@ export default async function HomePage({ params }: Props) {
   return (
     <>
       {/* Page-specific structured data. Organization + WebSite already
-          live in the layout. LocalBusiness + FAQPage are home-only. */}
+          live in the layout. WebPage anchors the home @id graph;
+          LocalBusiness + FAQPage are home-only. */}
+      <JsonLd
+        id="ld-webpage"
+        data={webPageJsonLd({
+          locale,
+          url: absoluteUrl(`/${locale}`),
+          name: siteConfig.name,
+          description: siteConfig.fullDescription[locale],
+        })}
+        nonce={nonce}
+      />
       <JsonLd id="ld-localbusiness" data={localBusinessJsonLd()} nonce={nonce} />
       <JsonLd id="ld-faq" data={faqPageJsonLd(faqEntries)} nonce={nonce} />
 

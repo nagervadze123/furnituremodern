@@ -19,9 +19,46 @@ export type DataProductImage = {
   height: number;
 };
 
+/** schema.org availability values we expose to the catalog. */
+export type ProductAvailability =
+  | "InStock"
+  | "OutOfStock"
+  | "PreOrder"
+  | "BackOrder";
+
+/** schema.org item condition values we expose to the catalog. */
+export type ProductCondition =
+  | "NewCondition"
+  | "UsedCondition"
+  | "RefurbishedCondition";
+
+/**
+ * Physical dimensions for one axis. unitCode follows the UN/CEFACT
+ * common-codes used by schema.org QuantitativeValue — "CMT" for
+ * centimetres, "MTR" for metres.
+ */
+export type DimensionsValue = {
+  width?: number;
+  height?: number;
+  depth?: number;
+  unitCode?: "CMT" | "MTR";
+};
+
+export type WeightValue = {
+  value: number;
+  /** "KGM" for kilograms, "GRM" for grams. */
+  unitCode?: "KGM" | "GRM";
+};
+
 /**
  * A product as the marketing site sees it — already filtered to
  * published rows, already typed and bilingual.
+ *
+ * Optional ecommerce fields below (sku, mpn, color, material,
+ * dimensions, weight, availability, condition, brand) feed Product
+ * JSON-LD on the detail page. None are mandatory: fields that are
+ * undefined are simply omitted from the schema output, so existing
+ * catalog rows keep working without backfill.
  */
 export type DataProduct = {
   id: string;
@@ -35,6 +72,18 @@ export type DataProduct = {
   images: DataProductImage[];
   /** Used by getFeaturedProducts(). Defaults to false locally. */
   isFeatured?: boolean;
+
+  // ---- Ecommerce / structured-data fields (all optional) ----
+  sku?: string;
+  mpn?: string;
+  color?: string;
+  material?: string;
+  dimensions?: DimensionsValue;
+  weight?: WeightValue;
+  availability?: ProductAvailability;
+  condition?: ProductCondition;
+  /** Per-product brand override; falls back to siteConfig.name. */
+  brand?: string;
 };
 
 /**
