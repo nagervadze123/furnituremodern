@@ -39,9 +39,17 @@ const intlMiddleware = createIntlMiddleware(routing);
 // We avoid hammering the DB on every request by skipping the lookup
 // for paths that obviously aren't user-facing (admin, _next, etc.) and
 // by short-circuiting when Supabase isn't configured.
+//
+// Returns one of three shapes so the caller can decide whether the
+// response needs CSP applied: 30x redirects don't (the browser never
+// sees the response body), but a 410 rewrite does (it is a real page).
+type RedirectMatch =
+  | { kind: "redirect"; response: NextResponse }
+  | { kind: "gone"; response: NextResponse };
+
 async function checkRedirect(
   request: NextRequest
-): Promise<NextResponse | null> {
+): Promise<RedirectMatch | null> {
   if (!isSupabaseConfigured()) return null;
 
   const { pathname } = request.nextUrl;
@@ -83,10 +91,23 @@ async function checkRedirect(
 
   if (error || !data) return null;
 
+  if (data.status_code === 410) {
+    // Rewrite to the locale's /gone route handler so the response
+    // carries HTTP 410 with a localized body. Locale is the first
+    // path segment; default to ka if the URL has none.
+    const locale = pathname.split("/")[1] || "ka";
+    const goneUrl = request.nextUrl.clone();
+    goneUrl.pathname = `/${locale}/gone`;
+    return { kind: "gone", response: NextResponse.rewrite(goneUrl) };
+  }
+
   // Preserve the query string from the incoming URL.
   const url = request.nextUrl.clone();
   url.pathname = data.to_path;
-  return NextResponse.redirect(url, { status: data.status_code });
+  return {
+    kind: "redirect",
+    response: NextResponse.redirect(url, { status: data.status_code }),
+  };
 }
 
 // ---------------------------------------------------------------------------
@@ -212,8 +233,12 @@ function applyCspToResponse(
 // ---------------------------------------------------------------------------
 export default async function proxy(request: NextRequest) {
   // 1. Redirects (only for marketing routes — admin paths are handled below).
-  const redirectResponse = await checkRedirect(request);
-  if (redirectResponse) return redirectResponse; // 301s don't need CSP
+  const match = await checkRedirect(request);
+  if (match) {
+    if (match.kind === "redirect") return match.response; // 30x — no CSP needed
+    // 410 rewrites render a real page; apply CSP like any other route.
+    return applyCspToResponse(request, match.response);
+  }
 
   // 2. Admin auth.
   if (request.nextUrl.pathname.startsWith("/admin")) {

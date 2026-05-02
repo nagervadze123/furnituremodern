@@ -362,9 +362,9 @@ export async function softDeleteProductAction(
     );
   } else {
     const status = mode === "gone" ? (410 as const) : (301 as const);
-    // When status is 410, `to_path` is ignored at lookup time (Task 7's
-    // proxy rewrites to /_gone); we still set it to the category page
-    // because the column is NOT NULL. Don't trust `to_path` for 410 rows.
+    // When status is 410, `to_path` is ignored at lookup time (the
+    // proxy rewrites to /<locale>/gone); we still set it to the category
+    // page because the column is NOT NULL. Don't trust `to_path` for 410.
     const rows = (["ka", "en"] as const).map((loc) => ({
       from_path: `/${loc}/${cat}/${row.slug}`,
       to_path: `/${loc}/${cat}`,
