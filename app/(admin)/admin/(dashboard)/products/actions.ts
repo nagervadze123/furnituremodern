@@ -21,6 +21,7 @@ import { requireAdmin } from "@/lib/admin/auth";
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
 import { productSchema } from "@/lib/admin/schemas";
 import { isValidSlug } from "@/lib/slug";
+import { detectSlugConflicts } from "@/lib/admin/slug-conflicts";
 
 export type ActionState = {
   ok: boolean;
@@ -90,6 +91,35 @@ export async function createProductAction(
   }
 
   const supabase = createSupabaseAdminClient();
+
+  const { data: category } = await supabase
+    .from("categories")
+    .select("slug")
+    .eq("id", parsed.category_id)
+    .single();
+
+  if (!category) {
+    return {
+      ok: false,
+      message: "Category not found.",
+      fieldErrors: { category_id: "Category not found" },
+    };
+  }
+
+  const conflict = await detectSlugConflicts({
+    supabase,
+    slug: parsed.slug,
+    categorySlug: category.slug,
+    excludeProductId: null,
+  });
+  if (!conflict.ok) {
+    return {
+      ok: false,
+      message: conflict.message_ka,
+      fieldErrors: { slug: conflict.message_ka },
+    };
+  }
+
   const { data, error } = await supabase
     .from("products")
     .insert({
@@ -168,6 +198,39 @@ export async function updateProductAction(
     slug: string;
     categories: { slug: string };
   };
+
+  // If the form sent a different category_id than prev's, look up the new
+  // category's slug; otherwise reuse prev.categories.slug.
+  let nextCategorySlug = prev.categories.slug;
+  if (parsed.category_id) {
+    const { data: nextCategory } = await supabase
+      .from("categories")
+      .select("slug")
+      .eq("id", parsed.category_id)
+      .single();
+    if (!nextCategory) {
+      return {
+        ok: false,
+        message: "Category not found.",
+        fieldErrors: { category_id: "Category not found" },
+      };
+    }
+    nextCategorySlug = nextCategory.slug;
+  }
+
+  const conflict = await detectSlugConflicts({
+    supabase,
+    slug: parsed.slug,
+    categorySlug: nextCategorySlug,
+    excludeProductId: productId,
+  });
+  if (!conflict.ok) {
+    return {
+      ok: false,
+      message: conflict.message_ka,
+      fieldErrors: { slug: conflict.message_ka },
+    };
+  }
 
   // Update the row.
   const { data: updated, error: updateErr } = await supabase

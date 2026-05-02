@@ -25,9 +25,9 @@ export const productSchema = z.object({
   // matters for SEO and we want a clear error message.
   slug: z
     .string()
-    .min(1, "Slug is required")
-    .max(80, "Slug must be 80 characters or less")
-    .refine(isValidSlug, "Slug must be lowercase, dash-separated ASCII"),
+    .min(1, { message: "სლაგი სავალდებულოა" })
+    .max(80, { message: "სლაგი 80 სიმბოლოზე გრძელია" })
+    .refine(isValidSlug, { message: "სლაგი მხოლოდ ASCII ასოებით, ციფრებითა და დეფისებით" }),
 
   category_id: z.string().uuid("Pick a category"),
 
