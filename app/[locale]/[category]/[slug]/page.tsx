@@ -21,6 +21,7 @@ import {
   formatLastUpdated,
   LAST_UPDATED_LABEL,
 } from "@/lib/aeo/summary";
+import { BRAND_PORTRAIT_BLUR } from "@/lib/perf/blur";
 import { absoluteUrl, siteConfig } from "@/lib/site-config";
 import { routing, type Locale } from "@/i18n/routing";
 
@@ -167,6 +168,8 @@ export default async function ProductDetailPage({ params }: Props) {
               fill
               sizes="(min-width: 768px) 50vw, 100vw"
               priority
+              placeholder="blur"
+              blurDataURL={BRAND_PORTRAIT_BLUR}
               className="object-cover"
             />
           ) : null}

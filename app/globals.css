@@ -46,12 +46,15 @@
   --color-card-foreground: var(--card-foreground);
   --color-card: var(--card);
 
-  /* Type scale — body uses Inter, headings use Fraunces. The variables
-     are set by next/font in app/[locale]/layout.tsx. */
-  --font-sans: var(--font-body);
-  --font-display: var(--font-display);
+  /* Type scale — body uses Inter, headings use Fraunces. Inter and
+     Fraunces don't carry Georgian glyphs, so we append Noto Sans/Serif
+     Georgian (loaded via next/font) inside the font-family declarations
+     below — browsers pick the right glyph per character without us
+     needing per-locale CSS classes. */
+  --font-sans: var(--font-body), var(--font-georgian-sans), system-ui, sans-serif;
+  --font-display: var(--font-display), var(--font-georgian-serif), Georgia, "Times New Roman", serif;
   --font-mono: var(--font-geist-mono);
-  --font-heading: var(--font-display);
+  --font-heading: var(--font-display), var(--font-georgian-serif), Georgia, "Times New Roman", serif;
 
   /* Radius scale — single root, derived sizes. */
   --radius-sm: calc(var(--radius) * 0.6);
@@ -149,16 +152,30 @@
   html {
     @apply font-sans;
   }
-  /* All headings use the display serif. Tailwind utilities can override
-     per element if you want a sans-serif headline somewhere. */
+  /* All headings use the display serif. The font stack chains Latin →
+     Georgian → system-serif so browsers can mix scripts in a single
+     line without missing glyphs. */
   h1,
   h2,
   h3,
   .font-display {
-    font-family: var(--font-display), Georgia, "Times New Roman", serif;
+    font-family: var(--font-display), var(--font-georgian-serif), Georgia, "Times New Roman", serif;
   }
   /* Make focus rings visible on every interactive element. */
   :focus-visible {
     @apply outline-none ring-2 ring-ring ring-offset-2 ring-offset-background;
+  }
+}
+
+/* View Transitions API — collapse animations to zero for users with
+   prefers-reduced-motion. Browsers swap content instantly (the default
+   non-VT behavior) instead of animating. Targets the pseudo-elements
+   the View Transitions API generates per snapshot. */
+@media (prefers-reduced-motion: reduce) {
+  ::view-transition-old(*),
+  ::view-transition-new(*),
+  ::view-transition-group(*) {
+    animation-duration: 0s !important;
+    animation-delay: 0s !important;
   }
 }

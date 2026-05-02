@@ -103,8 +103,14 @@ A snapshot of what's already done versus what to do before you go live.
 
 ### Performance
 - [x] SSG / ISR for all public routes (categories + products `revalidate = 300`)
-- [x] `next/font` for Fraunces + Inter, self-hosted with `display: swap`
-- [x] `next/image` everywhere with `sizes`, `priority` on the hero
+- [x] `next/font` for Fraunces + Inter (Latin) + Noto Sans/Serif Georgian, self-hosted with `display: swap`
+- [x] `next/image` everywhere with `sizes`, `priority` on the hero, blur placeholders on hero/product/category cards via `lib/perf/blur.ts`
+- [x] AVIF + WebP delivery, 1y `minimumCacheTTL`, calibrated `deviceSizes`/`imageSizes`, locked `remotePatterns` (see `lib/perf/image-config.ts`)
+- [x] Supabase preconnect in `<head>` (only when `NEXT_PUBLIC_SUPABASE_URL` is set)
+- [x] Analytics preconnects gated by cookie consent (inside `AnalyticsLoader`)
+- [x] `experimental.viewTransition` + `<ViewTransition>` wrapping `<main>`; `prefers-reduced-motion` collapses durations to zero
+- [x] OG image route has `Cache-Control: max-age=3600, s-maxage=3600, stale-while-revalidate=86400`
+- [x] `npm run analyze` (webpack + `@next/bundle-analyzer`) wired up; Turbopack alternative: `npx next experimental-analyze`
 - [x] Mobile-first responsive
 
 ### Accessibility
@@ -146,7 +152,9 @@ A snapshot of what's already done versus what to do before you go live.
 - [ ] Add a `/contact` page (`localBusinessJsonLd` already supports it)
 - [ ] Tighten Content-Security-Policy: switch from `'unsafe-inline'` to nonce-based CSP
 - [ ] Add a third locale (Russian?) — see `README.md` § "Add a new locale"
-- [ ] Run a real Lighthouse audit on the deployed URL (target: 95+ on all four scores)
+- [ ] Run a real Lighthouse mobile audit on the deployed URL — placeholder phase: Performance ≥ 90, SEO 100, Accessibility ≥ 95, Best Practices 100. After real photos: Performance ≥ 95.
+- [ ] Capture per-route First Load JS once Next 16's Turbopack build summary or analyzer pipeline reports it natively, then ratchet the bundle budget at *baseline + 5%*. Today the 180 KB target is a Lighthouse-derived ceiling, not a CI gate.
+- [ ] Verify p75 INP < 200 ms once the RUM dashboard (Plan 3) has a week of real traffic.
 - [ ] Submit `sitemap.xml` to Google Search Console and Bing Webmaster Tools
 - [ ] Run `supabase db advisors` and resolve any warnings
 - [ ] Rotate the `service_role` key after launch and confirm it lives only in server env (never `NEXT_PUBLIC_`)

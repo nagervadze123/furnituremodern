@@ -8,8 +8,14 @@
 // handled by app/[locale]/layout.tsx.
 
 import type { Metadata } from "next";
-import { Fraunces, Inter } from "next/font/google";
 import {
+  Fraunces,
+  Inter,
+  Noto_Sans_Georgian,
+  Noto_Serif_Georgian,
+} from "next/font/google";
+import {
+  SITE_URL,
   absoluteUrl,
   siteConfig,
   verificationTokens,
@@ -36,6 +42,13 @@ function buildVerification(): Metadata["verification"] {
 
 // Fonts must be loaded at the root so they apply to every page in the
 // tree, including /_not-found (which has no [locale] layout above it).
+//
+// Inter and Fraunces don't ship Georgian glyphs, so we layer
+// Noto Sans/Serif Georgian alongside them. CSS var fallback chains in
+// globals.css (var(--font-body), var(--font-georgian-sans), system-ui)
+// make browsers pick whichever has the right glyph for each character —
+// no JS detection needed. We only request the weights actually used to
+// keep the font payload tight.
 const fraunces = Fraunces({
   subsets: ["latin", "latin-ext"],
   variable: "--font-display",
@@ -46,6 +59,20 @@ const fraunces = Fraunces({
 const inter = Inter({
   subsets: ["latin", "latin-ext"],
   variable: "--font-body",
+  display: "swap",
+  weight: ["400", "500", "600", "700"],
+});
+
+const notoSansGeorgian = Noto_Sans_Georgian({
+  subsets: ["georgian"],
+  variable: "--font-georgian-sans",
+  display: "swap",
+  weight: ["400", "500", "600", "700"],
+});
+
+const notoSerifGeorgian = Noto_Serif_Georgian({
+  subsets: ["georgian"],
+  variable: "--font-georgian-serif",
   display: "swap",
   weight: ["400", "500", "600", "700"],
 });
@@ -80,11 +107,29 @@ export default function RootLayout({
   return (
     <html
       lang={siteConfig.defaultLocale}
-      // The two font CSS variables go on <html> so every descendant
-      // inherits them. globals.css reads them via var(--font-display).
-      className={`${fraunces.variable} ${inter.variable}`}
+      // Font CSS variables go on <html> so every descendant inherits
+      // them. globals.css references them via var(--font-display) and
+      // var(--font-body), with the Georgian variants appended to the
+      // font-family stack so browsers pick the right glyph per char.
+      className={`${fraunces.variable} ${inter.variable} ${notoSansGeorgian.variable} ${notoSerifGeorgian.variable}`}
       suppressHydrationWarning
     >
+      <head>
+        {/* Preconnect to the Supabase origin only when one is configured.
+            Public pages fetch product images from this host on cold
+            navigation, so a TCP+TLS warm-up shaves ~150-300ms off the
+            first image request without extra round-trips for the
+            local-fallback build. */}
+        {SITE_URL && process.env.NEXT_PUBLIC_SUPABASE_URL ? (
+          <link
+            rel="preconnect"
+            href={
+              new URL(process.env.NEXT_PUBLIC_SUPABASE_URL).origin
+            }
+            crossOrigin=""
+          />
+        ) : null}
+      </head>
       <body className="min-h-screen bg-background font-sans text-foreground">
         {children}
       </body>

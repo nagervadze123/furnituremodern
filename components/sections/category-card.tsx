@@ -4,6 +4,7 @@
 import Image from "next/image";
 import { Link } from "@/i18n/navigation";
 import { ArrowUpRight } from "lucide-react";
+import { BRAND_PORTRAIT_BLUR } from "@/lib/perf/blur";
 
 type Props = {
   href: string;
@@ -25,6 +26,8 @@ export function CategoryCard({ href, name, tagline, imageUrl, imageAlt }: Props)
           alt={imageAlt}
           fill
           sizes="(min-width: 1024px) 33vw, (min-width: 640px) 50vw, 100vw"
+          placeholder="blur"
+          blurDataURL={BRAND_PORTRAIT_BLUR}
           className="object-cover transition-transform duration-700 group-hover:scale-105"
         />
         <div

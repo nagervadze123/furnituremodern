@@ -9,6 +9,7 @@ import { getLocale } from "next-intl/server";
 import { SelectItemLink } from "@/components/analytics/select-item-link";
 import { formatPrice } from "@/lib/format";
 import { productToItem } from "@/lib/analytics";
+import { BRAND_PORTRAIT_BLUR } from "@/lib/perf/blur";
 import type { DataProduct } from "@/lib/data/types";
 import type { Locale } from "@/i18n/routing";
 
@@ -37,6 +38,8 @@ export async function ProductCard({ product, listName }: Props) {
             alt={primary.alt[locale]}
             fill
             sizes="(min-width: 1024px) 25vw, (min-width: 640px) 50vw, 100vw"
+            placeholder="blur"
+            blurDataURL={BRAND_PORTRAIT_BLUR}
             className="object-cover transition-transform duration-500 group-hover:scale-[1.03]"
           />
         ) : null}

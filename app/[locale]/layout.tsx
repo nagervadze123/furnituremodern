@@ -7,6 +7,7 @@
 // crawlers running JS see the right language.
 
 import type { Metadata } from "next";
+import { ViewTransition } from "react";
 import { NextIntlClientProvider, hasLocale } from "next-intl";
 import { setRequestLocale } from "next-intl/server";
 import { notFound } from "next/navigation";
@@ -79,7 +80,17 @@ export default async function LocaleLayout({
 
       <NextIntlClientProvider>
         <Header />
-        <main id="main-content">{children}</main>
+        {/* React's <ViewTransition> activates the browser View
+            Transitions API on every route change. We wrap just the
+            <main> content so the persistent header/footer stay
+            anchored — the page content crossfades while chrome
+            stays put. Browsers without View Transitions API support
+            no-op silently; prefers-reduced-motion is honored via
+            globals.css. The experimental viewTransition flag in
+            next.config.ts must remain enabled. */}
+        <main id="main-content">
+          <ViewTransition>{children}</ViewTransition>
+        </main>
         <Footer />
         <CookieConsent />
         <AnalyticsLoader nonce={nonce} />

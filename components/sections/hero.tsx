@@ -5,6 +5,7 @@ import Image from "next/image";
 import { getLocale, getTranslations } from "next-intl/server";
 import { Link } from "@/i18n/navigation";
 import { buttonVariants } from "@/components/ui/button";
+import { BRAND_PORTRAIT_BLUR } from "@/lib/perf/blur";
 import type { Locale } from "@/i18n/routing";
 
 export async function Hero() {
@@ -63,6 +64,8 @@ export async function Hero() {
               sizes="(min-width: 768px) 50vw, 100vw"
               // priority = preload; this is the LCP image.
               priority
+              placeholder="blur"
+              blurDataURL={BRAND_PORTRAIT_BLUR}
               className="object-cover"
             />
           </div>

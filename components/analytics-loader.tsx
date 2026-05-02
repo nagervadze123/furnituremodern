@@ -48,8 +48,23 @@ export function AnalyticsLoader({ nonce }: Props) {
 
   if (consent !== "accepted") return null;
 
+  // Preconnect to provider hosts only once consent is granted. These
+  // <link> tags react-hoist into <head> so the browser starts the
+  // TCP+TLS handshake while the <Script> tags below are still queued.
+  // We do NOT preconnect before consent — that would defeat the
+  // whole point of the consent gate.
   return (
     <>
+      {(config.enabled.gtm || config.enabled.ga4) ? (
+        <link rel="preconnect" href="https://www.googletagmanager.com" crossOrigin="" />
+      ) : null}
+      {config.enabled.meta ? (
+        <link rel="preconnect" href="https://connect.facebook.net" crossOrigin="" />
+      ) : null}
+      {config.enabled.plausible ? (
+        <link rel="preconnect" href="https://plausible.io" crossOrigin="" />
+      ) : null}
+
       {/* GTM loads once and owns GA4 + Meta tags inside the container. */}
       {config.enabled.gtm && config.gtmId ? (
         <Script

@@ -257,6 +257,18 @@ It currently emits a `console.debug` line as a placeholder — swap in your real
 3. `npm run build` should report zero errors and zero warnings.
 4. The site is mostly static (categories + products are SSG with ISR). Admin routes are dynamic. Any Node host (Vercel, Netlify, Render, a VPS) works.
 
+### Performance & bundle analysis
+
+- `npm run analyze` runs a webpack production build with `@next/bundle-analyzer` enabled (`ANALYZE=true`). Results land in `.next/analyze/{client,nodejs,edge}.html` — open the client report to spot oversized dependencies. The script uses `--webpack` because the analyzer is webpack-only at Next 16.2.4.
+- For a Turbopack-native size view, run `npx next experimental-analyze` (interactive UI on `localhost:4000`) after a regular build. Output-only mode: `npx next experimental-analyze -o`.
+- **Per-route JS budget (target):** 180 KB First Load JS on public routes, ratcheted at *current baseline + 5%* once the analyzer pipeline reports per-route numbers natively. Until Next 16's build summary prints those again, treat 180 KB as a rough Lighthouse-derived ceiling rather than a CI gate.
+- **Lighthouse mobile targets** (run against a production build):
+  - Now (placeholder photos via `picsum.photos`): Performance ≥ 90, SEO 100, Accessibility ≥ 95, Best Practices 100.
+  - After real product photos land: Performance ≥ 95.
+- **INP target:** p75 < 200 ms (Core Web Vitals "Good" threshold). Verify after the RUM dashboard from Plan 3 ships and a week of real traffic accumulates.
+- **View Transitions** are enabled via `experimental.viewTransition: true` in `next.config.ts` and a `<ViewTransition>` wrapper around `<main>` in `app/[locale]/layout.tsx`. Browsers without the View Transitions API fall back silently. `prefers-reduced-motion` collapses transition durations to zero in `app/globals.css` — content swaps instantly, matching the default non-VT behavior.
+- **Resource hints are consent-gated.** The Supabase preconnect in the root layout fires only when `NEXT_PUBLIC_SUPABASE_URL` is configured. Analytics preconnects (Google Tag Manager, Facebook, Plausible) live inside `components/analytics-loader.tsx` and only emit *after* the visitor accepts the cookie banner — there is no analytics network warm-up before consent.
+
 ## 12. Search engine setup
 
 ### Verification meta tags
