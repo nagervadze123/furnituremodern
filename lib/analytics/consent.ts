@@ -1,16 +1,17 @@
-// Maps the existing fm-consent cookie/localStorage shape to Google
-// Consent Mode v2 signals.
-//
-// The current consent system is binary ("accepted" | "declined" | null).
-// Per spec: analytics, marketing, and functional categories all map to
-// that single accepted-state until the consent UI grows category-level
-// toggles. `security_storage` is always granted.
+// Maps the granular fm_consent ConsentChoice to Google Consent Mode v2
+// signals. `null` means "no choice yet" and produces all-denied (the
+// pre-consent default). `analytics` toggles analytics_storage; the
+// `marketing` boolean toggles ad_storage / ad_user_data /
+// ad_personalization. functionality_storage and personalization_storage
+// are tied to analytics today (we only ship analytics-class storage —
+// no separate functional or personalization category in the UI), and
+// security_storage is always granted per the spec.
 //
 // `updateGtagConsent` only fires if `gtag` is already on window — we
 // never load gtag.js purely to deliver a consent update. The usual
 // caller is the GA4 or GTM provider, both of which load gtag first.
 
-import type { ConsentState } from "@/components/cookie-consent";
+import type { ConsentChoice } from "@/lib/consent";
 
 export type ConsentSignal = "granted" | "denied";
 
@@ -24,15 +25,16 @@ export type ConsentMode = {
   security_storage: "granted";
 };
 
-export function consentToMode(consent: ConsentState | null): ConsentMode {
-  const accepted = consent === "accepted";
+export function consentToMode(choice: ConsentChoice | null): ConsentMode {
+  const analytics = choice?.analytics === true;
+  const marketing = choice?.marketing === true;
   return {
-    ad_storage: accepted ? "granted" : "denied",
-    ad_user_data: accepted ? "granted" : "denied",
-    ad_personalization: accepted ? "granted" : "denied",
-    analytics_storage: accepted ? "granted" : "denied",
-    functionality_storage: accepted ? "granted" : "denied",
-    personalization_storage: accepted ? "granted" : "denied",
+    ad_storage: marketing ? "granted" : "denied",
+    ad_user_data: marketing ? "granted" : "denied",
+    ad_personalization: marketing ? "granted" : "denied",
+    analytics_storage: analytics ? "granted" : "denied",
+    functionality_storage: analytics ? "granted" : "denied",
+    personalization_storage: analytics ? "granted" : "denied",
     security_storage: "granted",
   };
 }

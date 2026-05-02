@@ -34,11 +34,80 @@
     "address": "Address",
     "contact": "Contact",
     "explore": "Explore",
-    "languages": "Languages"
+    "languages": "Languages",
+    "legal": "Legal",
+    "privacy_link": "Privacy policy"
   },
   "breadcrumbs": {
     "home": "Home",
-    "search": "Search"
+    "search": "Search",
+    "privacy": "Privacy"
+  },
+  "privacy": {
+    "page_title": "Privacy policy",
+    "page_description": "How Furnituremodern collects, uses, and protects your data.",
+    "effective_date_label": "Last updated",
+    "sections": {
+      "who_we_are": {
+        "title": "Who we are",
+        "body": "Furnituremodern Ltd. is a Tbilisi-based studio that designs and builds modern furniture. We operate this website at the address listed below, and we are the data controller for any personal data described on this page."
+      },
+      "what_we_collect": {
+        "title": "What data we collect",
+        "necessary": "Necessary cookies: a single first-party cookie that stores your cookie preferences. This is set the moment you make a choice in the consent banner and is required for the site to remember that choice. It is not used for analytics or advertising.",
+        "analytics": "Analytics data: when you opt in to analytics, we collect anonymous usage data — page paths visited, anonymous device/browser metadata, and Web Vitals performance metrics. We do not store names, email addresses, or precise location alongside these events.",
+        "marketing": "Marketing data: when you opt in to marketing, advertising platforms may receive anonymous attribution data so we can measure the effectiveness of campaigns. No marketing platform is enabled today, so opting in produces no actual data flow until that changes."
+      },
+      "why_we_collect": {
+        "title": "Why we collect it",
+        "body": "We collect only what we need to operate and improve the site. Necessary cookies remember your consent choice. Analytics helps us understand which pages are useful and where the site is slow. Marketing, if enabled, would help us measure whether advertising spend reaches the right audience. We follow the principle of purpose limitation under GDPR Article 5: data is collected for explicit, legitimate purposes and is not reused for unrelated ones."
+      },
+      "retention": {
+        "title": "How long we keep it",
+        "intro": "We keep different categories of data for different periods:",
+        "web_vitals": "Web Vitals: 90 days.",
+        "analytics_events": "Analytics events: 90 days.",
+        "redirects": "Redirect history: indefinitely, because it is part of the site's operational integrity — old URLs must continue to resolve.",
+        "future_features": "We do not currently process orders or contact-form submissions. This section will be updated when those features ship."
+      },
+      "third_parties": {
+        "title": "Who we share it with",
+        "intro": "We do not currently share data with any third party. The platforms listed below are POTENTIAL recipients — none are enabled today.",
+        "ga": "If we enable Google Analytics 4, Google will receive anonymous technical data about your device and behavior on the site, governed by Google's own privacy terms.",
+        "gtm": "If we enable Google Tag Manager, Google will receive event metadata routed through the GTM container.",
+        "meta": "If we enable the Meta Pixel, Meta will receive anonymous interaction data for advertising attribution.",
+        "plausible": "If we enable Plausible Analytics, Plausible will receive anonymous traffic data; Plausible processes data in the EU and does not use cookies."
+      },
+      "your_rights": {
+        "title": "Your rights",
+        "intro": "Under GDPR you have the following rights regarding your personal data:",
+        "access": "Right of access — you can ask us what data we hold about you.",
+        "rectification": "Right to rectification — you can ask us to correct inaccurate data.",
+        "erasure": "Right to erasure — you can ask us to delete your data.",
+        "restriction": "Right to restriction — you can ask us to limit how we use your data.",
+        "portability": "Right to portability — you can ask us to provide your data in a machine-readable format.",
+        "objection": "Right to object — you can object to specific kinds of processing."
+      },
+      "cookies": {
+        "title": "Cookies we set",
+        "intro": "We set one first-party cookie ourselves; everything else depends on what you opt into.",
+        "table_name": "Name",
+        "table_purpose": "Purpose",
+        "table_duration": "Duration",
+        "fm_consent_purpose": "Stores your cookie preferences (which categories you accepted).",
+        "fm_consent_duration": "12 months",
+        "manage_intro": "You can change your preferences at any time:"
+      },
+      "contact": {
+        "title": "Contact us",
+        "body": "If you have questions about this policy or want to exercise any of your rights, contact us using the details below.",
+        "response_note": "We aim to respond within 30 days."
+      },
+      "updates": {
+        "title": "Updates to this policy",
+        "body": "We will update this page when our practices change. The date at the top of the page reflects the most recent update. The most recent update was on"
+      }
+    }
   },
   "search": {
     "title": "Search",
@@ -48,9 +117,32 @@
     "backHome": "Back to home"
   },
   "consent": {
-    "title": "Cookies",
-    "body": "We only set cookies that are strictly necessary for the site to work. Optional analytics are loaded only after you give consent.",
-    "accept": "Accept",
-    "decline": "Decline"
+    "banner": {
+      "heading": "Manage cookies",
+      "body": "This site uses cookies. Necessary cookies are always on — they are required for the site to function. Analytics and marketing cookies load only after you accept them.",
+      "links": {
+        "privacy_policy": "Privacy policy"
+      },
+      "buttons": {
+        "accept_all": "Accept all",
+        "necessary_only": "Necessary only",
+        "customize": "Customize"
+      }
+    },
+    "settings": {
+      "heading": "Cookie preferences",
+      "intro": "Choose which categories of cookies you allow.",
+      "necessary_label": "Necessary",
+      "necessary_description": "Required for the site to work. Always on.",
+      "analytics_label": "Analytics",
+      "analytics_description": "Helps us understand how visitors use the site. Collected anonymously.",
+      "marketing_label": "Marketing",
+      "marketing_description": "Used for personalized offers. Not currently in use.",
+      "save": "Save",
+      "cancel": "Cancel"
+    },
+    "manage_link": {
+      "label": "Manage cookies"
+    }
   }
 }

@@ -14,22 +14,22 @@ const ITEM: Item = {
   item_brand: "Furnituremodern",
 };
 
-// Build a fake window with stubbed localStorage + provider globals.
-// Each test resets it explicitly so cross-test pollution can't happen.
+// Build a fake window + document with stubbed cookie + provider globals.
+// Each test resets explicitly so cross-test pollution can't happen.
+//
+// The `consent` field maps to the literal cookie value:
+//   "accepted" → fm_consent=accepted (legacy migration → analytics:true)
+//   "declined" → fm_consent=declined (legacy migration → analytics:false)
+//   null       → no cookie at all (undecided)
 function setupWindow(opts: {
-  consent: string | null;
+  consent: "accepted" | "declined" | null;
   gtag?: ReturnType<typeof vi.fn>;
   dataLayer?: unknown[];
   fbq?: ReturnType<typeof vi.fn>;
   plausible?: ReturnType<typeof vi.fn>;
 }) {
   const w: Record<string, unknown> = {
-    location: { href: "https://example.com/test" },
-    localStorage: {
-      getItem: (k: string) => (k === "fm-consent" ? opts.consent : null),
-      setItem: () => {},
-      removeItem: () => {},
-    },
+    location: { href: "https://example.com/test", protocol: "https:" },
     addEventListener: () => {},
     removeEventListener: () => {},
   };
@@ -39,9 +39,17 @@ function setupWindow(opts: {
   if (opts.plausible) w.plausible = opts.plausible;
   // @ts-expect-error — assign synthetic window
   globalThis.window = w;
+
+  // Stub document.cookie. Legacy literal strings exercise the parser's
+  // migration path (parseStoredConsent maps "accepted" → all-true).
+  const cookieValue =
+    opts.consent === null ? "" : `fm_consent=${opts.consent}`;
+  // @ts-expect-error — assign synthetic document
+  globalThis.document = { cookie: cookieValue };
 }
 
 const originalWindow = globalThis.window;
+const originalDocument = globalThis.document;
 
 beforeEach(() => {
   vi.unstubAllEnvs();
@@ -54,6 +62,12 @@ afterEach(() => {
     delete globalThis.window;
   } else {
     globalThis.window = originalWindow;
+  }
+  if (originalDocument === undefined) {
+    // @ts-expect-error — restore SSR-like state
+    delete globalThis.document;
+  } else {
+    globalThis.document = originalDocument;
   }
   vi.unstubAllEnvs();
   _();

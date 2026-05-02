@@ -135,6 +135,11 @@ export const siteConfig = {
   locales: ["ka", "en"] as const,
   defaultLocale: "ka" as const,
 
+  // ISO date of the most recent privacy-policy update. Surfaces on the
+  // /privacy page as the "Last updated" line. Update whenever you
+  // materially change the policy text.
+  privacyPolicyUpdatedAt: "2026-05-02",
+
   // ---------------------------------------------------------------------------
   // Commerce / structured-data facts
   // ---------------------------------------------------------------------------

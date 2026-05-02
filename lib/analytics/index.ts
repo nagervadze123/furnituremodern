@@ -12,9 +12,9 @@
 //     is set
 //   • No env vars → track() is a complete no-op
 //
-// Consent is read from the existing cookie-consent localStorage key
-// at dispatch time (lazy read) so a user accepting after page load
-// immediately starts producing events without re-mounting components.
+// Consent is read from the fm_consent cookie at dispatch time (lazy
+// read) so a user accepting after page load immediately starts
+// producing events without re-mounting components.
 
 import type { AnalyticsEvent, Item } from "./types";
 import { getAnalyticsConfig } from "./config";
@@ -22,21 +22,22 @@ import { ga4Track } from "./providers/ga4";
 import { gtmTrack } from "./providers/gtm";
 import { metaTrack } from "./providers/meta";
 import { plausibleTrack } from "./providers/plausible";
-import { getStoredConsent } from "@/components/cookie-consent";
+import { readConsentFromBrowser } from "@/lib/consent";
 import { siteConfig } from "@/lib/site-config";
 import type { DataProduct } from "@/lib/data/types";
 import type { Locale } from "@/i18n/routing";
 
 export type { AnalyticsEvent, Item } from "./types";
 
-function consentAccepted(): boolean {
+// TODO(phase-6): marketing-class events gate on choice.marketing
+function consentAllowsEvent(): boolean {
   // SSR / build-time: nothing accepted.
-  if (typeof window === "undefined") return false;
-  return getStoredConsent() === "accepted";
+  if (typeof document === "undefined") return false;
+  return readConsentFromBrowser()?.analytics === true;
 }
 
 export function track(event: AnalyticsEvent): void {
-  if (!consentAccepted()) return;
+  if (!consentAllowsEvent()) return;
   const config = getAnalyticsConfig();
 
   // Each provider call is wrapped so a thrown SDK never breaks the

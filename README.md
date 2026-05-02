@@ -250,6 +250,17 @@ You can also add manual redirects from `/admin/redirects`.
 
 It currently emits a `console.debug` line as a placeholder — swap in your real analytics provider's snippet (Plausible, Fathom, Umami, etc.).
 
+## Consent + Privacy
+
+The site uses a granular cookie-consent system with two opt-in categories:
+
+- **Analytics** (page views, Web Vitals, ecommerce events). Off by default.
+- **Marketing** (advertising attribution). Off by default. No marketing platform is currently enabled.
+
+The user's choice is stored in a first-party `fm_consent` cookie as JSON of shape `{ analytics: boolean; marketing: boolean; updatedAt: string }`. Storage is cookie-only — no localStorage. Legacy `"accepted"` / `"declined"` string values are migrated on read.
+
+The bilingual privacy policy lives at `/[locale]/privacy`. Visitors can revisit and change their preferences at any time via the **Manage cookies** link in the footer.
+
 ## 11. Production deployment
 
 1. Set `NEXT_PUBLIC_SITE_URL` (no trailing slash). Without it, canonical URLs and OG images point at `localhost:3000`.

@@ -13,9 +13,10 @@
 //   • NEXT_PUBLIC_PLAUSIBLE_DOMAIN  → Plausible always loads when set
 //
 // Consent integration:
-//   • No script renders before consent === "accepted".
-//   • When consent flips to accepted after page load, scripts mount
-//     immediately because the component re-renders via useConsent().
+//   • No script renders until choice.analytics === true OR
+//     choice.marketing === true. Both denied → nothing loads.
+//   • When consent flips after page load, scripts mount immediately
+//     because the component re-renders via useConsent().
 //   • On the same flip, we fire Consent Mode v2 update so any
 //     already-loaded gtag re-evaluates with granted signals.
 //
@@ -25,7 +26,7 @@
 
 import Script from "next/script";
 import { useEffect } from "react";
-import { useConsent } from "./cookie-consent";
+import { useConsent } from "@/lib/consent";
 import { getAnalyticsConfig } from "@/lib/analytics/config";
 import { consentToMode, updateGtagConsent } from "@/lib/analytics/consent";
 
@@ -34,7 +35,7 @@ type Props = {
 };
 
 export function AnalyticsLoader({ nonce }: Props) {
-  const consent = useConsent();
+  const { choice } = useConsent();
   const config = getAnalyticsConfig();
 
   // When consent changes after a script is already loaded, push the
@@ -42,11 +43,14 @@ export function AnalyticsLoader({ nonce }: Props) {
   // present yet — the script's own consent="default" line is the
   // pre-consent baseline.
   useEffect(() => {
-    if (consent === null) return;
-    updateGtagConsent(consentToMode(consent));
-  }, [consent]);
+    if (choice === null) return;
+    updateGtagConsent(consentToMode(choice));
+  }, [choice]);
 
-  if (consent !== "accepted") return null;
+  // Load scripts only once user has consented to anything trackable.
+  // analytics OR marketing enabled → load. Both denied → no scripts.
+  const anyConsent = choice?.analytics === true || choice?.marketing === true;
+  if (!anyConsent) return null;
 
   // Preconnect to provider hosts only once consent is granted. These
   // <link> tags react-hoist into <head> so the browser starts the
@@ -105,7 +109,7 @@ export function AnalyticsLoader({ nonce }: Props) {
                 window.gtag = gtag;
                 gtag('js', new Date());
                 gtag('consent', 'default', ${JSON.stringify(
-                  consentToMode(consent)
+                  consentToMode(choice)
                 )});
                 gtag('config', '${config.ga4Id}', { send_page_view: false });
               `,

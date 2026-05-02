@@ -12,7 +12,7 @@
 
 import { useEffect } from "react";
 import { usePathname, useSearchParams } from "next/navigation";
-import { useConsent } from "@/components/cookie-consent";
+import { useConsent } from "@/lib/consent";
 import { track } from "@/lib/analytics";
 
 type Props = {
@@ -22,21 +22,21 @@ type Props = {
 export function PageViewTracker({ locale }: Props) {
   const pathname = usePathname();
   const searchParams = useSearchParams();
-  const consent = useConsent();
+  const { choice } = useConsent();
   const search = searchParams?.toString() ?? "";
 
   useEffect(() => {
     // track() itself gates on consent — repeating the gate here lets
     // the effect dependency array stay tight without firing a stale
     // event between consent flip and provider load.
-    if (consent !== "accepted") return;
+    if (choice?.analytics !== true) return;
     track({
       type: "page_view",
       pathname,
       search: search ? `?${search}` : "",
       locale,
     });
-  }, [pathname, search, locale, consent]);
+  }, [pathname, search, locale, choice?.analytics]);
 
   return null;
 }

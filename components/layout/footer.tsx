@@ -4,6 +4,7 @@ import { getLocale, getTranslations } from "next-intl/server";
 import { Link } from "@/i18n/navigation";
 import { siteConfig } from "@/lib/site-config";
 import { footerExploreNav } from "@/lib/navigation";
+import { ManageLink } from "@/components/consent/manage-link";
 import type { Locale } from "@/i18n/routing";
 
 export async function Footer() {
@@ -15,7 +16,7 @@ export async function Footer() {
 
   return (
     <footer className="mt-24 border-t border-border/50 bg-muted/40">
-      <div className="mx-auto grid max-w-7xl gap-10 px-4 py-12 md:grid-cols-4 md:px-6">
+      <div className="mx-auto grid max-w-7xl gap-10 px-4 py-12 md:grid-cols-5 md:px-6">
         <div className="md:col-span-2">
           <p className="font-display text-lg font-semibold text-foreground">
             {siteConfig.name}
@@ -72,6 +73,27 @@ export async function Footer() {
               </a>
             </p>
           </address>
+        </div>
+
+        <div>
+          <h2 className="text-sm font-semibold text-foreground">
+            {t("legal")}
+          </h2>
+          <ul className="mt-4 space-y-2 text-sm">
+            <li>
+              <Link
+                href="/privacy"
+                className="text-muted-foreground transition-colors hover:text-foreground"
+              >
+                {t("privacy_link")}
+              </Link>
+            </li>
+            <li>
+              {/* Re-opens the cookie settings sheet. Client island
+                  inside an otherwise server-rendered footer. */}
+              <ManageLink className="text-muted-foreground transition-colors hover:text-foreground" />
+            </li>
+          </ul>
         </div>
       </div>
       <div className="border-t border-border/50">

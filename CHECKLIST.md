@@ -138,6 +138,12 @@ A snapshot of what's already done versus what to do before you go live.
 - [ ] Replace FAQ answers in `content/faq.ts`
 - [ ] Tighten the brand-story copy in `messages/ka.json` / `messages/en.json`
 
+### Privacy & legal
+- [ ] Confirm `privacyPolicyUpdatedAt` in `lib/site-config.ts` reflects the actual most recent edit before launch.
+- [ ] Confirm `siteConfig.contact.email` (currently `hello@furnituremodern.ge`) is correct and monitored — the privacy page links to it for data-rights requests.
+- [ ] Confirm whether GA4, GTM, Meta Pixel, or Plausible will actually be enabled at launch, and rewrite the privacy page's "Who we share it with" conditional language ("If we enable …") into definite language for the providers that will actually run.
+- [ ] **Replace placeholder Georgian privacy policy text with legal-counsel-reviewed copy before launch.** Current text is plain-language drafted in good faith and is NOT legal advice.
+
 ### Supabase
 - [ ] Create a Supabase project; run `supabase/schema.sql` then `supabase/seed.sql`
 - [ ] Create a Supabase Auth user and `INSERT INTO admin_users (user_id, role) VALUES ('<UUID>', 'admin')`

@@ -48,6 +48,11 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
 
   const home = localizedSitemapEntry("", siteLastMod, 1.0, "daily");
 
+  // Privacy policy: rare changes, low priority. Static page, no DB
+  // dependency — siteLastMod is a fine proxy here; the page itself
+  // only changes when siteConfig.privacyPolicyUpdatedAt moves.
+  const privacy = localizedSitemapEntry("privacy", siteLastMod, 0.4, "yearly");
+
   const categoryEntries = categories.flatMap((c) =>
     localizedSitemapEntry(c.slug, siteLastMod, 0.8, "weekly")
   );
@@ -61,5 +66,5 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     )
   );
 
-  return [...home, ...categoryEntries, ...productEntries];
+  return [...home, ...privacy, ...categoryEntries, ...productEntries];
 }
