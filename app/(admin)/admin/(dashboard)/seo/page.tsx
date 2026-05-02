@@ -13,6 +13,7 @@
 import { requireAdmin } from "@/lib/admin/auth";
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
 import { deleteRedirectAction } from "../redirects/actions";
+import { cleanupOrphanSlugAction } from "./actions";
 import { NotFoundRow } from "@/components/admin/not-found-row";
 
 export const dynamic = "force-dynamic";
@@ -25,6 +26,17 @@ async function deleteRedirectFormAction(formData: FormData): Promise<void> {
   const id = formData.get("id");
   if (typeof id === "string" && id) {
     await deleteRedirectAction(id);
+  }
+}
+
+// Same shape for cleaning up an orphan product_slug_history row.
+async function cleanupOrphanSlugFormAction(
+  formData: FormData
+): Promise<void> {
+  "use server";
+  const id = formData.get("id");
+  if (typeof id === "string" && id) {
+    await cleanupOrphanSlugAction(id);
   }
 }
 
@@ -46,6 +58,7 @@ export default async function SeoAuditPage() {
     missingDescriptionsCount,
     redirectsList,
     notFoundRecent,
+    slugHistoryWithProducts,
   ] = await Promise.all([
     supabase
       .from("redirects")
@@ -74,6 +87,17 @@ export default async function SeoAuditPage() {
       .gte("occurred_at", since)
       .order("occurred_at", { ascending: false })
       .limit(500),
+    // LEFT JOIN onto products so we get history rows whose product_id
+    // is missing entirely (data from before the FK was enforced) AND
+    // rows whose product is present but soft-deleted. We filter to
+    // orphans in JS below.
+    supabase
+      .from("product_slug_history")
+      .select(
+        "id, product_id, old_slug, changed_at, products ( id, deleted_at )"
+      )
+      .order("changed_at", { ascending: false })
+      .limit(200),
   ]);
 
   const redirects = redirectsList.data ?? [];
@@ -92,6 +116,23 @@ export default async function SeoAuditPage() {
   const topNotFounds = [...counts.entries()]
     .sort(([, a], [, b]) => b.count - a.count)
     .slice(0, 50);
+
+  // Orphan = the joined product is missing OR soft-deleted. The
+  // products relation on a left join is null when the FK target is
+  // gone; with our FK ON DELETE CASCADE today this is rare, but old
+  // history rows or future schema relaxation would surface here.
+  type SlugHistoryRow = {
+    id: string;
+    product_id: string;
+    old_slug: string;
+    changed_at: string;
+    products: { id: string; deleted_at: string | null } | null;
+  };
+  const orphanSlugs = (
+    (slugHistoryWithProducts.data ?? []) as unknown as SlugHistoryRow[]
+  )
+    .filter((row) => !row.products || row.products.deleted_at !== null)
+    .slice(0, 100);
 
   return (
     <main className="space-y-8">
@@ -198,6 +239,63 @@ export default async function SeoAuditPage() {
                     count={info.count}
                     lastSeen={info.lastSeen}
                   />
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
+      </section>
+
+      <section>
+        <h2 className="text-lg font-semibold tracking-tight">
+          Orphan slug history
+        </h2>
+        <p className="mt-1 text-sm text-muted-foreground">
+          Slug-history entries whose product has been soft-deleted (or
+          is missing entirely). Cleaning up removes the audit row but
+          leaves the redirects intact.
+        </p>
+        {orphanSlugs.length === 0 ? (
+          <p className="mt-4 rounded-md border border-border bg-muted/30 px-3 py-2 text-sm text-muted-foreground">
+            No orphans.
+          </p>
+        ) : (
+          <div className="mt-4 overflow-x-auto rounded-xl border border-border">
+            <table className="w-full text-sm">
+              <thead className="bg-muted/40 text-left text-xs uppercase tracking-wide text-muted-foreground">
+                <tr>
+                  <th className="px-3 py-2 font-medium">Old slug</th>
+                  <th className="px-3 py-2 font-medium">Reason</th>
+                  <th className="px-3 py-2 font-medium">Changed</th>
+                  <th className="px-3 py-2" />
+                </tr>
+              </thead>
+              <tbody>
+                {orphanSlugs.map((row) => (
+                  <tr key={row.id} className="border-t border-border">
+                    <td className="px-3 py-2 font-mono text-xs">
+                      {row.old_slug}
+                    </td>
+                    <td className="px-3 py-2 text-xs text-muted-foreground">
+                      {row.products
+                        ? "product soft-deleted"
+                        : "product missing"}
+                    </td>
+                    <td className="px-3 py-2 text-muted-foreground">
+                      {new Date(row.changed_at).toLocaleDateString()}
+                    </td>
+                    <td className="px-3 py-2 text-right">
+                      <form action={cleanupOrphanSlugFormAction}>
+                        <input type="hidden" name="id" value={row.id} />
+                        <button
+                          type="submit"
+                          className="text-xs text-destructive hover:underline"
+                        >
+                          Clean up
+                        </button>
+                      </form>
+                    </td>
+                  </tr>
                 ))}
               </tbody>
             </table>
