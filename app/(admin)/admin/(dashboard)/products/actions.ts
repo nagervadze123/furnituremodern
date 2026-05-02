@@ -348,19 +348,37 @@ export async function softDeleteProductAction(
   if (updateErr) return { ok: false, message: updateErr.message };
 
   // 2. Wire up either a 301 redirect to the category page or a 410.
+  // Failure here matters: without these rows the old URL serves a hard
+  // 404, so we surface upsert errors back to the admin instead of
+  // silently redirecting with `?deleted=1`. The product row is already
+  // soft-deleted at this point — re-running the action recovers.
   const cat = row.categories?.slug ?? "";
-  if (cat) {
+  if (!cat) {
+    // Defensive: should never happen given the FK, but the read cast
+    // admits null. Log and keep going — the soft-delete still took.
+    console.warn(
+      "[softDeleteProductAction] product %s has no category; skipping redirects",
+      productId
+    );
+  } else {
     const status = mode === "gone" ? (410 as const) : (301 as const);
-    // to_path is unused at status 410 (the proxy rewrites to /_gone)
-    // but the column is NOT NULL, so write the category page either way.
+    // When status is 410, `to_path` is ignored at lookup time (Task 7's
+    // proxy rewrites to /_gone); we still set it to the category page
+    // because the column is NOT NULL. Don't trust `to_path` for 410 rows.
     const rows = (["ka", "en"] as const).map((loc) => ({
       from_path: `/${loc}/${cat}/${row.slug}`,
       to_path: `/${loc}/${cat}`,
       status_code: status,
     }));
-    await supabase
+    const { error: redirectErr } = await supabase
       .from("redirects")
       .upsert(rows, { onConflict: "from_path", ignoreDuplicates: false });
+    if (redirectErr) {
+      return {
+        ok: false,
+        message: `Soft-deleted, but failed to wire up redirects: ${redirectErr.message}. Re-run delete to retry.`,
+      };
+    }
   }
 
   revalidatePublicSurfaces(cat || undefined, row.slug);
