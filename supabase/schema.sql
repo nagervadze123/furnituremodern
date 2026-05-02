@@ -19,11 +19,13 @@
 
 -- Always start fresh — drop in dependency order if you re-run the file.
 -- (Comment these out in production once data exists.)
-DROP TABLE IF EXISTS public.product_images CASCADE;
-DROP TABLE IF EXISTS public.products       CASCADE;
-DROP TABLE IF EXISTS public.categories     CASCADE;
-DROP TABLE IF EXISTS public.redirects      CASCADE;
-DROP TABLE IF EXISTS public.admin_users    CASCADE;
+DROP TABLE IF EXISTS public.product_images       CASCADE;
+DROP TABLE IF EXISTS public.product_slug_history CASCADE;
+DROP TABLE IF EXISTS public.products             CASCADE;
+DROP TABLE IF EXISTS public.categories           CASCADE;
+DROP TABLE IF EXISTS public.redirects            CASCADE;
+DROP TABLE IF EXISTS public.not_found_log        CASCADE;
+DROP TABLE IF EXISTS public.admin_users          CASCADE;
 
 -- ---------------------------------------------------------------------------
 -- categories
@@ -58,13 +60,15 @@ CREATE TABLE public.products (
   is_published  boolean NOT NULL DEFAULT false,
   sort_order    integer NOT NULL DEFAULT 0,
   created_at    timestamptz NOT NULL DEFAULT now(),
-  updated_at    timestamptz NOT NULL DEFAULT now()
+  updated_at    timestamptz NOT NULL DEFAULT now(),
+  deleted_at    timestamptz NULL
 );
 
 CREATE INDEX products_category_id_idx       ON public.products (category_id);
 CREATE INDEX products_is_published_idx      ON public.products (is_published);
 CREATE INDEX products_is_featured_idx       ON public.products (is_featured);
 CREATE INDEX products_sort_order_idx        ON public.products (sort_order);
+CREATE INDEX products_deleted_at_idx        ON public.products (deleted_at) WHERE deleted_at IS NULL;
 
 -- Auto-update updated_at on every row change. search_path is locked
 -- because the body is schema-qualifier-free; pg_catalog is always on
@@ -110,6 +114,40 @@ CREATE UNIQUE INDEX product_images_one_primary_per_product
   WHERE is_primary = true;
 
 -- ---------------------------------------------------------------------------
+-- product_slug_history
+-- ---------------------------------------------------------------------------
+-- Append-only audit trail of slug changes. Inserted by the admin product
+-- update action whenever a slug is rewritten. Used by the SEO dashboard
+-- to flag orphaned redirect chains.
+CREATE TABLE public.product_slug_history (
+  id          uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  product_id  uuid NOT NULL REFERENCES public.products(id) ON DELETE CASCADE,
+  old_slug    text NOT NULL,
+  changed_at  timestamptz NOT NULL DEFAULT now(),
+  changed_by  uuid NULL REFERENCES auth.users(id) ON DELETE SET NULL
+);
+
+CREATE INDEX product_slug_history_product_id_idx ON public.product_slug_history (product_id);
+CREATE INDEX product_slug_history_changed_at_idx ON public.product_slug_history (changed_at DESC);
+
+-- ---------------------------------------------------------------------------
+-- not_found_log
+-- ---------------------------------------------------------------------------
+-- 404 telemetry. The not-found boundary fires a beacon to /api/log-404
+-- which inserts here. IP is hashed (FNV-1a) before insert.
+CREATE TABLE public.not_found_log (
+  id           uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  path         text NOT NULL,
+  locale       text NULL,
+  referrer     text NULL,
+  ip_hash      text NULL,
+  occurred_at  timestamptz NOT NULL DEFAULT now()
+);
+
+CREATE INDEX not_found_log_path_idx        ON public.not_found_log (path);
+CREATE INDEX not_found_log_occurred_at_idx ON public.not_found_log (occurred_at DESC);
+
+-- ---------------------------------------------------------------------------
 -- admin_users
 -- ---------------------------------------------------------------------------
 -- Maps an authenticated Supabase user to an admin role. RLS policies on
@@ -133,7 +171,7 @@ CREATE TABLE public.redirects (
   id          uuid PRIMARY KEY DEFAULT gen_random_uuid(),
   from_path   text UNIQUE NOT NULL,    -- e.g. "/ka/sofas/old-slug"
   to_path     text NOT NULL,           -- e.g. "/ka/sofas/new-slug"
-  status_code integer NOT NULL DEFAULT 301 CHECK (status_code IN (301, 302, 307, 308)),
+  status_code integer NOT NULL DEFAULT 301 CHECK (status_code IN (301, 302, 307, 308, 410)),
   created_at  timestamptz NOT NULL DEFAULT now()
 );
 
@@ -291,6 +329,40 @@ WITH CHECK (private.is_admin());
 
 CREATE POLICY "redirects_admin_delete"
 ON public.redirects FOR DELETE
+USING (private.is_admin());
+
+-- product_slug_history: admin-only. No public read; the SEO dashboard
+-- queries it via the service-role admin client. No update policy —
+-- history rows are immutable after insert.
+ALTER TABLE public.product_slug_history ENABLE ROW LEVEL SECURITY;
+
+CREATE POLICY "product_slug_history_admin_select"
+ON public.product_slug_history FOR SELECT
+USING (private.is_admin());
+
+CREATE POLICY "product_slug_history_admin_insert"
+ON public.product_slug_history FOR INSERT
+WITH CHECK (private.is_admin());
+
+CREATE POLICY "product_slug_history_admin_delete"
+ON public.product_slug_history FOR DELETE
+USING (private.is_admin());
+
+-- not_found_log: admin reads + deletes; insert is open so the public
+-- /api/log-404 beacon can write without elevated keys. The route hashes
+-- the IP before insert so no PII lands in the row.
+ALTER TABLE public.not_found_log ENABLE ROW LEVEL SECURITY;
+
+CREATE POLICY "not_found_log_admin_select"
+ON public.not_found_log FOR SELECT
+USING (private.is_admin());
+
+CREATE POLICY "not_found_log_anon_insert"
+ON public.not_found_log FOR INSERT
+WITH CHECK (true);
+
+CREATE POLICY "not_found_log_admin_delete"
+ON public.not_found_log FOR DELETE
 USING (private.is_admin());
 
 -- ---------------------------------------------------------------------------

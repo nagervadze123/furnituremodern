@@ -50,6 +50,7 @@ export type Database = {
           sort_order: number;
           created_at: string;
           updated_at: string;
+          deleted_at: string | null;
         };
         Insert: {
           id?: string;
@@ -66,6 +67,7 @@ export type Database = {
           sort_order?: number;
           created_at?: string;
           updated_at?: string;
+          deleted_at?: string | null;
         };
         Update: Partial<Database["public"]["Tables"]["products"]["Insert"]>;
         Relationships: [
@@ -111,6 +113,56 @@ export type Database = {
             referencedColumns: ["id"];
           }
         ];
+      };
+      product_slug_history: {
+        Row: {
+          id: string;
+          product_id: string;
+          old_slug: string;
+          changed_at: string;
+          changed_by: string | null;
+        };
+        Insert: {
+          id?: string;
+          product_id: string;
+          old_slug: string;
+          changed_at?: string;
+          changed_by?: string | null;
+        };
+        Update: Partial<
+          Database["public"]["Tables"]["product_slug_history"]["Insert"]
+        >;
+        Relationships: [
+          {
+            foreignKeyName: "product_slug_history_product_id_fkey";
+            columns: ["product_id"];
+            isOneToOne: false;
+            referencedRelation: "products";
+            referencedColumns: ["id"];
+          }
+        ];
+      };
+      not_found_log: {
+        Row: {
+          id: string;
+          path: string;
+          locale: string | null;
+          referrer: string | null;
+          ip_hash: string | null;
+          occurred_at: string;
+        };
+        Insert: {
+          id?: string;
+          path: string;
+          locale?: string | null;
+          referrer?: string | null;
+          ip_hash?: string | null;
+          occurred_at?: string;
+        };
+        Update: Partial<
+          Database["public"]["Tables"]["not_found_log"]["Insert"]
+        >;
+        Relationships: [];
       };
       admin_users: {
         Row: {
