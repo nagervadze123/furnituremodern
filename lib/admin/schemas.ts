@@ -75,11 +75,30 @@ const pathString = z
   .max(2048)
   .refine((v) => v.startsWith("/"), "Path must start with /");
 
+// Form-submitted status codes arrive as strings (hidden input or <select>),
+// while server-side callers may pass numbers directly. Coerce numeric
+// strings into numbers, then enforce the allowed-codes whitelist. 410 is
+// included because proxy.ts treats it as a "Gone" rewrite.
 export const redirectSchema = z.object({
   from_path: pathString,
   to_path: pathString,
   status_code: z
-    .union([z.literal(301), z.literal(302), z.literal(307), z.literal(308)])
+    .preprocess(
+      (v) => {
+        if (typeof v === "string") {
+          const n = Number(v);
+          return Number.isFinite(n) ? n : v;
+        }
+        return v;
+      },
+      z.union([
+        z.literal(301),
+        z.literal(302),
+        z.literal(307),
+        z.literal(308),
+        z.literal(410),
+      ])
+    )
     .default(301),
 });
 export type RedirectInput = z.infer<typeof redirectSchema>;
