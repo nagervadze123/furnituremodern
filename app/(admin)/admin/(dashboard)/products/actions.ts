@@ -308,37 +308,62 @@ export async function updateProductAction(
 }
 
 // ---------------------------------------------------------------------------
-// Delete
+// Soft delete (with redirect-or-410 choice)
 // ---------------------------------------------------------------------------
-export async function deleteProductAction(
-  productId: string
+// Hard-delete is no longer exposed. The product row stays in the
+// database with `deleted_at` set, public reads filter it out, and the
+// admin chooses between two outcomes for visitors landing on the old
+// URL: 301 to the category, or 410 Gone (Plan 2 Task 7 wires the 410
+// handler).
+
+export type DeleteMode = "redirect" | "gone";
+
+export async function softDeleteProductAction(
+  productId: string,
+  mode: DeleteMode
 ): Promise<ActionState> {
   await requireAdmin();
-
   if (!productId) return { ok: false, message: "Missing product id." };
 
   const supabase = createSupabaseAdminClient();
 
-  // Fetch first so we know what to revalidate.
+  // Fetch the row so we know what URL to wire up afterwards.
   const { data: existing } = await supabase
     .from("products")
     .select("slug, categories ( slug )")
     .eq("id", productId)
     .single();
-
-  const { error } = await supabase
-    .from("products")
-    .delete()
-    .eq("id", productId);
-
-  if (error) return { ok: false, message: error.message };
+  if (!existing) return { ok: false, message: "Product not found." };
 
   const row = existing as unknown as {
     slug: string;
     categories: { slug: string } | null;
-  } | null;
-  revalidatePublicSurfaces(row?.categories?.slug, row?.slug);
+  };
 
+  // 1. Mark deleted.
+  const { error: updateErr } = await supabase
+    .from("products")
+    .update({ deleted_at: new Date().toISOString() })
+    .eq("id", productId);
+  if (updateErr) return { ok: false, message: updateErr.message };
+
+  // 2. Wire up either a 301 redirect to the category page or a 410.
+  const cat = row.categories?.slug ?? "";
+  if (cat) {
+    const status = mode === "gone" ? (410 as const) : (301 as const);
+    // to_path is unused at status 410 (the proxy rewrites to /_gone)
+    // but the column is NOT NULL, so write the category page either way.
+    const rows = (["ka", "en"] as const).map((loc) => ({
+      from_path: `/${loc}/${cat}/${row.slug}`,
+      to_path: `/${loc}/${cat}`,
+      status_code: status,
+    }));
+    await supabase
+      .from("redirects")
+      .upsert(rows, { onConflict: "from_path", ignoreDuplicates: false });
+  }
+
+  revalidatePublicSurfaces(cat || undefined, row.slug);
   redirect("/admin/products?deleted=1");
 }
 

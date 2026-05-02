@@ -12,7 +12,7 @@ import { ProductImageList } from "@/components/admin/product-image-list";
 import { DeleteProductButton } from "@/components/admin/delete-product-button";
 import {
   updateProductAction,
-  deleteProductAction,
+  softDeleteProductAction,
   type ActionState,
 } from "../../actions";
 
@@ -71,7 +71,8 @@ export default async function EditProductPage({ params, searchParams }: Props) {
     formData: FormData
   ) => Promise<ActionState>;
 
-  const boundDelete = deleteProductAction.bind(null, product.id);
+  // Bind productId; the button supplies the mode at click time.
+  const boundDelete = softDeleteProductAction.bind(null, product.id);
 
   return (
     <div className="max-w-3xl">

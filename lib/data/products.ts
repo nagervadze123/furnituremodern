@@ -174,6 +174,7 @@ export async function getProducts(
          product_images ( storage_path, alt_ka, alt_en, sort_order, is_primary )`
       )
       .eq("is_published", true)
+      .is("deleted_at", null)
       .order("sort_order", { ascending: true });
 
     if (category) query = query.eq("categories.slug", category);
@@ -233,6 +234,7 @@ export async function getProductBySlug(
          product_images ( storage_path, alt_ka, alt_en, sort_order, is_primary )`
       )
       .eq("is_published", true)
+      .is("deleted_at", null)
       .eq("slug", slug)
       .limit(1);
 
@@ -303,7 +305,8 @@ export async function getAllProductPaths(): Promise<
     const { data, error } = await supabase
       .from("products")
       .select("slug, categories!inner ( slug )")
-      .eq("is_published", true);
+      .eq("is_published", true)
+      .is("deleted_at", null);
 
     if (!error && data) {
       return (data as unknown as Array<{
