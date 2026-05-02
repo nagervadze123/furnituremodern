@@ -1,10 +1,10 @@
 "use server";
 
-import { revalidatePath } from "next/cache";
 import { ZodError } from "zod";
 import { requireAdmin } from "@/lib/admin/auth";
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
 import { redirectSchema } from "@/lib/admin/schemas";
+import { notifyRevalidation } from "@/lib/revalidation/notify";
 
 export type ActionState = {
   ok: boolean;
@@ -72,7 +72,7 @@ export async function upsertRedirectAction(
   }
 
   // Revalidate everything — a redirect can affect any URL.
-  revalidatePath("/", "layout");
+  await notifyRevalidation({ paths: [{ path: "/", type: "layout" }] });
   return { ok: true, message: id ? "Saved." : "Redirect added." };
 }
 
@@ -83,6 +83,6 @@ export async function deleteRedirectAction(
   const supabase = createSupabaseAdminClient();
   const { error } = await supabase.from("redirects").delete().eq("id", id);
   if (error) return { ok: false, message: error.message };
-  revalidatePath("/", "layout");
+  await notifyRevalidation({ paths: [{ path: "/", type: "layout" }] });
   return { ok: true };
 }

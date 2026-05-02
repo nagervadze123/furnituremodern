@@ -14,7 +14,6 @@
 
 "use server";
 
-import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { ZodError } from "zod";
 import { requireAdmin } from "@/lib/admin/auth";
@@ -22,6 +21,7 @@ import { createSupabaseAdminClient } from "@/lib/supabase/admin";
 import { productSchema } from "@/lib/admin/schemas";
 import { isValidSlug } from "@/lib/slug";
 import { detectSlugConflicts } from "@/lib/admin/slug-conflicts";
+import { notifyRevalidation, type PathSpec } from "@/lib/revalidation/notify";
 
 export type ActionState = {
   ok: boolean;
@@ -50,21 +50,21 @@ function zodToFieldErrors(err: ZodError): Record<string, string> {
 /**
  * Revalidate every public surface that could be displaying a product.
  * Called after every mutation so visitors see fresh data without the
- * 5-minute ISR window.
+ * 5-minute ISR window. Routes through notifyRevalidation() so peer
+ * deployments (Vercel ↔ localhost) also drop their cache.
  */
-function revalidatePublicSurfaces(category?: string, slug?: string) {
-  // Home page (uses featured products).
-  revalidatePath("/", "page");
-  // Category landing pages.
+async function revalidatePublicSurfaces(category?: string, slug?: string) {
+  const paths: PathSpec[] = [
+    { path: "/", type: "page" },
+    { path: "/sitemap.xml", type: "page" },
+  ];
   if (category) {
-    revalidatePath(`/[locale]/[category]`, "page");
+    paths.push({ path: `/[locale]/[category]`, type: "page" });
   }
-  // Specific product detail page.
   if (category && slug) {
-    revalidatePath(`/[locale]/[category]/[slug]`, "page");
+    paths.push({ path: `/[locale]/[category]/[slug]`, type: "page" });
   }
-  // Sitemap.
-  revalidatePath("/sitemap.xml", "page");
+  await notifyRevalidation({ paths });
 }
 
 // ---------------------------------------------------------------------------
@@ -151,7 +151,7 @@ export async function createProductAction(
     slug: string;
     categories: { slug: string } | null;
   };
-  revalidatePublicSurfaces(created.categories?.slug, created.slug);
+  await revalidatePublicSurfaces(created.categories?.slug, created.slug);
 
   // Redirect throws — must come AFTER all DB work.
   redirect(`/admin/products/${created.id}/edit?created=1`);
@@ -298,10 +298,10 @@ export async function updateProductAction(
       .upsert(rows, { onConflict: "from_path", ignoreDuplicates: false });
   }
 
-  revalidatePublicSurfaces(next.categories?.slug, next.slug);
+  await revalidatePublicSurfaces(next.categories?.slug, next.slug);
   // Also revalidate the OLD URL so any cached version returns 301.
   if (next.slug !== prev.slug) {
-    revalidatePublicSurfaces(prev.categories.slug, prev.slug);
+    await revalidatePublicSurfaces(prev.categories.slug, prev.slug);
   }
 
   return { ok: true, message: "Saved." };
@@ -381,7 +381,7 @@ export async function softDeleteProductAction(
     }
   }
 
-  revalidatePublicSurfaces(cat || undefined, row.slug);
+  await revalidatePublicSurfaces(cat || undefined, row.slug);
   redirect("/admin/products?deleted=1");
 }
 

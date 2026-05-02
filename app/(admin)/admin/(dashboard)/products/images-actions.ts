@@ -5,10 +5,15 @@
 
 "use server";
 
-import { revalidatePath } from "next/cache";
 import { z } from "zod";
 import { requireAdmin } from "@/lib/admin/auth";
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
+import { notifyRevalidation } from "@/lib/revalidation/notify";
+
+const IMAGE_REVALIDATE_PATHS = [
+  { path: "/[locale]/[category]/[slug]", type: "page" as const },
+  { path: "/[locale]/[category]", type: "page" as const },
+];
 
 const addImageSchema = z.object({
   product_id: z.string().uuid(),
@@ -46,8 +51,7 @@ export async function addProductImageAction(input: {
   });
   if (error) return { ok: false, message: error.message };
 
-  revalidatePath("/[locale]/[category]/[slug]", "page");
-  revalidatePath("/[locale]/[category]", "page");
+  await notifyRevalidation({ paths: IMAGE_REVALIDATE_PATHS });
   return { ok: true };
 }
 
@@ -103,7 +107,6 @@ export async function deleteProductImageAction(
     }
   }
 
-  revalidatePath("/[locale]/[category]/[slug]", "page");
-  revalidatePath("/[locale]/[category]", "page");
+  await notifyRevalidation({ paths: IMAGE_REVALIDATE_PATHS });
   return { ok: true };
 }

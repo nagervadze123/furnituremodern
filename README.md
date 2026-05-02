@@ -46,8 +46,14 @@ Copy `.env.example` to `.env.local` and fill in what you need.
 | `NEXT_PUBLIC_SUPABASE_ANON_KEY`  | For DB mode     | Supabase publishable key. Safe to ship to the browser. |
 | `SUPABASE_SERVICE_ROLE_KEY`      | Admin panel     | Server-only key used by the admin panel and seed scripts. **Never** prefix with `NEXT_PUBLIC_`. |
 | `NEXT_PUBLIC_ANALYTICS_DOMAIN`   | Optional        | When set, the analytics placeholder script is loaded after the user accepts cookies. When empty, nothing is loaded and no cookies are written. |
+| `REVALIDATE_WEBHOOK_URL`         | Multi-deploy    | Peer deployment's `/api/revalidate` endpoint. When set, every admin write POSTs here so the peer's ISR cache invalidates too. Leave unset for single-deployment setups. |
+| `REVALIDATE_SECRET`              | Multi-deploy    | Shared secret for the webhook. Generate with `openssl rand -hex 32`. The **same** value must be set on every peer. Required if `REVALIDATE_WEBHOOK_URL` is set. |
 
 If neither Supabase variable is set, every page falls back to the in-memory catalogue — useful for offline development and previews.
+
+### Cross-deployment revalidation
+
+If you run more than one deployment of this app against the same Supabase project (for example: localhost during development plus Vercel in production), set `REVALIDATE_WEBHOOK_URL` and `REVALIDATE_SECRET` on **both** peers so their ISR caches stay in sync. After an admin write, each peer revalidates its own paths *and* fires a fire-and-forget POST to the other peer's `/api/revalidate`. Without this wiring, edits made on one deployment will not appear on the other until the next natural revalidation tick.
 
 ## 5. Supabase setup
 

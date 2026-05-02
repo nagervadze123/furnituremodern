@@ -7,9 +7,9 @@
 
 "use server";
 
-import { revalidatePath } from "next/cache";
 import { requireAdmin } from "@/lib/admin/auth";
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
+import { notifyRevalidation } from "@/lib/revalidation/notify";
 
 export type SeoActionResult = { ok: boolean; message?: string };
 
@@ -35,7 +35,7 @@ export async function createRedirectFrom404Action(
     );
   if (error) return { ok: false, message: error.message };
 
-  revalidatePath("/", "layout");
+  await notifyRevalidation({ paths: [{ path: "/", type: "layout" }] });
   return { ok: true };
 }
 
@@ -52,6 +52,6 @@ export async function cleanupOrphanSlugAction(
     .eq("id", historyId);
   if (error) return { ok: false, message: error.message };
 
-  revalidatePath("/admin/seo", "page");
+  await notifyRevalidation({ paths: [{ path: "/admin/seo", type: "page" }] });
   return { ok: true };
 }

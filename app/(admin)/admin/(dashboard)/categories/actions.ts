@@ -1,10 +1,10 @@
 "use server";
 
-import { revalidatePath } from "next/cache";
 import { ZodError } from "zod";
 import { requireAdmin } from "@/lib/admin/auth";
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
 import { categorySchema } from "@/lib/admin/schemas";
+import { notifyRevalidation } from "@/lib/revalidation/notify";
 
 export type ActionState = {
   ok: boolean;
@@ -27,10 +27,14 @@ function zodToFieldErrors(err: ZodError): Record<string, string> {
   return out;
 }
 
-function revalidateCategorySurfaces() {
-  revalidatePath("/", "page");
-  revalidatePath("/[locale]/[category]", "page");
-  revalidatePath("/sitemap.xml", "page");
+async function revalidateCategorySurfaces() {
+  await notifyRevalidation({
+    paths: [
+      { path: "/", type: "page" },
+      { path: "/[locale]/[category]", type: "page" },
+      { path: "/sitemap.xml", type: "page" },
+    ],
+  });
 }
 
 export async function upsertCategoryAction(
@@ -66,7 +70,7 @@ export async function upsertCategoryAction(
   }
   if (error) return { ok: false, message: error.message };
 
-  revalidateCategorySurfaces();
+  await revalidateCategorySurfaces();
   return { ok: true, message: id ? "Saved." : "Category created." };
 }
 
@@ -94,6 +98,6 @@ export async function deleteCategoryAction(
   const { error } = await supabase.from("categories").delete().eq("id", id);
   if (error) return { ok: false, message: error.message };
 
-  revalidateCategorySurfaces();
+  await revalidateCategorySurfaces();
   return { ok: true };
 }
