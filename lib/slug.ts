@@ -1,28 +1,12 @@
+// Re-exports the slug pipeline as `slugify` so existing call sites keep
+// working. The actual logic — NFD-stripping accented Latin, BGN/PCGN
+// transliteration of Georgian, hyphen normalization, length cap — lives
+// in lib/slug/transliterate.ts where it can also be unit-tested.
+
 import { transliterate } from "./slug/transliterate";
 
-const ASCII_LETTERS_DIGITS = /^[\x00-\x7F]+$/;
-
-/**
- * Generate a slug from an arbitrary string.
- *
- * - For Georgian or mixed-script input, delegates to BGN/PCGN
- *   transliteration in lib/slug/transliterate.ts.
- * - For pure-ASCII input keeps the old fast path: lowercase, strip
- *   diacritics, collapse non-alphanumerics to hyphens, trim, cap at 80.
- */
-export function slugify(input: string): string {
-  if (!input) return "";
-  if (!ASCII_LETTERS_DIGITS.test(input)) {
-    return transliterate(input);
-  }
-  return input
-    .normalize("NFD")
-    .replace(/[̀-ͯ]/g, "")
-    .toLowerCase()
-    .replace(/[^a-z0-9]+/g, "-")
-    .replace(/^-+|-+$/g, "")
-    .slice(0, 80);
-}
+/** Generate a URL-safe slug from arbitrary input. */
+export const slugify = transliterate;
 
 /** Quick check used by Zod refinements. */
 export function isValidSlug(slug: string): boolean {

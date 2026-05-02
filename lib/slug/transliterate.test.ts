@@ -37,8 +37,14 @@ describe("transliterate (BGN/PCGN 1981, slug-mode)", () => {
     expect(transliterate("")).toBe("");
   });
 
-  it("is idempotent for already-ASCII slugs", () => {
+  it("passes already-ASCII slugs through unchanged", () => {
     expect(transliterate("linen-three-seater")).toBe("linen-three-seater");
+  });
+
+  it("strips combining marks from accented Latin input", () => {
+    expect(transliterate("café")).toBe("cafe");
+    expect(transliterate("naïve")).toBe("naive");
+    expect(transliterate("Žižek")).toBe("zizek");
   });
 
   it("handles mixed Georgian + Latin + digits", () => {

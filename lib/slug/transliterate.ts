@@ -1,7 +1,7 @@
-// lib/slug/transliterate.ts
-//
 // Georgian → ASCII slug transliteration based on the BGN/PCGN 1981
 // romanization scheme, adapted for URL slugs:
+//   - decompose accented Latin via NFD and drop combining marks so
+//     "café" → "cafe" and "naïve" → "naive" before mapping
 //   - drop the apostrophes BGN/PCGN uses to mark ejectives
 //     (k', t', p', q', ts', ch') because they're URL-hostile
 //   - lowercase everything
@@ -48,16 +48,16 @@ const GEORGIAN_TO_LATIN: Record<string, string> = {
   ჰ: "h",
 };
 
-const MAX_SLUG_LENGTH = 80;
+export const MAX_SLUG_LENGTH = 80;
 
 export function transliterate(input: string): string {
   if (!input) return "";
 
-  // Pass 1: walk character-by-character, mapping Georgian letters to
-  // Latin and dropping anything that isn't ASCII alphanumeric or a
-  // separator we can later normalize.
+  // NFD splits "é" into "e" + combining acute; \p{M} matches the mark.
+  const stripped = input.normalize("NFD").replace(/\p{M}/gu, "");
+
   let buffer = "";
-  for (const char of input.toLowerCase()) {
+  for (const char of stripped.toLowerCase()) {
     const mapped = GEORGIAN_TO_LATIN[char];
     if (mapped !== undefined) {
       buffer += mapped;
@@ -68,14 +68,9 @@ export function transliterate(input: string): string {
     }
   }
 
-  // Pass 2: collapse runs of hyphens and trim.
   buffer = buffer.replace(/-+/g, "-").replace(/^-+|-+$/g, "");
-
-  // Pass 3: enforce the 80-char cap, then re-trim a trailing hyphen
-  // in case the cap landed mid-word.
   if (buffer.length > MAX_SLUG_LENGTH) {
     buffer = buffer.slice(0, MAX_SLUG_LENGTH).replace(/-+$/g, "");
   }
-
   return buffer;
 }
