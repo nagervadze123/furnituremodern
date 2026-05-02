@@ -12,62 +12,36 @@ import createNextIntlPlugin from "next-intl/plugin";
 const withNextIntl = createNextIntlPlugin("./i18n/request.ts");
 
 // Browser-side Supabase calls (auth, REST, Realtime) all hit the project
-// origin. Read it once and feed it into both the CSP and the image
-// whitelist so the two stay in sync without manual edits.
+// origin. Read it once and reuse it for the next/image whitelist.
 const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL ?? "";
 const supabaseHost = SUPABASE_URL ? new URL(SUPABASE_URL).host : "";
-const supabaseOriginForCsp = SUPABASE_URL
-  ? new URL(SUPABASE_URL).origin
-  : "";
 
-// Content-Security-Policy
-// 'self'                 = our own origin only
-// 'unsafe-inline'        = inline <script>/<style>; Next.js needs this for
-//                          its hydration scripts and Tailwind-generated
-//                          inline styles. Tighten with nonces later.
-// img-src https:         = allow placeholder images from any HTTPS host
-// frame-ancestors 'none' = nobody can iframe us (anti-clickjacking)
-// connect-src includes the Supabase project origin (and its wss:// peer)
-//                        so the browser client can hit auth, REST, and
-//                        Realtime websockets without being blocked.
-const connectSrc = ["'self'"];
-if (supabaseOriginForCsp) {
-  connectSrc.push(supabaseOriginForCsp);
-  // Realtime uses websockets on the same host.
-  connectSrc.push(supabaseOriginForCsp.replace(/^https:/, "wss:"));
-}
-
-const csp = [
-  "default-src 'self'",
-  "script-src 'self' 'unsafe-inline'",
-  "style-src 'self' 'unsafe-inline'",
-  "img-src 'self' data: https:",
-  "font-src 'self' data:",
-  `connect-src ${connectSrc.join(" ")}`,
-  "frame-ancestors 'none'",
-  "base-uri 'self'",
-  "form-action 'self'",
-].join("; ");
-
+// Static security headers sent on every response. The Content-Security-
+// Policy is intentionally NOT here — it's set per-request from proxy.ts
+// because it carries a nonce that has to be unique per page render.
 const securityHeaders = [
-  // HSTS: tell browsers to always use HTTPS for the next 2 years.
-  // Only takes effect once the site is served over HTTPS in production.
+  // HSTS: force HTTPS for two years, include subdomains, signal preload list eligibility.
   {
     key: "Strict-Transport-Security",
     value: "max-age=63072000; includeSubDomains; preload",
   },
-  // Block MIME-type sniffing.
+  // Block MIME-type sniffing — stops a server-typed text/plain from being executed as JS.
   { key: "X-Content-Type-Options", value: "nosniff" },
-  // No iframing this site, anywhere, ever.
+  // No iframing this site, anywhere, ever (defense-in-depth alongside CSP frame-ancestors).
   { key: "X-Frame-Options", value: "DENY" },
   // Send only the origin (not the full URL) on cross-origin navigation.
   { key: "Referrer-Policy", value: "strict-origin-when-cross-origin" },
-  // Disable powerful browser features we never use.
+  // Disable powerful browser features by default. interest-cohort=() opts out of FLoC.
+  // geolocation=(self) is permissive enough for delivery-zone features inside our origin.
   {
     key: "Permissions-Policy",
-    value: "camera=(), microphone=(), geolocation=()",
+    value: "camera=(), microphone=(), geolocation=(self), interest-cohort=()",
   },
-  { key: "Content-Security-Policy", value: csp },
+  // COOP isolates this top-level browsing context — required to be a cross-origin-isolated
+  // page and protects against side-channel leaks via window.opener.
+  { key: "Cross-Origin-Opener-Policy", value: "same-origin" },
+  // CORP restricts which origins can embed our resources. Same-origin pairs well with COOP.
+  { key: "Cross-Origin-Resource-Policy", value: "same-origin" },
 ];
 
 const nextConfig: NextConfig = {
