@@ -16,7 +16,8 @@ import { Footer } from "@/components/layout/footer";
 import { JsonLd } from "@/components/json-ld";
 import { HtmlLangSync } from "@/components/layout/html-lang-sync";
 import { CookieConsent } from "@/components/cookie-consent";
-import { Analytics } from "@/components/analytics";
+import { AnalyticsLoader } from "@/components/analytics-loader";
+import { PageViewTracker } from "@/components/analytics/page-view-tracker";
 import { organizationJsonLd, websiteJsonLd } from "@/lib/schema";
 import { siteConfig, absoluteUrl } from "@/lib/site-config";
 import { routing, type Locale } from "@/i18n/routing";
@@ -72,7 +73,8 @@ export default async function LocaleLayout({
         <main id="main-content">{children}</main>
         <Footer />
         <CookieConsent />
-        <Analytics nonce={nonce} />
+        <AnalyticsLoader nonce={nonce} />
+        <PageViewTracker locale={locale} />
       </NextIntlClientProvider>
     </>
   );

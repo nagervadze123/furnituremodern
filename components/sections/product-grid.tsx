@@ -6,15 +6,17 @@ import { ProductCard } from "./product-card";
 
 type Props = {
   products: DataProduct[];
+  /** Optional list_name passed through to product-card analytics. */
+  listName?: string;
 };
 
-export function ProductGrid({ products }: Props) {
+export function ProductGrid({ products, listName }: Props) {
   return (
     <section className="mx-auto max-w-7xl px-4 pb-12 md:px-6">
       <ul className="grid grid-cols-2 gap-6 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4">
         {products.map((product) => (
           <li key={product.id}>
-            <ProductCard product={product} />
+            <ProductCard product={product} listName={listName} />
           </li>
         ))}
       </ul>

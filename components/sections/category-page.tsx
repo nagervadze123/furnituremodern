@@ -11,10 +11,12 @@ import { CategoryIntro } from "./category-intro";
 import { ProductGrid } from "./product-grid";
 import { CategoryCrossLinks } from "./category-cross-links";
 import { JsonLd } from "@/components/json-ld";
+import { ViewItemListTracker } from "@/components/analytics/view-item-list-tracker";
 import { breadcrumbListJsonLd, itemListJsonLd } from "@/lib/schema";
 import type { CategorySlug } from "@/lib/site-config";
 import { getCategoryBySlug } from "@/lib/data/categories";
 import { getProducts } from "@/lib/data/products";
+import { productToItem } from "@/lib/analytics";
 import type { Locale } from "@/i18n/routing";
 
 type Props = {
@@ -68,8 +70,13 @@ export async function CategoryPage({ slug, locale, intro }: Props) {
       </div>
 
       <CategoryIntro title={category.name[locale]} intro={intro} />
-      <ProductGrid products={products} />
+      <ProductGrid products={products} listName={category.name[locale]} />
       <CategoryCrossLinks currentSlug={slug} />
+
+      <ViewItemListTracker
+        list_name={category.name[locale]}
+        items={products.map((p) => productToItem(p, locale))}
+      />
     </>
   );
 }

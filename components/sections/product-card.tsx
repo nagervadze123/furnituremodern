@@ -6,18 +6,22 @@
 
 import Image from "next/image";
 import { getLocale } from "next-intl/server";
-import { Link } from "@/i18n/navigation";
+import { SelectItemLink } from "@/components/analytics/select-item-link";
 import { formatPrice } from "@/lib/format";
+import { productToItem } from "@/lib/analytics";
 import type { DataProduct } from "@/lib/data/types";
 import type { Locale } from "@/i18n/routing";
 
 type Props = {
   product: DataProduct;
+  /** Optional list_name passed to select_item analytics. */
+  listName?: string;
 };
 
-export async function ProductCard({ product }: Props) {
+export async function ProductCard({ product, listName }: Props) {
   const locale = (await getLocale()) as Locale;
   const primary = product.images[0];
+  const item = productToItem(product, locale);
 
   const card = (
     <article
@@ -48,14 +52,16 @@ export async function ProductCard({ product }: Props) {
     </article>
   );
 
-  // Wrap in a locale-aware link to the product detail page.
+  // Wrap in a locale-aware link that also fires `select_item` on click.
   return (
-    <Link
+    <SelectItemLink
       href={`/${product.category}/${product.slug}`}
+      item={item}
+      list_name={listName}
       className="block focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-4 focus-visible:ring-offset-background"
-      aria-label={product.name[locale]}
+      ariaLabel={product.name[locale]}
     >
       {card}
-    </Link>
+    </SelectItemLink>
   );
 }

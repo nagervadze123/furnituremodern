@@ -8,6 +8,7 @@ import { notFound } from "next/navigation";
 import { setRequestLocale, getTranslations } from "next-intl/server";
 import { Breadcrumbs, type BreadcrumbCrumb } from "@/components/sections/breadcrumbs";
 import { JsonLd } from "@/components/json-ld";
+import { ViewItemTracker } from "@/components/analytics/view-item-tracker";
 import { breadcrumbListJsonLd, productJsonLd } from "@/lib/schema";
 import { getCategoryBySlug, isCategorySlug } from "@/lib/data/categories";
 import {
@@ -15,6 +16,7 @@ import {
   getAllProductPaths,
 } from "@/lib/data/products";
 import { formatPrice } from "@/lib/format";
+import { productToItem } from "@/lib/analytics";
 import { absoluteUrl, siteConfig } from "@/lib/site-config";
 import { routing, type Locale } from "@/i18n/routing";
 
@@ -143,6 +145,8 @@ export default async function ProductDetailPage({ params }: Props) {
         data={productJsonLd(product, locale)}
         nonce={nonce}
       />
+
+      <ViewItemTracker item={productToItem(product, locale)} />
 
       <div className="mx-auto max-w-7xl px-4 pt-6 md:px-6 md:pt-8">
         <Breadcrumbs items={crumbs} />

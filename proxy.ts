@@ -26,10 +26,21 @@ import {
 import type { Database } from "./lib/supabase/database.types";
 import { generateNonce } from "./lib/security/nonce";
 import { buildCsp } from "./lib/security/csp";
+import { readAnalyticsConfig } from "./lib/analytics/config";
 
 // Computed once per cold start. The Supabase URL doesn't change at
 // runtime, so we can cache the origin we'll plug into connect-src.
 const SUPABASE_ORIGIN = SUPABASE_URL ? new URL(SUPABASE_URL).origin : "";
+
+// Analytics config also stable per cold start — public env vars are
+// inlined at build time. Used by buildCsp() to extend script-src /
+// connect-src for whichever providers are enabled.
+const ANALYTICS_CONFIG = readAnalyticsConfig({
+  NEXT_PUBLIC_GA4_MEASUREMENT_ID: process.env.NEXT_PUBLIC_GA4_MEASUREMENT_ID,
+  NEXT_PUBLIC_GTM_ID: process.env.NEXT_PUBLIC_GTM_ID,
+  NEXT_PUBLIC_META_PIXEL_ID: process.env.NEXT_PUBLIC_META_PIXEL_ID,
+  NEXT_PUBLIC_PLAUSIBLE_DOMAIN: process.env.NEXT_PUBLIC_PLAUSIBLE_DOMAIN,
+});
 
 const intlMiddleware = createIntlMiddleware(routing);
 
@@ -198,7 +209,12 @@ function applyCspToResponse(
 ): NextResponse {
   const isDev = process.env.NODE_ENV === "development";
   const nonce = generateNonce();
-  const csp = buildCsp({ nonce, isDev, supabaseOrigin: SUPABASE_ORIGIN });
+  const csp = buildCsp({
+    nonce,
+    isDev,
+    supabaseOrigin: SUPABASE_ORIGIN,
+    analytics: ANALYTICS_CONFIG,
+  });
 
   // Mutate the original request.headers so that any downstream middleware
   // (e.g. the intl middleware that built `response`) and Next.js's own
