@@ -179,8 +179,30 @@ function applyCspToResponse(
   const nonce = generateNonce();
   const csp = buildCsp({ nonce, isDev, supabaseOrigin: SUPABASE_ORIGIN });
 
+  // Mutate the original request.headers so that any downstream middleware
+  // (e.g. the intl middleware that built `response`) and Next.js's own
+  // CSP-parsing pipeline see the new x-nonce/CSP entries.
   request.headers.set("x-nonce", nonce);
   request.headers.set("Content-Security-Policy", csp);
+
+  // Bridge the mutated request headers into the page render so that
+  // Server Components can read x-nonce via headers(). Next.js uses the
+  // `x-middleware-override-headers` + `x-middleware-request-*` protocol
+  // (the same mechanism behind NextResponse.next({ request })) to
+  // forward request-header overrides to the renderer.
+  const overrideKeys = ["x-nonce", "content-security-policy"];
+  response.headers.set("x-middleware-request-x-nonce", nonce);
+  response.headers.set("x-middleware-request-content-security-policy", csp);
+  const existingOverride =
+    response.headers.get("x-middleware-override-headers") ?? "";
+  const merged = new Set(
+    existingOverride.split(",").filter(Boolean).concat(overrideKeys)
+  );
+  response.headers.set(
+    "x-middleware-override-headers",
+    Array.from(merged).join(",")
+  );
+
   response.headers.set("Content-Security-Policy", csp);
   return response;
 }

@@ -15,7 +15,12 @@ import { useConsent } from "./cookie-consent";
 
 const ANALYTICS_DOMAIN = process.env.NEXT_PUBLIC_ANALYTICS_DOMAIN;
 
-export function Analytics() {
+type AnalyticsProps = {
+  // Per-request CSP nonce, threaded down from the locale layout.
+  nonce?: string;
+};
+
+export function Analytics({ nonce }: AnalyticsProps) {
   const consent = useConsent();
   if (!ANALYTICS_DOMAIN || consent !== "accepted") return null;
 
@@ -25,6 +30,7 @@ export function Analytics() {
     <Script
       id="fm-analytics"
       strategy="afterInteractive"
+      nonce={nonce}
       dangerouslySetInnerHTML={{
         __html: `console.debug("[analytics] consented; domain=${ANALYTICS_DOMAIN}");`,
       }}

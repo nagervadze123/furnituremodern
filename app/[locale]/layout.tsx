@@ -10,6 +10,7 @@ import type { Metadata } from "next";
 import { NextIntlClientProvider, hasLocale } from "next-intl";
 import { setRequestLocale } from "next-intl/server";
 import { notFound } from "next/navigation";
+import { headers } from "next/headers";
 import { Header } from "@/components/layout/header";
 import { Footer } from "@/components/layout/footer";
 import { JsonLd } from "@/components/json-ld";
@@ -52,21 +53,26 @@ export default async function LocaleLayout({
   //    static generation; without it, getTranslations() throws.
   setRequestLocale(locale);
 
+  // Read the per-request nonce that proxy.ts injected. Passed into
+  // every component that emits an inline script tag so the strict
+  // production CSP doesn't block them.
+  const nonce = (await headers()).get("x-nonce") ?? undefined;
+
   return (
     <>
       {/* Keeps document.documentElement.lang in sync with the active locale. */}
       <HtmlLangSync locale={locale} />
 
       {/* Site-wide JSON-LD: Organization + WebSite. */}
-      <JsonLd id="ld-organization" data={organizationJsonLd()} />
-      <JsonLd id="ld-website" data={websiteJsonLd(locale)} />
+      <JsonLd id="ld-organization" data={organizationJsonLd()} nonce={nonce} />
+      <JsonLd id="ld-website" data={websiteJsonLd(locale)} nonce={nonce} />
 
       <NextIntlClientProvider>
         <Header />
         <main id="main-content">{children}</main>
         <Footer />
         <CookieConsent />
-        <Analytics />
+        <Analytics nonce={nonce} />
       </NextIntlClientProvider>
     </>
   );

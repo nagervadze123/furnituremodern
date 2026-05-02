@@ -4,6 +4,7 @@
 // cross-links to other categories.
 
 import { notFound } from "next/navigation";
+import { headers } from "next/headers";
 import { getTranslations } from "next-intl/server";
 import { Breadcrumbs, type BreadcrumbCrumb } from "./breadcrumbs";
 import { CategoryIntro } from "./category-intro";
@@ -33,6 +34,9 @@ export async function CategoryPage({ slug, locale, intro }: Props) {
   ]);
   if (!category) notFound();
 
+  // Per-request CSP nonce, threaded into every inline <script> tag.
+  const nonce = (await headers()).get("x-nonce") ?? undefined;
+
   const crumbs: BreadcrumbCrumb[] = [
     { label: tBreadcrumbs("home"), href: "/" },
     { label: category.name[locale] },
@@ -50,10 +54,12 @@ export async function CategoryPage({ slug, locale, intro }: Props) {
       <JsonLd
         id={`ld-breadcrumbs-${slug}`}
         data={breadcrumbListJsonLd(breadcrumbsForLd)}
+        nonce={nonce}
       />
       <JsonLd
         id={`ld-itemlist-${slug}`}
         data={itemListJsonLd(slug, locale, products)}
+        nonce={nonce}
       />
 
       {/* Breadcrumb strip — visible navigation, separate from the JSON-LD. */}

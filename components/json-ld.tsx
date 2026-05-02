@@ -9,13 +9,18 @@ type Props = {
   data: Record<string, unknown> | Record<string, unknown>[];
   // Optional id, useful when you want to target a script tag from tests.
   id?: string;
+  // Per-request CSP nonce. Required when strict CSP is active in
+  // production; passed through from the layout that already read it
+  // from the x-nonce request header.
+  nonce?: string;
 };
 
-export function JsonLd({ data, id }: Props) {
+export function JsonLd({ data, id, nonce }: Props) {
   return (
     <script
       id={id}
       type="application/ld+json"
+      nonce={nonce}
       // We control the input, so this is safe; no untrusted strings reach here.
       dangerouslySetInnerHTML={{ __html: JSON.stringify(data) }}
     />

@@ -3,6 +3,7 @@
 
 import type { Metadata } from "next";
 import Image from "next/image";
+import { headers } from "next/headers";
 import { notFound } from "next/navigation";
 import { setRequestLocale, getTranslations } from "next-intl/server";
 import { Breadcrumbs, type BreadcrumbCrumb } from "@/components/sections/breadcrumbs";
@@ -108,6 +109,9 @@ export default async function ProductDetailPage({ params }: Props) {
 
   if (!product || !categoryRow) notFound();
 
+  // Per-request CSP nonce, threaded into every inline <script> tag.
+  const nonce = (await headers()).get("x-nonce") ?? undefined;
+
   const primary = product.images[0];
 
   // Visible breadcrumbs.
@@ -132,8 +136,13 @@ export default async function ProductDetailPage({ params }: Props) {
       <JsonLd
         id={`ld-breadcrumbs-${slug}`}
         data={breadcrumbListJsonLd(breadcrumbsForLd)}
+        nonce={nonce}
       />
-      <JsonLd id={`ld-product-${slug}`} data={productJsonLd(product, locale)} />
+      <JsonLd
+        id={`ld-product-${slug}`}
+        data={productJsonLd(product, locale)}
+        nonce={nonce}
+      />
 
       <div className="mx-auto max-w-7xl px-4 pt-6 md:px-6 md:pt-8">
         <Breadcrumbs items={crumbs} />

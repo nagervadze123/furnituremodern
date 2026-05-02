@@ -1,6 +1,7 @@
 // Home page — route: /ka or /en
 
 import type { Metadata } from "next";
+import { headers } from "next/headers";
 import { setRequestLocale, getTranslations } from "next-intl/server";
 import { Hero } from "@/components/sections/hero";
 import { FeaturedCategories } from "@/components/sections/featured-categories";
@@ -68,13 +69,15 @@ export default async function HomePage({ params }: Props) {
 
   const t = await getTranslations("home");
   const faqEntries = getFaqEntries(locale);
+  // Per-request CSP nonce, threaded into every inline <script> tag.
+  const nonce = (await headers()).get("x-nonce") ?? undefined;
 
   return (
     <>
       {/* Page-specific structured data. Organization + WebSite already
           live in the layout. LocalBusiness + FAQPage are home-only. */}
-      <JsonLd id="ld-localbusiness" data={localBusinessJsonLd()} />
-      <JsonLd id="ld-faq" data={faqPageJsonLd(faqEntries)} />
+      <JsonLd id="ld-localbusiness" data={localBusinessJsonLd()} nonce={nonce} />
+      <JsonLd id="ld-faq" data={faqPageJsonLd(faqEntries)} nonce={nonce} />
 
       <Hero />
       <FeaturedCategories />
