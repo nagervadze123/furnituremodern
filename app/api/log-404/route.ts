@@ -1,9 +1,13 @@
 // Beacon endpoint hit by the locale not-found page when a path 404s.
 // We hash the IP before storage so the table can't be used for tracking
 // individual visitors but can still answer "is this the same source?".
+//
+// Rate limit: 30 calls / minute / IP, in-memory (best-effort on
+//   serverless cold starts; goal is anti-runaway, not anti-attacker).
 
 import { NextResponse } from "next/server";
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
+import { createRateLimiter, log404Schema } from "@/lib/api/log-404";
 
 function hashIp(ip: string | null): string | null {
   if (!ip) return null;
@@ -16,21 +20,43 @@ function hashIp(ip: string | null): string | null {
   return h.toString(16);
 }
 
-export async function POST(request: Request) {
-  const body = (await request.json().catch(() => null)) as
-    | { path?: string; locale?: string; referrer?: string }
-    | null;
-  if (!body?.path) return NextResponse.json({ ok: false }, { status: 400 });
+const withinRateLimit = createRateLimiter({ max: 30, windowMs: 60_000 });
 
-  const ip =
+export async function POST(request: Request) {
+  const rawIp =
     request.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ?? null;
+  const bucketKey = rawIp ?? "unknown";
+
+  if (!withinRateLimit(bucketKey)) {
+    return NextResponse.json(
+      { ok: false, error: "rate limit exceeded" },
+      { status: 429 }
+    );
+  }
+
+  let raw: unknown;
+  try {
+    raw = await request.json();
+  } catch {
+    return NextResponse.json(
+      { ok: false, error: "invalid json" },
+      { status: 400 }
+    );
+  }
+  const parsed = log404Schema.safeParse(raw);
+  if (!parsed.success) {
+    return NextResponse.json(
+      { ok: false, error: "invalid payload" },
+      { status: 400 }
+    );
+  }
 
   const supabase = createSupabaseAdminClient();
   await supabase.from("not_found_log").insert({
-    path: body.path.slice(0, 2048),
-    locale: body.locale ?? null,
-    referrer: body.referrer?.slice(0, 2048) ?? null,
-    ip_hash: hashIp(ip),
+    path: parsed.data.path,
+    locale: parsed.data.locale ?? null,
+    referrer: parsed.data.referrer ?? null,
+    ip_hash: hashIp(rawIp),
   });
 
   return NextResponse.json({ ok: true });
