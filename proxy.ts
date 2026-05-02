@@ -24,6 +24,12 @@ import {
   isSupabaseConfigured,
 } from "./lib/supabase/env";
 import type { Database } from "./lib/supabase/database.types";
+import { generateNonce } from "./lib/security/nonce";
+import { buildCsp } from "./lib/security/csp";
+
+// Computed once per cold start. The Supabase URL doesn't change at
+// runtime, so we can cache the origin we'll plug into connect-src.
+const SUPABASE_ORIGIN = SUPABASE_URL ? new URL(SUPABASE_URL).origin : "";
 
 const intlMiddleware = createIntlMiddleware(routing);
 
@@ -154,24 +160,50 @@ async function checkAdminAuth(
 }
 
 // ---------------------------------------------------------------------------
+// 3. CSP + nonce
+// ---------------------------------------------------------------------------
+// Returns a fresh nonce, attaches the CSP header to both the request the
+// page will see (so Next.js can extract the nonce and stamp its own
+// scripts) and the response (so the browser enforces the policy).
+//
+// Why on the request as well as the response?
+//   Next.js parses the request's Content-Security-Policy header to find
+//   the nonce token and applies it automatically to framework scripts,
+//   page bundles, and <Script> components. Without setting the request
+//   header, framework scripts are unsigned and get blocked.
+function applyCspToResponse(
+  request: NextRequest,
+  response: NextResponse
+): NextResponse {
+  const isDev = process.env.NODE_ENV === "development";
+  const nonce = generateNonce();
+  const csp = buildCsp({ nonce, isDev, supabaseOrigin: SUPABASE_ORIGIN });
+
+  request.headers.set("x-nonce", nonce);
+  request.headers.set("Content-Security-Policy", csp);
+  response.headers.set("Content-Security-Policy", csp);
+  return response;
+}
+
+// ---------------------------------------------------------------------------
 // Main handler
 // ---------------------------------------------------------------------------
 export default async function proxy(request: NextRequest) {
   // 1. Redirects (only for marketing routes — admin paths are handled below).
   const redirectResponse = await checkRedirect(request);
-  if (redirectResponse) return redirectResponse;
+  if (redirectResponse) return redirectResponse; // 301s don't need CSP
 
   // 2. Admin auth.
   if (request.nextUrl.pathname.startsWith("/admin")) {
     const adminResponse = await checkAdminAuth(request);
-    if (adminResponse) return adminResponse;
-    // If checkAdminAuth returned null (e.g. /admin/login), fall through
-    // and let the request go to its handler without locale routing.
-    return NextResponse.next();
+    if (adminResponse) return applyCspToResponse(request, adminResponse);
+    // /admin/login fallthrough — we still want CSP on the login page.
+    return applyCspToResponse(request, NextResponse.next());
   }
 
   // 3. Locale routing for the marketing site.
-  return intlMiddleware(request);
+  const intlResponse = intlMiddleware(request);
+  return applyCspToResponse(request, intlResponse);
 }
 
 export const config = {
