@@ -8,12 +8,14 @@ import { FeaturedCategories } from "@/components/sections/featured-categories";
 import { BrandStory } from "@/components/sections/brand-story";
 import { Faq } from "@/components/sections/faq";
 import { JsonLd } from "@/components/json-ld";
+import { AeoSummaryPanel } from "@/components/sections/aeo-summary";
 import {
   localBusinessJsonLd,
   faqPageJsonLd,
   webPageJsonLd,
 } from "@/lib/schema";
 import { getFaqEntries } from "@/content/faq";
+import { homeAeoSummary } from "@/lib/aeo/summary";
 import { siteConfig, absoluteUrl } from "@/lib/site-config";
 import { routing, type Locale } from "@/i18n/routing";
 
@@ -97,6 +99,7 @@ export default async function HomePage({ params }: Props) {
       <Hero />
       <FeaturedCategories />
       <BrandStory />
+      <AeoSummaryPanel summary={homeAeoSummary(locale)} id="aeo-home" />
       <Faq title={t("faqTitle")} items={faqEntries} />
     </>
   );

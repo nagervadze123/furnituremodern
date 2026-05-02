@@ -12,6 +12,7 @@ import { ProductGrid } from "./product-grid";
 import { CategoryCrossLinks } from "./category-cross-links";
 import { JsonLd } from "@/components/json-ld";
 import { ViewItemListTracker } from "@/components/analytics/view-item-list-tracker";
+import { AeoSummaryPanel } from "@/components/sections/aeo-summary";
 import {
   breadcrumbListJsonLd,
   itemListJsonLd,
@@ -21,6 +22,11 @@ import type { CategorySlug } from "@/lib/site-config";
 import { getCategoryBySlug } from "@/lib/data/categories";
 import { getProducts } from "@/lib/data/products";
 import { productToItem } from "@/lib/analytics";
+import {
+  categoryAeoSummary,
+  formatLastUpdated,
+  LAST_UPDATED_LABEL,
+} from "@/lib/aeo/summary";
 import type { Locale } from "@/i18n/routing";
 
 type Props = {
@@ -86,6 +92,34 @@ export async function CategoryPage({ slug, locale, intro }: Props) {
 
       <CategoryIntro title={category.name[locale]} intro={intro} />
       <ProductGrid products={products} listName={category.name[locale]} />
+
+      {/* Compact AEO summary block — visible factual snapshot for
+          AI crawlers, identical to what humans see. */}
+      <AeoSummaryPanel
+        summary={categoryAeoSummary(slug, locale, products.length)}
+        id={`aeo-${slug}`}
+      />
+
+      {/* Last-updated freshness signal. We use the latest product
+          updatedAt within this category as the most truthful answer
+          to "when did this page change." */}
+      {(() => {
+        const ts = products
+          .map((p) => p.updatedAt ?? p.createdAt)
+          .filter((d): d is string => typeof d === "string" && d.length > 0)
+          .sort()
+          .pop();
+        if (!ts) return null;
+        const formatted = formatLastUpdated(ts, locale);
+        if (!formatted) return null;
+        return (
+          <p className="mx-auto max-w-3xl px-4 pb-4 text-sm text-muted-foreground md:px-6">
+            {LAST_UPDATED_LABEL[locale]}:{" "}
+            <time dateTime={ts}>{formatted}</time>
+          </p>
+        );
+      })()}
+
       <CategoryCrossLinks currentSlug={slug} />
 
       <ViewItemListTracker

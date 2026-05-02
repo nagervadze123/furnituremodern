@@ -72,6 +72,8 @@ type SupabaseProductRow = {
   is_featured: boolean;
   is_published: boolean;
   sort_order: number;
+  updated_at: string | null;
+  created_at: string | null;
   categories: { slug: string } | null;
   product_images: Array<{
     storage_path: string;
@@ -133,6 +135,8 @@ function mapSupabase(
     currency: (row.currency as DataProduct["currency"]) ?? "GEL",
     images,
     isFeatured: row.is_featured,
+    updatedAt: row.updated_at ?? undefined,
+    createdAt: row.created_at ?? undefined,
   };
 }
 
@@ -170,6 +174,7 @@ export async function getProducts(
         // Explicit columns + nested categories slug + nested images.
         `id, slug, name_ka, name_en, description_ka, description_en,
          price, currency, is_featured, is_published, sort_order,
+         updated_at, created_at,
          categories!inner ( slug ),
          product_images ( storage_path, alt_ka, alt_en, sort_order, is_primary )`
       )
@@ -230,6 +235,7 @@ export async function getProductBySlug(
       .select(
         `id, slug, name_ka, name_en, description_ka, description_en,
          price, currency, is_featured, is_published, sort_order,
+         updated_at, created_at,
          categories!inner ( slug ),
          product_images ( storage_path, alt_ka, alt_en, sort_order, is_primary )`
       )

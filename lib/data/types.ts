@@ -84,6 +84,12 @@ export type DataProduct = {
   condition?: ProductCondition;
   /** Per-product brand override; falls back to siteConfig.name. */
   brand?: string;
+
+  // ---- Freshness signals (Supabase-backed only; undefined locally) ----
+  /** ISO timestamp from products.updated_at. */
+  updatedAt?: string;
+  /** ISO timestamp from products.created_at. */
+  createdAt?: string;
 };
 
 /**

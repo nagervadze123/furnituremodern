@@ -173,6 +173,16 @@ Run Google Rich Results Test on the three highest-value pages once a real domain
 
 For each page: record date tested, tool URL used, pass/fail, and any warnings the validator flags. Acceptable warnings (because data is genuinely unavailable today): missing dimensions, weight, color, material, mpn — these only emit when a row in the catalog actually carries the value.
 
+### AEO (Answer Engine Optimization)
+
+- [ ] **Open `/llms.txt`** in production — Georgian section appears first, English second; every category URL is absolute and resolves; no `/admin` or `/api/admin` URLs in the output.
+- [ ] **Open `/llms-full.txt`** in production — same locale ordering; every published product appears under its category with price + URL; soft-deleted products are absent; no `undefined` tokens in the body.
+- [ ] **Confirm AEO summary copy** on home and a category page: brand name, location wording, service area, languages, and category names match real business facts.
+- [ ] **Confirm delivery/service area wording** in `siteConfig.areaServed.country` matches what the business actually serves.
+- [ ] **No hidden keyword stuffing** — view source and verify the AEO summary panels are visually rendered, not display:none, and read the same as visible page content.
+- [ ] **AI crawler discovery** — after deployment, confirm the head of any locale page contains `<link rel="alternate" type="text/plain" href=".../llms-full.txt">`.
+- [ ] **Last-updated dates** appear on category and product pages and are sourced from real `updated_at` data (not the deploy time).
+
 ### Verification — manual
 
 - [ ] View source on home / category / product pages and confirm exactly one of each schema block, no duplicates, no `null` leakage.

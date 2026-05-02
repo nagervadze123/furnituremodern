@@ -30,12 +30,21 @@ export function generateStaticParams() {
 // Static metadata that applies to the whole [locale] tree.
 // metadataBase is repeated here in case Next chooses not to merge the
 // root layout's metadata into the per-locale tree.
+//
+// alternates.types announces /llms-full.txt as a text/plain alternate
+// of every locale page. AI crawlers that scan <head> for LLM-readable
+// indexes pick this up; ordinary search crawlers ignore it.
 export const metadata: Metadata = {
   metadataBase: new URL(absoluteUrl("/")),
   authors: [{ name: siteConfig.legalName }],
   creator: siteConfig.legalName,
   publisher: siteConfig.legalName,
   robots: { index: true, follow: true },
+  alternates: {
+    types: {
+      "text/plain": absoluteUrl("/llms-full.txt"),
+    },
+  },
 };
 
 export default async function LocaleLayout({

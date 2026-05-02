@@ -17,6 +17,10 @@ import {
 } from "@/lib/data/products";
 import { formatPrice } from "@/lib/format";
 import { productToItem } from "@/lib/analytics";
+import {
+  formatLastUpdated,
+  LAST_UPDATED_LABEL,
+} from "@/lib/aeo/summary";
 import { absoluteUrl, siteConfig } from "@/lib/site-config";
 import { routing, type Locale } from "@/i18n/routing";
 
@@ -178,6 +182,23 @@ export default async function ProductDetailPage({ params }: Props) {
           <div className="mt-8 max-w-prose text-base leading-relaxed text-muted-foreground md:text-lg">
             <p>{product.description[locale]}</p>
           </div>
+
+          {/* Last-updated freshness signal — a real <time> element so
+              crawlers pick it up as a structured timestamp. Sourced
+              from updated_at, fallback to created_at; emitted only
+              when at least one is available. */}
+          {(() => {
+            const ts = product.updatedAt ?? product.createdAt;
+            if (!ts) return null;
+            const formatted = formatLastUpdated(ts, locale);
+            if (!formatted) return null;
+            return (
+              <p className="mt-6 text-sm text-muted-foreground">
+                {LAST_UPDATED_LABEL[locale]}:{" "}
+                <time dateTime={ts}>{formatted}</time>
+              </p>
+            );
+          })()}
         </div>
       </article>
     </>
