@@ -2,7 +2,13 @@
 // Used by every admin page EXCEPT /admin/login (which renders bare).
 
 import Link from "next/link";
-import { LayoutDashboard, Box, FolderTree, ArrowRightLeft } from "lucide-react";
+import {
+  LayoutDashboard,
+  Box,
+  FolderTree,
+  ArrowRightLeft,
+  Search,
+} from "lucide-react";
 import { SignOutButton } from "./sign-out-button";
 
 const navItems = [
@@ -10,6 +16,7 @@ const navItems = [
   { href: "/admin/products", label: "Products", Icon: Box },
   { href: "/admin/categories", label: "Categories", Icon: FolderTree },
   { href: "/admin/redirects", label: "Redirects", Icon: ArrowRightLeft },
+  { href: "/admin/seo", label: "SEO Audit", Icon: Search },
 ] as const;
 
 type Props = {
