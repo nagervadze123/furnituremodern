@@ -6,12 +6,13 @@
 
 "use client";
 
-import { useActionState, useEffect, useRef, useState } from "react";
+import { useActionState, useEffect, useMemo, useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
 import {
   suggestSlugAction,
   type ActionState,
 } from "@/app/(admin)/admin/(dashboard)/products/actions";
+import { slugify } from "@/lib/slug";
 
 export type CategoryOption = {
   id: string;
@@ -54,7 +55,18 @@ export function ProductForm({
   // OR matches the previous suggestion — never overwrite a manual edit.
   const [slug, setSlug] = useState(defaults.slug);
   const [nameEn, setNameEn] = useState(defaults.name_en);
+  const [nameKa, setNameKa] = useState(defaults.name_ka);
   const lastSuggestionRef = useRef(defaults.slug);
+
+  // Live preview of the slug the form would submit. Reflects the manual
+  // override when present; otherwise prefers the Georgian name (the
+  // primary locale) and falls back to the English name. Pure client —
+  // routed through lib/slug.slugify which now transliterates Georgian.
+  const previewSlug = useMemo(() => {
+    const manual = slug.trim();
+    if (manual) return manual;
+    return slugify(nameKa) || slugify(nameEn);
+  }, [slug, nameKa, nameEn]);
 
   useEffect(() => {
     let cancelled = false;
@@ -101,7 +113,8 @@ export function ProductForm({
         <Field label="Georgian name (ქართული)" error={fieldErrors.name_ka}>
           <input
             name="name_ka"
-            defaultValue={defaults.name_ka}
+            value={nameKa}
+            onChange={(e) => setNameKa(e.target.value)}
             required
             className={inputClass}
           />
@@ -121,6 +134,14 @@ export function ProductForm({
             required
             className={inputClass + " font-mono"}
           />
+          {previewSlug && previewSlug !== slug.trim() ? (
+            <p
+              className="mt-1 text-xs text-muted-foreground"
+              aria-live="polite"
+            >
+              Preview: <code className="font-mono">{previewSlug}</code>
+            </p>
+          ) : null}
         </Field>
         <Field label="Category" error={fieldErrors.category_id}>
           <select
