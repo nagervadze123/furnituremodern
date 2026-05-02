@@ -51,12 +51,17 @@ export function ProductForm({
 }: Props) {
   const [state, formAction, pending] = useActionState(action, INITIAL_STATE);
 
-  // Slug auto-suggest. We only suggest while the slug field is empty
-  // OR matches the previous suggestion — never overwrite a manual edit.
+  // Slug auto-fill. The single source of truth is `slugAuthoredRef`:
+  //   - false → auto-fill from the English name on every change
+  //   - true  → never auto-fill again for the lifetime of this mount
+  // Initial state: TRUE on edit (defaults.slug is non-empty, so the
+  // saved value is treated as user-authored and never overwritten),
+  // FALSE on the new-product form (empty slug, auto-fill should run
+  // until the admin types in the slug field).
   const [slug, setSlug] = useState(defaults.slug);
   const [nameEn, setNameEn] = useState(defaults.name_en);
   const [nameKa, setNameKa] = useState(defaults.name_ka);
-  const lastSuggestionRef = useRef(defaults.slug);
+  const slugAuthoredRef = useRef(defaults.slug.trim().length > 0);
 
   // Live preview of the slug the form would submit. Reflects the manual
   // override when present; otherwise prefers the Georgian name (the
@@ -69,20 +74,20 @@ export function ProductForm({
   }, [slug, nameKa, nameEn]);
 
   useEffect(() => {
-    let cancelled = false;
-    const previous = lastSuggestionRef.current;
-    // Only suggest if the slug field is currently the previous suggestion.
-    if (slug !== previous && slug.length > 0) return;
+    if (slugAuthoredRef.current) return;
     if (!nameEn) return;
+    let cancelled = false;
     suggestSlugAction(nameEn).then((suggestion) => {
       if (cancelled || !suggestion) return;
-      lastSuggestionRef.current = suggestion;
+      // Re-check the ref inside the resolved promise: the admin may
+      // have typed in the slug field while the round-trip was inflight.
+      if (slugAuthoredRef.current) return;
       setSlug(suggestion);
     });
     return () => {
       cancelled = true;
     };
-  }, [nameEn, slug]);
+  }, [nameEn]);
 
   const fieldErrors = state.fieldErrors ?? {};
 
@@ -130,7 +135,10 @@ export function ProductForm({
           <input
             name="slug"
             value={slug}
-            onChange={(e) => setSlug(e.target.value)}
+            onChange={(e) => {
+              slugAuthoredRef.current = true;
+              setSlug(e.target.value);
+            }}
             required
             className={inputClass + " font-mono"}
           />
