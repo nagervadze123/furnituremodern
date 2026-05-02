@@ -296,27 +296,36 @@ export async function getFeaturedProducts(
 /**
  * Enumerate every (category, slug) tuple for `generateStaticParams`.
  * Called at build time so it must work in BOTH paths.
+ *
+ * `updatedAt` is included for sitemap lastModified — undefined when
+ * we're running against the local fallback catalog (no DB timestamps).
  */
-export async function getAllProductPaths(): Promise<
-  Array<{ category: CategorySlug; slug: string }>
-> {
+export type ProductPath = {
+  category: CategorySlug;
+  slug: string;
+  updatedAt?: string;
+};
+
+export async function getAllProductPaths(): Promise<ProductPath[]> {
   if (isSupabaseConfigured()) {
     const supabase = createSupabasePublicClient();
     const { data, error } = await supabase
       .from("products")
-      .select("slug, categories!inner ( slug )")
+      .select("slug, updated_at, categories!inner ( slug )")
       .eq("is_published", true)
       .is("deleted_at", null);
 
     if (!error && data) {
       return (data as unknown as Array<{
         slug: string;
+        updated_at: string | null;
         categories: { slug: string };
       }>)
         .filter((row) => isCategorySlug(row.categories.slug))
         .map((row) => ({
           category: row.categories.slug as CategorySlug,
           slug: row.slug,
+          updatedAt: row.updated_at ?? undefined,
         }));
     }
   }

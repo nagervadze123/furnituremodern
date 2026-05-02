@@ -9,9 +9,30 @@
 
 import type { Metadata } from "next";
 import { Fraunces, Inter } from "next/font/google";
-import { absoluteUrl, siteConfig } from "@/lib/site-config";
+import {
+  absoluteUrl,
+  siteConfig,
+  verificationTokens,
+} from "@/lib/site-config";
 
 import "./globals.css";
+
+// Search-engine verification tags. We only emit the ones whose env var
+// is set; passing `undefined` to Next's metadata API drops the tag.
+// Bing uses the `msvalidate.01` meta name; Facebook uses
+// `facebook-domain-verification` — both go under `verification.other`.
+function buildVerification(): Metadata["verification"] {
+  const other: Record<string, string> = {};
+  if (verificationTokens.bing) other["msvalidate.01"] = verificationTokens.bing;
+  if (verificationTokens.facebook) {
+    other["facebook-domain-verification"] = verificationTokens.facebook;
+  }
+  return {
+    google: verificationTokens.google,
+    yandex: verificationTokens.yandex,
+    other: Object.keys(other).length > 0 ? other : undefined,
+  };
+}
 
 // Fonts must be loaded at the root so they apply to every page in the
 // tree, including /_not-found (which has no [locale] layout above it).
@@ -45,6 +66,7 @@ export const metadata: Metadata = {
     card: "summary_large_image",
     images: [siteConfig.defaultOgImage],
   },
+  verification: buildVerification(),
 };
 
 export default function RootLayout({

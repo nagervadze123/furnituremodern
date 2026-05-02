@@ -257,7 +257,51 @@ It currently emits a `console.debug` line as a placeholder — swap in your real
 3. `npm run build` should report zero errors and zero warnings.
 4. The site is mostly static (categories + products are SSG with ISR). Admin routes are dynamic. Any Node host (Vercel, Netlify, Render, a VPS) works.
 
-## 12. Known notes
+## 12. Search engine setup
+
+### Verification meta tags
+
+Each search-engine console issues a verification token. Drop the token into the matching `NEXT_PUBLIC_*` env var and the corresponding `<meta>` tag appears in the root `<head>`. Missing vars render nothing — leave them empty if you don't use a console.
+
+| Console | Env var | Output meta name |
+| --- | --- | --- |
+| Google Search Console | `NEXT_PUBLIC_GOOGLE_SITE_VERIFICATION` | `google-site-verification` |
+| Bing Webmaster Tools | `NEXT_PUBLIC_BING_SITE_VERIFICATION` | `msvalidate.01` |
+| Yandex Webmaster | `NEXT_PUBLIC_YANDEX_VERIFICATION` | `yandex-verification` |
+| Facebook Domain | `NEXT_PUBLIC_FACEBOOK_DOMAIN_VERIFICATION` | `facebook-domain-verification` |
+
+Re-deploy after setting a token; the meta tag is inlined at build time.
+
+### Sitemap + robots
+
+- `/robots.txt` — generated from `app/robots.ts`. Allows everything, disallows `/admin`, `/api/admin`, `/_next`, `/private`. References `/sitemap.xml` and sets `Crawl-delay: 1`.
+- `/sitemap.xml` — generated from `app/sitemap.ts`. Single sitemap covering home, all categories, and every published, non-soft-deleted product in both locales with hreflang alternates and `x-default`. Cached for 1 hour; admin saves call `revalidatePath("/sitemap.xml")` so a fresh crawl always sees the latest URLs.
+
+We deliberately stay on a single sitemap rather than a sitemap index — at current scale (3 categories × dozens of products × 2 locales) splitting adds revalidation surfaces without observable benefit. If product count crosses ~3,000 we revisit.
+
+### IndexNow (optional)
+
+[IndexNow](https://www.indexnow.org) accelerates re-crawls on Bing, Yandex, Naver, and Seznam after URL changes. Enable it by setting two server-only env vars:
+
+```bash
+# Generate once per host
+INDEXNOW_KEY=$(openssl rand -hex 32)
+
+# Optional — defaults to the host parsed from NEXT_PUBLIC_SITE_URL
+INDEXNOW_HOST=furnituremodern.ge
+```
+
+When configured, admin server actions submit affected URLs to IndexNow on:
+
+- product publish (new and updated rows)
+- slug change — submits both old and new URLs
+- category change — submits both old and new URLs
+- soft delete with redirect — submits the old URL and the destination category
+- soft delete with 410 Gone — submits the now-410 URL
+
+All submissions are best-effort with a 5-second timeout and never block or fail an admin save. The key file is served from `/indexnow.txt` (gated on `INDEXNOW_KEY` being set; 404 otherwise) and the submission payload references it via `keyLocation` so the IndexNow protocol's ownership check resolves cleanly.
+
+## 13. Known notes
 
 - `npm audit` reports a moderate PostCSS vulnerability inside Next.js's bundled deps. The auto-fix downgrades Next; this is upstream and will resolve on the next Next.js patch.
 - `next.config.ts` CSP includes `script-src 'unsafe-inline'` because Next's hydration runtime needs it. Tighten with a nonce-based CSP later if you need stricter posture.

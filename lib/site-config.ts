@@ -21,6 +21,26 @@ export const absoluteUrl = (path: string): string => {
   return `${SITE_URL}${normalized}`;
 };
 
+// Bare host extracted from SITE_URL — used by IndexNow's `host` field
+// and by anywhere else that needs the apex domain without protocol.
+export const SITE_HOST = (() => {
+  try {
+    return new URL(SITE_URL).host;
+  } catch {
+    return "";
+  }
+})();
+
+// Optional search-engine verification tokens. Each is read from a
+// public env var so it can be inlined into the static <head>. Missing
+// vars render nothing — never hard-code real tokens here.
+export const verificationTokens = {
+  google: process.env.NEXT_PUBLIC_GOOGLE_SITE_VERIFICATION || undefined,
+  bing: process.env.NEXT_PUBLIC_BING_SITE_VERIFICATION || undefined,
+  yandex: process.env.NEXT_PUBLIC_YANDEX_VERIFICATION || undefined,
+  facebook: process.env.NEXT_PUBLIC_FACEBOOK_DOMAIN_VERIFICATION || undefined,
+} as const;
+
 // Each category has its own slug, route, and short tagline.
 // Adding a new category later is just adding an entry here plus
 // a matching folder under app/[locale]/.

@@ -22,6 +22,8 @@ import { productSchema } from "@/lib/admin/schemas";
 import { isValidSlug } from "@/lib/slug";
 import { detectSlugConflicts } from "@/lib/admin/slug-conflicts";
 import { notifyRevalidation, type PathSpec } from "@/lib/revalidation/notify";
+import { submitIndexNow, productUrls } from "@/lib/seo/indexnow";
+import { absoluteUrl } from "@/lib/site-config";
 
 export type ActionState = {
   ok: boolean;
@@ -152,6 +154,13 @@ export async function createProductAction(
     categories: { slug: string } | null;
   };
   await revalidatePublicSurfaces(created.categories?.slug, created.slug);
+
+  // Best-effort IndexNow ping when the new product is published. Fire
+  // and forget — submitIndexNow is bounded by an internal 5s timeout
+  // and never throws. Skip when unpublished (URL is not yet public).
+  if (parsed.is_published && created.categories?.slug) {
+    void submitIndexNow(productUrls(created.categories.slug, created.slug));
+  }
 
   // Redirect throws — must come AFTER all DB work.
   redirect(`/admin/products/${created.id}/edit?created=1`);
@@ -304,6 +313,21 @@ export async function updateProductAction(
     await revalidatePublicSurfaces(prev.categories.slug, prev.slug);
   }
 
+  // Best-effort IndexNow ping. Submit the new canonical URLs always,
+  // and the old URLs too when the slug or category moved — telling
+  // engines to re-crawl the old paths is what accelerates discovery
+  // of the 301 redirect we just wrote.
+  const newCat = next.categories?.slug;
+  if (parsed.is_published && newCat) {
+    const urls = productUrls(newCat, next.slug);
+    const slugChanged = next.slug !== prev.slug;
+    const categoryChanged = newCat !== prev.categories.slug;
+    if (slugChanged || categoryChanged) {
+      urls.push(...productUrls(prev.categories.slug, prev.slug));
+    }
+    void submitIndexNow(urls);
+  }
+
   return { ok: true, message: "Saved." };
 }
 
@@ -382,6 +406,20 @@ export async function softDeleteProductAction(
   }
 
   await revalidatePublicSurfaces(cat || undefined, row.slug);
+
+  // Best-effort IndexNow ping. Submit the now-redirected/410'd URLs
+  // so engines re-crawl them, see the new status, and either follow
+  // the 301 to the category or de-index the page.
+  if (cat) {
+    const urls = productUrls(cat, row.slug);
+    if (mode === "redirect") {
+      // For 301 mode, also nudge the destination category so engines
+      // re-crawl it and see the inbound link equity reroute.
+      urls.push(absoluteUrl(`/ka/${cat}`), absoluteUrl(`/en/${cat}`));
+    }
+    void submitIndexNow(urls);
+  }
+
   redirect("/admin/products?deleted=1");
 }
 
