@@ -13,6 +13,7 @@
 import { requireAdmin } from "@/lib/admin/auth";
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
 import { deleteRedirectAction } from "../redirects/actions";
+import { NotFoundRow } from "@/components/admin/not-found-row";
 
 export const dynamic = "force-dynamic";
 
@@ -44,6 +45,7 @@ export default async function SeoAuditPage() {
     notFoundCount,
     missingDescriptionsCount,
     redirectsList,
+    notFoundRecent,
   ] = await Promise.all([
     supabase
       .from("redirects")
@@ -66,9 +68,30 @@ export default async function SeoAuditPage() {
       .select("id, from_path, to_path, status_code, created_at")
       .order("created_at", { ascending: false })
       .limit(100),
+    supabase
+      .from("not_found_log")
+      .select("path, occurred_at")
+      .gte("occurred_at", since)
+      .order("occurred_at", { ascending: false })
+      .limit(500),
   ]);
 
   const redirects = redirectsList.data ?? [];
+
+  // Aggregate the recent 404s by path. 500 rows / 50 paths is fine for
+  // in-memory; if traffic grows this should move into a SQL view.
+  const counts = new Map<string, { count: number; lastSeen: string }>();
+  for (const row of notFoundRecent.data ?? []) {
+    const cur = counts.get(row.path);
+    if (cur) {
+      cur.count += 1;
+    } else {
+      counts.set(row.path, { count: 1, lastSeen: row.occurred_at });
+    }
+  }
+  const topNotFounds = [...counts.entries()]
+    .sort(([, a], [, b]) => b.count - a.count)
+    .slice(0, 50);
 
   return (
     <main className="space-y-8">
@@ -137,6 +160,44 @@ export default async function SeoAuditPage() {
                       </form>
                     </td>
                   </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
+      </section>
+
+      <section>
+        <h2 className="text-lg font-semibold tracking-tight">
+          Recent 404s
+        </h2>
+        <p className="mt-1 text-sm text-muted-foreground">
+          Top 50 missing paths from the last 30 days. Click &ldquo;Create
+          redirect&rdquo; to map any of them to a working URL.
+        </p>
+        {topNotFounds.length === 0 ? (
+          <p className="mt-4 rounded-md border border-border bg-muted/30 px-3 py-2 text-sm text-muted-foreground">
+            No 404s logged in this window.
+          </p>
+        ) : (
+          <div className="mt-4 overflow-x-auto rounded-xl border border-border">
+            <table className="w-full text-sm">
+              <thead className="bg-muted/40 text-left text-xs uppercase tracking-wide text-muted-foreground">
+                <tr>
+                  <th className="px-3 py-2 font-medium">Path</th>
+                  <th className="px-3 py-2 font-medium">Hits</th>
+                  <th className="px-3 py-2 font-medium">Last seen</th>
+                  <th className="px-3 py-2" />
+                </tr>
+              </thead>
+              <tbody>
+                {topNotFounds.map(([path, info]) => (
+                  <NotFoundRow
+                    key={path}
+                    path={path}
+                    count={info.count}
+                    lastSeen={info.lastSeen}
+                  />
                 ))}
               </tbody>
             </table>
