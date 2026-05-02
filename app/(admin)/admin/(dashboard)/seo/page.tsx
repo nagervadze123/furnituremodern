@@ -12,8 +12,20 @@
 
 import { requireAdmin } from "@/lib/admin/auth";
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
+import { deleteRedirectAction } from "../redirects/actions";
 
 export const dynamic = "force-dynamic";
+
+// Wraps deleteRedirectAction(id) in a form-friendly server action that
+// reads the id out of FormData and returns void. Lets us render a tiny
+// inline delete form per redirect row without a Client Component.
+async function deleteRedirectFormAction(formData: FormData): Promise<void> {
+  "use server";
+  const id = formData.get("id");
+  if (typeof id === "string" && id) {
+    await deleteRedirectAction(id);
+  }
+}
 
 const THIRTY_DAYS_MS = 30 * 86_400_000;
 
@@ -31,6 +43,7 @@ export default async function SeoAuditPage() {
     historyCount,
     notFoundCount,
     missingDescriptionsCount,
+    redirectsList,
   ] = await Promise.all([
     supabase
       .from("redirects")
@@ -48,7 +61,14 @@ export default async function SeoAuditPage() {
       .is("deleted_at", null)
       .eq("is_published", true)
       .or("description_ka.eq.,description_en.eq."),
+    supabase
+      .from("redirects")
+      .select("id, from_path, to_path, status_code, created_at")
+      .order("created_at", { ascending: false })
+      .limit(100),
   ]);
+
+  const redirects = redirectsList.data ?? [];
 
   return (
     <main className="space-y-8">
@@ -73,6 +93,55 @@ export default async function SeoAuditPage() {
           label="Products missing descriptions"
           value={missingDescriptionsCount.count ?? 0}
         />
+      </section>
+
+      <section>
+        <h2 className="text-lg font-semibold tracking-tight">Redirects</h2>
+        <p className="mt-1 text-sm text-muted-foreground">
+          Most-recent 100. The proxy looks these up on every request.
+        </p>
+        {redirects.length === 0 ? (
+          <p className="mt-4 rounded-md border border-border bg-muted/30 px-3 py-2 text-sm text-muted-foreground">
+            No redirects yet.
+          </p>
+        ) : (
+          <div className="mt-4 overflow-x-auto rounded-xl border border-border">
+            <table className="w-full text-sm">
+              <thead className="bg-muted/40 text-left text-xs uppercase tracking-wide text-muted-foreground">
+                <tr>
+                  <th className="px-3 py-2 font-medium">From</th>
+                  <th className="px-3 py-2 font-medium">To</th>
+                  <th className="px-3 py-2 font-medium">Status</th>
+                  <th className="px-3 py-2 font-medium">Created</th>
+                  <th className="px-3 py-2" />
+                </tr>
+              </thead>
+              <tbody>
+                {redirects.map((r) => (
+                  <tr key={r.id} className="border-t border-border">
+                    <td className="px-3 py-2 font-mono text-xs">{r.from_path}</td>
+                    <td className="px-3 py-2 font-mono text-xs">{r.to_path}</td>
+                    <td className="px-3 py-2">{r.status_code}</td>
+                    <td className="px-3 py-2 text-muted-foreground">
+                      {new Date(r.created_at).toLocaleDateString()}
+                    </td>
+                    <td className="px-3 py-2 text-right">
+                      <form action={deleteRedirectFormAction}>
+                        <input type="hidden" name="id" value={r.id} />
+                        <button
+                          type="submit"
+                          className="text-xs text-destructive hover:underline"
+                        >
+                          Delete
+                        </button>
+                      </form>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
       </section>
     </main>
   );
