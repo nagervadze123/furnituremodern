@@ -8,6 +8,21 @@
 //
 // Errors return a code and a Georgian-language message so the form can
 // show them inline. English callers can map the code.
+//
+// Preconditions:
+//   - `slug` MUST already satisfy isValidSlug() — the helper does NOT
+//     re-validate. Callers should run it through productSchema/Zod first.
+//
+// Known corner: renaming a product `a → b → a` will hit redirect_conflict
+// on the revert because the `a → b` rename inserted /<loc>/<cat>/a as a
+// redirect's from_path. The redirect points back at this same product,
+// so it's stale, not truly conflicting — admin must delete that
+// redirect from /admin/seo before reverting. Plan 2's SEO dashboard
+// surfaces orphan/stale redirects; for now this helper treats it as a
+// hard conflict to prevent silent 301 loops.
+//
+// Strings live inline today because there are only two; if more land,
+// route through messages/ka.json keyed by `code`.
 
 import type { SupabaseClient } from "@supabase/supabase-js";
 import type { Database } from "@/lib/supabase/database.types";

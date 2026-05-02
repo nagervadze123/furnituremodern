@@ -186,7 +186,7 @@ export async function updateProductAction(
   // Fetch the existing row to detect slug or category changes.
   const { data: existing, error: fetchErr } = await supabase
     .from("products")
-    .select("id, slug, categories!inner ( slug )")
+    .select("id, slug, category_id, categories!inner ( slug )")
     .eq("id", productId)
     .single();
 
@@ -196,13 +196,14 @@ export async function updateProductAction(
   const prev = existing as unknown as {
     id: string;
     slug: string;
+    category_id: string;
     categories: { slug: string };
   };
 
-  // If the form sent a different category_id than prev's, look up the new
-  // category's slug; otherwise reuse prev.categories.slug.
+  // Reuse prev's category slug unless the form moved the product to a
+  // different category — saves a round-trip on the common in-place edit.
   let nextCategorySlug = prev.categories.slug;
-  if (parsed.category_id) {
+  if (parsed.category_id !== prev.category_id) {
     const { data: nextCategory } = await supabase
       .from("categories")
       .select("slug")
