@@ -19,6 +19,7 @@ import { HtmlLangSync } from "@/components/layout/html-lang-sync";
 import { CookieConsent } from "@/components/cookie-consent";
 import { AnalyticsLoader } from "@/components/analytics-loader";
 import { PageViewTracker } from "@/components/analytics/page-view-tracker";
+import { WebVitalsReporter } from "@/components/web-vitals-reporter";
 import { organizationJsonLd, websiteJsonLd } from "@/lib/schema";
 import { siteConfig, absoluteUrl } from "@/lib/site-config";
 import { routing, type Locale } from "@/i18n/routing";
@@ -95,6 +96,11 @@ export default async function LocaleLayout({
         <CookieConsent />
         <AnalyticsLoader nonce={nonce} />
         <PageViewTracker locale={locale} />
+        {/* First-party RUM beacon. Sends anonymous Web Vitals to
+            /api/vitals (no consent required — see route comment) and
+            also fans out a "web_vitals" analytics event that's gated
+            on cookie consent inside track(). */}
+        <WebVitalsReporter />
       </NextIntlClientProvider>
     </>
   );

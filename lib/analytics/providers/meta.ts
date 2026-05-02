@@ -99,5 +99,11 @@ export function metaTrack(event: AnalyticsEvent): void {
         contents: event.items.map(toMetaContent),
       });
       return;
+    case "web_vitals":
+      // Meta has no native Web Vitals event. We do NOT send anything
+      // to the Pixel for performance metrics — Meta's catalog focuses
+      // on commerce intent, and shipping perf telemetry there would
+      // pollute the Events Manager without any aggregation upside.
+      return;
   }
 }

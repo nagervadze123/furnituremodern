@@ -97,5 +97,23 @@ export function ga4Track(event: AnalyticsEvent): void {
         items: event.items.map((i) => toGa4Item(i)),
       });
       return;
+    case "web_vitals":
+      // GA4 expects integer values. CLS is a small float (0–5 range)
+      // so we multiply by 1000 to preserve precision; the rest are
+      // already millisecond integers (rounded). non_interaction
+      // prevents Web Vitals firing from skewing the bounce-rate.
+      gtag("event", "web_vitals", {
+        event_category: "Web Vitals",
+        event_label: event.id,
+        metric_name: event.metric_name,
+        metric_rating: event.rating,
+        value: Math.round(
+          event.metric_name === "CLS" ? event.value * 1000 : event.value
+        ),
+        page_path: event.pathname,
+        language: event.locale,
+        non_interaction: true,
+      });
+      return;
   }
 }

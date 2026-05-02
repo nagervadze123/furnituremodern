@@ -111,6 +111,7 @@ A snapshot of what's already done versus what to do before you go live.
 - [x] `experimental.viewTransition` + `<ViewTransition>` wrapping `<main>`; `prefers-reduced-motion` collapses durations to zero
 - [x] OG image route has `Cache-Control: max-age=3600, s-maxage=3600, stale-while-revalidate=86400`
 - [x] `npm run analyze` (webpack + `@next/bundle-analyzer`) wired up; Turbopack alternative: `npx next experimental-analyze`
+- [x] Real User Monitoring: `useReportWebVitals` reporter posts LCP/INP/CLS/FCP/TTFB to `/api/vitals` (anonymous, no consent) and fans out a `web_vitals` analytics event (consent-gated). Admin tile on `/admin` shows p75 over 7d via the `web_vitals_p75_7d` Postgres view.
 - [x] Mobile-first responsive
 
 ### Accessibility
@@ -154,7 +155,8 @@ A snapshot of what's already done versus what to do before you go live.
 - [ ] Add a third locale (Russian?) — see `README.md` § "Add a new locale"
 - [ ] Run a real Lighthouse mobile audit on the deployed URL — placeholder phase: Performance ≥ 90, SEO 100, Accessibility ≥ 95, Best Practices 100. After real photos: Performance ≥ 95.
 - [ ] Capture per-route First Load JS once Next 16's Turbopack build summary or analyzer pipeline reports it natively, then ratchet the bundle budget at *baseline + 5%*. Today the 180 KB target is a Lighthouse-derived ceiling, not a CI gate.
-- [ ] Verify p75 INP < 200 ms once the RUM dashboard (Plan 3) has a week of real traffic.
+- [ ] Verify p75 INP < 200 ms once the RUM dashboard has a week of real traffic.
+- [ ] After deployment, visit the live site once, then refresh `/admin` — confirm the "Real User Performance (7d)" tile shows non-zero samples within ~5 minutes (the reporter beacons fire on visibilitychange/pagehide). If the tile stays empty, check: cookie consent isn't blocking the *first-party* beacon (it shouldn't; only third-party analytics is gated); browser blocks `sendBeacon`; Supabase env is configured on the deployment; no bot UA on the test client.
 - [ ] Submit `sitemap.xml` to Google Search Console and Bing Webmaster Tools
 - [ ] Run `supabase db advisors` and resolve any warnings
 - [ ] Rotate the `service_role` key after launch and confirm it lives only in server env (never `NEXT_PUBLIC_`)
@@ -203,3 +205,12 @@ For each page: record date tested, tool URL used, pass/fail, and any warnings th
 - [ ] **2026-05-16 (2 weeks after Plan 2 ship date 2026-05-02):** A scheduled agent will open a cleanup PR.
   - Remove `suggestSlugAction` from `app/(admin)/admin/(dashboard)/products/actions.ts` if no caller imports it (live preview now runs client-side via `lib/slug.slugify`).
   - Prune `not_found_log` rows older than 60 days whose `path` now resolves through a redirect — keeps the SEO dashboard's "Recent 404s" list usefully short.
+
+- [ ] **`web_vitals` retention.** Until Phase 4 ships scheduled jobs, run the snippet below manually (monthly is fine) so the table stays bounded:
+
+  ```sql
+  DELETE FROM public.web_vitals
+  WHERE occurred_at < now() - interval '90 days';
+  ```
+
+- [ ] **RUM sampling upgrade.** Today the reporter samples per-event (set by `NEXT_PUBLIC_RUM_SAMPLE_RATE`, default `1.0`). Per-event sampling at low rates leaves low-traffic pages without coverage. When traffic exceeds ~100k events/day, switch to **session-based sampling**: roll the dice once per page-load (or per session) and either send all metrics for that session or none. Sketch: derive a 0..1 number from `crypto.randomUUID()` once at module import, compare against the rate, and gate every metric on that single decision instead of `Math.random()` per metric.

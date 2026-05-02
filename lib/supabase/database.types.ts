@@ -239,6 +239,8 @@ export type Database = {
           navigation_type: string | null;
           ip_hash: string | null;
           user_agent: string | null;
+          device_type: "mobile" | "tablet" | "desktop" | null;
+          effective_connection_type: string | null;
           occurred_at: string;
         };
         Insert: {
@@ -251,6 +253,8 @@ export type Database = {
           navigation_type?: string | null;
           ip_hash?: string | null;
           user_agent?: string | null;
+          device_type?: "mobile" | "tablet" | "desktop" | null;
+          effective_connection_type?: string | null;
           occurred_at?: string;
         };
         Update: Partial<
@@ -259,7 +263,20 @@ export type Database = {
         Relationships: [];
       };
     };
-    Views: Record<string, never>;
+    Views: {
+      // Admin RUM tile aggregate. Read-only — Supabase exposes views
+      // only in the Row map. SECURITY INVOKER + admin-only RLS on
+      // web_vitals means non-admin clients see zero rows.
+      web_vitals_p75_7d: {
+        Row: {
+          metric: "CLS" | "INP" | "LCP" | "FCP" | "TTFB";
+          p75: number;
+          samples: number;
+          last_occurred_at: string;
+        };
+        Relationships: [];
+      };
+    };
     // is_admin() lives in the `private` schema (not exposed via the
     // Data API) and is invoked from RLS policies only — so it does
     // not appear in the public Functions map.

@@ -129,5 +129,20 @@ export function gtmTrack(event: AnalyticsEvent): void {
         },
       });
       return;
+    case "web_vitals":
+      // GTM consumers (GA4 tag inside the container) expect the same
+      // integer-ized value semantics as the direct GA4 provider.
+      dl.push({
+        event: "web_vitals",
+        metric_name: event.metric_name,
+        metric_rating: event.rating,
+        metric_id: event.id,
+        value: Math.round(
+          event.metric_name === "CLS" ? event.value * 1000 : event.value
+        ),
+        page_path: event.pathname,
+        language: event.locale,
+      });
+      return;
   }
 }

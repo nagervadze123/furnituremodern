@@ -81,5 +81,21 @@ export function plausibleTrack(event: AnalyticsEvent): void {
         revenue: { currency: event.currency, amount: event.value },
       });
       return;
+    case "web_vitals":
+      // Plausible has no built-in Web Vitals goal, so we send a custom
+      // event with the metric and rating as props. Plausible
+      // automatically aggregates by props in the dashboard.
+      plausible("WebVitals", {
+        props: {
+          metric_name: event.metric_name,
+          rating: event.rating,
+          // CLS multiplied to keep it readable in the props column.
+          value: Math.round(
+            event.metric_name === "CLS" ? event.value * 1000 : event.value
+          ),
+          page_path: event.pathname,
+        },
+      });
+      return;
   }
 }

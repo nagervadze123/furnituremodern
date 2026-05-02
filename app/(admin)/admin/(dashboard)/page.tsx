@@ -5,8 +5,14 @@ import Link from "next/link";
 import { Box, FolderTree, ArrowRightLeft } from "lucide-react";
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
 import { isSupabaseConfigured } from "@/lib/supabase/env";
+import { RumTile } from "@/components/admin/rum-tile";
+import type { Database } from "@/lib/supabase/database.types";
 
-async function getCount(table: string): Promise<number | null> {
+// Restrict the table arg to known table names so the typed Supabase
+// client can route .from() to the right Insert/Update/Row shape.
+type CountableTable = keyof Database["public"]["Tables"];
+
+async function getCount(table: CountableTable): Promise<number | null> {
   if (!isSupabaseConfigured()) return null;
   try {
     const supabase = createSupabaseAdminClient();
@@ -53,6 +59,10 @@ export default async function AdminDashboardPage() {
           count={redirects}
           Icon={ArrowRightLeft}
         />
+      </div>
+
+      <div className="mt-8">
+        <RumTile />
       </div>
     </div>
   );

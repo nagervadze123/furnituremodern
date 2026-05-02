@@ -408,17 +408,24 @@ USING (private.is_admin());
 -- ---------------------------------------------------------------------------
 -- Same security shape as analytics_event: RLS on, no anon INSERT,
 -- service-role writes via /api/vitals, admin reads for the dashboard.
+-- ip_hash + user_agent are kept on the schema for backwards-compat with
+-- the original migration but the /api/vitals route handler never inserts
+-- into them (privacy contract: no IP and no raw UA persisted). The route
+-- bucket-derives device_type from the User-Agent server-side then
+-- discards the raw header before insert.
 CREATE TABLE public.web_vitals (
-  id              uuid PRIMARY KEY DEFAULT gen_random_uuid(),
-  metric          text NOT NULL CHECK (metric IN ('CLS','INP','LCP','FCP','TTFB')),
-  value           numeric NOT NULL,
-  rating          text NOT NULL CHECK (rating IN ('good','needs-improvement','poor')),
-  path            text NOT NULL,
-  locale          text NULL,
-  navigation_type text NULL,
-  ip_hash         text NULL,
-  user_agent      text NULL,
-  occurred_at     timestamptz NOT NULL DEFAULT now()
+  id                        uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  metric                    text NOT NULL CHECK (metric IN ('CLS','INP','LCP','FCP','TTFB')),
+  value                     numeric NOT NULL,
+  rating                    text NOT NULL CHECK (rating IN ('good','needs-improvement','poor')),
+  path                      text NOT NULL,
+  locale                    text NULL,
+  navigation_type           text NULL,
+  ip_hash                   text NULL,
+  user_agent                text NULL,
+  device_type               text NULL CHECK (device_type IS NULL OR device_type IN ('mobile','tablet','desktop')),
+  effective_connection_type text NULL,
+  occurred_at               timestamptz NOT NULL DEFAULT now()
 );
 
 CREATE INDEX web_vitals_metric_idx
@@ -437,6 +444,21 @@ USING (private.is_admin());
 CREATE POLICY "web_vitals_admin_delete"
 ON public.web_vitals FOR DELETE
 USING (private.is_admin());
+
+-- One-row-per-metric aggregate used by /admin's RUM tile. Continuous
+-- p75 over the last 7 days, plus sample count and last-seen timestamp.
+-- SECURITY INVOKER + admin-only RLS on web_vitals means anon can't read
+-- this view either.
+CREATE OR REPLACE VIEW public.web_vitals_p75_7d
+WITH (security_invoker = true) AS
+SELECT
+  metric,
+  PERCENTILE_CONT(0.75) WITHIN GROUP (ORDER BY value)::numeric AS p75,
+  COUNT(*)::bigint AS samples,
+  MAX(occurred_at) AS last_occurred_at
+FROM public.web_vitals
+WHERE occurred_at >= now() - interval '7 days'
+GROUP BY metric;
 
 -- ---------------------------------------------------------------------------
 -- Storage bucket: product-images

@@ -269,6 +269,41 @@ It currently emits a `console.debug` line as a placeholder — swap in your real
 - **View Transitions** are enabled via `experimental.viewTransition: true` in `next.config.ts` and a `<ViewTransition>` wrapper around `<main>` in `app/[locale]/layout.tsx`. Browsers without the View Transitions API fall back silently. `prefers-reduced-motion` collapses transition durations to zero in `app/globals.css` — content swaps instantly, matching the default non-VT behavior.
 - **Resource hints are consent-gated.** The Supabase preconnect in the root layout fires only when `NEXT_PUBLIC_SUPABASE_URL` is configured. Analytics preconnects (Google Tag Manager, Facebook, Plausible) live inside `components/analytics-loader.tsx` and only emit *after* the visitor accepts the cookie banner — there is no analytics network warm-up before consent.
 
+### Real User Monitoring (RUM)
+
+Real-world Core Web Vitals are captured client-side by `components/web-vitals-reporter.tsx`, which wraps Next 16's `useReportWebVitals` hook (built on top of the `web-vitals` library). Every page reports up to five metrics — LCP, INP, CLS, FCP, TTFB — exactly once per page lifetime. The library handles the timing semantics: INP and CLS report on `visibilitychange → "hidden"` / `pagehide` with the final accumulated value; LCP / FCP / TTFB report at their natural settling moments.
+
+Each metric fires two beacons:
+
+1. **First-party RUM beacon** to `/api/vitals` (this app's own endpoint, route handler in `app/api/vitals/route.ts`). Anonymous, runs **without analytics consent** because the row stores no PII — just metric name, value, rating, pathname, optional locale + navigation_type + effective_connection_type, and a 3-bucket `device_type` derived server-side from the User-Agent before discarding the raw header. No IP, no cookies, no session id.
+2. **Third-party analytics event** via `track({ type: "web_vitals", ... })`. Fans out to GA4 / GTM / Plausible only **after** the visitor accepts the cookie banner. Meta is intentionally a no-op for this event.
+
+Both beacons use `navigator.sendBeacon()` with a `fetch({ keepalive: true })` fallback so reports survive the unload window without blocking navigation.
+
+Hardening on the route handler:
+- `POST` only, `dynamic = "force-dynamic"`, no caching.
+- 4 KB payload cap (413 on overflow).
+- Bot UAs return 204 silently — 403 would tip off scrapers.
+- Per-IP rate limit: 60 req/min/IP (in-memory, best-effort across cold starts).
+- Per-metric extreme-value drop: LCP/INP/FCP/TTFB > 60 s, CLS > 5 → silent 204.
+- `Sec-GPC: 1` or `DNT: 1` → silent 204 (no row inserted).
+- No-ops gracefully when Supabase env is missing — public pages never depend on RUM availability.
+
+**Sampling.** Per-event sampling controlled by `NEXT_PUBLIC_RUM_SAMPLE_RATE` (default `1.0`, accepts 0–1). The decision happens client-side in the reporter so non-sampled events never hit the endpoint. Per-event sampling at low rates can leave low-traffic pages with no data; switch to session-based sampling when traffic exceeds ~100k events/day. See CHECKLIST `Scheduled maintenance`.
+
+**Admin dashboard tile.** `/admin` shows a "Real User Performance (7d)" card with p75 LCP / INP / CLS, color-coded by Core Web Vitals thresholds (green ≤ good, amber = needs improvement, red > poor). Backed by the Postgres view `public.web_vitals_p75_7d` (idempotent definition in `supabase/schema.sql` and the `2026-05-02-web-vitals-extend` migration) which computes `PERCENTILE_CONT(0.75)` per metric over the rolling 7-day window. Empty state when zero rows: dashed values with the message *"Real user data appears after deployment receives live traffic."*
+
+**Retention.** No automatic cleanup yet — Phase 4 will add scheduled jobs. For now, cap the table size manually with the snippet below (90 days is a reasonable starting retention window):
+
+```sql
+DELETE FROM public.web_vitals
+WHERE occurred_at < now() - interval '90 days';
+```
+
+**Launch verification.** After deployment, visit the live site, refresh `/admin`, and confirm the RUM tile shows non-zero samples within 5 minutes.
+
+**RUM vs Lighthouse.** RUM is the *real-world* signal — what users actually see on their hardware and networks. Lighthouse on preview deploys (Phase 4 DX work) is *synthetic* — fixed device, fixed network, repeatable. Both are useful: RUM for production reality, Lighthouse for catching regressions before merge.
+
 ## 12. Search engine setup
 
 ### Verification meta tags

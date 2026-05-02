@@ -90,6 +90,23 @@ export type PurchaseEvent = {
   shipping?: number;
 };
 
+// Real User Monitoring beacon. The client reporter fires one of these
+// per Core Web Vital metric per page lifetime (LCP/INP/CLS/FCP/TTFB).
+// The analytics layer ships them to GA4/GTM only after consent; the
+// first-party /api/vitals beacon (separate path) runs unconditionally.
+export type WebVitalsMetricName = "CLS" | "INP" | "LCP" | "FCP" | "TTFB";
+
+export type WebVitalsEvent = {
+  type: "web_vitals";
+  metric_name: WebVitalsMetricName;
+  value: number;
+  rating: "good" | "needs-improvement" | "poor";
+  delta?: number;
+  id?: string;
+  pathname: string;
+  locale?: string;
+};
+
 export type AnalyticsEvent =
   | PageViewEvent
   | ViewItemEvent
@@ -101,6 +118,7 @@ export type AnalyticsEvent =
   | NewsletterEvent
   | AddToCartEvent
   | BeginCheckoutEvent
-  | PurchaseEvent;
+  | PurchaseEvent
+  | WebVitalsEvent;
 
 export type AnalyticsEventType = AnalyticsEvent["type"];

@@ -159,3 +159,110 @@ describe("plausibleTrack", () => {
     expect(plausible).toHaveBeenCalledWith("pageview");
   });
 });
+
+describe("web_vitals event mapping", () => {
+  it("ga4Track integerizes the value, multiplying CLS by 1000", () => {
+    const gtag = vi.fn();
+    // @ts-expect-error — stub
+    globalThis.window = { gtag };
+
+    ga4Track({
+      type: "web_vitals",
+      metric_name: "CLS",
+      value: 0.0432,
+      rating: "good",
+      pathname: "/ka",
+    });
+
+    const [, name, params] = gtag.mock.calls[0];
+    expect(name).toBe("web_vitals");
+    expect(params.value).toBe(43); // round(0.0432 * 1000)
+    expect(params.metric_name).toBe("CLS");
+    expect(params.metric_rating).toBe("good");
+    expect(params.non_interaction).toBe(true);
+  });
+
+  it("ga4Track rounds non-CLS values directly", () => {
+    const gtag = vi.fn();
+    // @ts-expect-error — stub
+    globalThis.window = { gtag };
+
+    ga4Track({
+      type: "web_vitals",
+      metric_name: "LCP",
+      value: 2387.6,
+      rating: "good",
+      pathname: "/ka",
+    });
+
+    const [, , params] = gtag.mock.calls[0];
+    expect(params.value).toBe(2388);
+  });
+
+  it("gtmTrack pushes a single web_vitals row to dataLayer", () => {
+    const dataLayer: Array<Record<string, unknown>> = [];
+    // @ts-expect-error — stub
+    globalThis.window = { dataLayer };
+
+    gtmTrack({
+      type: "web_vitals",
+      metric_name: "INP",
+      value: 187,
+      rating: "good",
+      id: "v3-1",
+      pathname: "/en/sofas",
+    });
+
+    // No ecommerce reset needed for vitals — exactly one row.
+    expect(dataLayer.length).toBe(1);
+    expect(dataLayer[0]).toMatchObject({
+      event: "web_vitals",
+      metric_name: "INP",
+      metric_rating: "good",
+      metric_id: "v3-1",
+      value: 187,
+      page_path: "/en/sofas",
+    });
+  });
+
+  it("plausibleTrack emits a WebVitals custom event", () => {
+    const plausible = vi.fn();
+    // @ts-expect-error — stub
+    globalThis.window = { plausible };
+
+    plausibleTrack({
+      type: "web_vitals",
+      metric_name: "LCP",
+      value: 2400,
+      rating: "good",
+      pathname: "/ka",
+    });
+
+    expect(plausible).toHaveBeenCalledWith(
+      "WebVitals",
+      expect.objectContaining({
+        props: expect.objectContaining({
+          metric_name: "LCP",
+          rating: "good",
+          value: 2400,
+        }),
+      })
+    );
+  });
+
+  it("metaTrack is intentionally a no-op for web_vitals", () => {
+    const fbq = vi.fn();
+    // @ts-expect-error — stub
+    globalThis.window = { fbq };
+
+    metaTrack({
+      type: "web_vitals",
+      metric_name: "LCP",
+      value: 2400,
+      rating: "good",
+      pathname: "/ka",
+    });
+
+    expect(fbq).not.toHaveBeenCalled();
+  });
+});
