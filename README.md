@@ -77,12 +77,24 @@ The first time you wire up Supabase:
 
 The schema sets up:
 
-- `categories`, `products`, `product_images`, `admin_users`, `redirects` tables.
+- `categories`, `products`, `product_images`, `admin_users`, `redirects`, `product_slug_history`, `not_found_log` tables.
 - Row Level Security on every table. Public reads on published rows; writes only by users that resolve through `private.is_admin()`.
 - An `is_admin()` SECURITY DEFINER helper in a dedicated `private` schema. Keeping it out of `public` means it cannot be called via the Data API (`supabase.rpc(...)`), only invoked indirectly by RLS evaluation.
 - A `product-images` Storage bucket with INSERT + SELECT + UPDATE + DELETE policies for admins (upsert needs all three on the storage.objects table).
 
 Do **not** add `private` to your project's "Exposed schemas" list in Project Settings → API. The schema is intentionally hidden from PostgREST.
+
+### Updating an existing database
+
+`supabase/schema.sql` is **destructive** — the `DROP TABLE … CASCADE` block at the top wipes existing rows. Only run it on a fresh project.
+
+For databases that already hold data, apply the dated files in `supabase/migrations/` instead. Each statement is wrapped with `IF EXISTS` / `IF NOT EXISTS` so re-running is safe:
+
+```bash
+psql "$SUPABASE_DB_URL" -f supabase/migrations/2026-05-02-slug-system.sql
+```
+
+A fresh `schema.sql` already includes every migration up through its date — there is no need to layer the migrations on top.
 
 ## 6. Admin panel
 

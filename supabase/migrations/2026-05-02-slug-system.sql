@@ -6,6 +6,15 @@
 --   • psql "$DATABASE_URL" -f supabase/migrations/2026-05-02-slug-system.sql
 --
 -- Every statement is idempotent so the migration can be re-run.
+--
+-- This file upgrades a database that pre-dates 2026-05-02. Projects
+-- bootstrapped from the current supabase/schema.sql already include
+-- everything below — applying this migration on top is a safe no-op
+-- but unnecessary.
+--
+-- Depends on private.is_admin(), which supabase/schema.sql provisions
+-- on first install. Run schema.sql before this migration on any database
+-- that does not yet have the helper.
 -- ---------------------------------------------------------------------------
 
 -- 1. products.deleted_at  (soft delete)
