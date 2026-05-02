@@ -25,6 +25,8 @@ DROP TABLE IF EXISTS public.products             CASCADE;
 DROP TABLE IF EXISTS public.categories           CASCADE;
 DROP TABLE IF EXISTS public.redirects            CASCADE;
 DROP TABLE IF EXISTS public.not_found_log        CASCADE;
+DROP TABLE IF EXISTS public.web_vitals           CASCADE;
+DROP TABLE IF EXISTS public.analytics_event      CASCADE;
 DROP TABLE IF EXISTS public.admin_users          CASCADE;
 
 -- ---------------------------------------------------------------------------
@@ -363,6 +365,77 @@ WITH CHECK (true);
 
 CREATE POLICY "not_found_log_admin_delete"
 ON public.not_found_log FOR DELETE
+USING (private.is_admin());
+
+-- ---------------------------------------------------------------------------
+-- analytics_event — first-party event log.
+-- ---------------------------------------------------------------------------
+-- RLS is enabled and there is NO anon/authenticated INSERT policy: the
+-- /api/analytics route handler uses createSupabaseAdminClient() (service
+-- role bypasses RLS), so anon clients hitting PostgREST can't write.
+-- Admin reads + deletes only — no public SELECT exposes event rows.
+CREATE TABLE public.analytics_event (
+  id           uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  event        text NOT NULL,
+  path         text NOT NULL,
+  locale       text NULL,
+  referrer     text NULL,
+  ip_hash      text NULL,
+  user_agent   text NULL,
+  props        jsonb NOT NULL DEFAULT '{}',
+  occurred_at  timestamptz NOT NULL DEFAULT now()
+);
+
+CREATE INDEX analytics_event_event_idx
+  ON public.analytics_event (event);
+CREATE INDEX analytics_event_path_idx
+  ON public.analytics_event (path);
+CREATE INDEX analytics_event_occurred_at_idx
+  ON public.analytics_event (occurred_at DESC);
+
+ALTER TABLE public.analytics_event ENABLE ROW LEVEL SECURITY;
+
+CREATE POLICY "analytics_event_admin_select"
+ON public.analytics_event FOR SELECT
+USING (private.is_admin());
+
+CREATE POLICY "analytics_event_admin_delete"
+ON public.analytics_event FOR DELETE
+USING (private.is_admin());
+
+-- ---------------------------------------------------------------------------
+-- web_vitals — Real User Monitoring metrics (LCP, INP, CLS, FCP, TTFB).
+-- ---------------------------------------------------------------------------
+-- Same security shape as analytics_event: RLS on, no anon INSERT,
+-- service-role writes via /api/vitals, admin reads for the dashboard.
+CREATE TABLE public.web_vitals (
+  id              uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  metric          text NOT NULL CHECK (metric IN ('CLS','INP','LCP','FCP','TTFB')),
+  value           numeric NOT NULL,
+  rating          text NOT NULL CHECK (rating IN ('good','needs-improvement','poor')),
+  path            text NOT NULL,
+  locale          text NULL,
+  navigation_type text NULL,
+  ip_hash         text NULL,
+  user_agent      text NULL,
+  occurred_at     timestamptz NOT NULL DEFAULT now()
+);
+
+CREATE INDEX web_vitals_metric_idx
+  ON public.web_vitals (metric);
+CREATE INDEX web_vitals_path_idx
+  ON public.web_vitals (path);
+CREATE INDEX web_vitals_occurred_at_idx
+  ON public.web_vitals (occurred_at DESC);
+
+ALTER TABLE public.web_vitals ENABLE ROW LEVEL SECURITY;
+
+CREATE POLICY "web_vitals_admin_select"
+ON public.web_vitals FOR SELECT
+USING (private.is_admin());
+
+CREATE POLICY "web_vitals_admin_delete"
+ON public.web_vitals FOR DELETE
 USING (private.is_admin());
 
 -- ---------------------------------------------------------------------------

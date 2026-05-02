@@ -200,6 +200,64 @@ export type Database = {
         Update: Partial<Database["public"]["Tables"]["redirects"]["Insert"]>;
         Relationships: [];
       };
+      analytics_event: {
+        Row: {
+          id: string;
+          event: string;
+          path: string;
+          locale: string | null;
+          referrer: string | null;
+          ip_hash: string | null;
+          user_agent: string | null;
+          props: Record<string, unknown>;
+          occurred_at: string;
+        };
+        Insert: {
+          id?: string;
+          event: string;
+          path: string;
+          locale?: string | null;
+          referrer?: string | null;
+          ip_hash?: string | null;
+          user_agent?: string | null;
+          props?: Record<string, unknown>;
+          occurred_at?: string;
+        };
+        Update: Partial<
+          Database["public"]["Tables"]["analytics_event"]["Insert"]
+        >;
+        Relationships: [];
+      };
+      web_vitals: {
+        Row: {
+          id: string;
+          metric: "CLS" | "INP" | "LCP" | "FCP" | "TTFB";
+          value: number;
+          rating: "good" | "needs-improvement" | "poor";
+          path: string;
+          locale: string | null;
+          navigation_type: string | null;
+          ip_hash: string | null;
+          user_agent: string | null;
+          occurred_at: string;
+        };
+        Insert: {
+          id?: string;
+          metric: "CLS" | "INP" | "LCP" | "FCP" | "TTFB";
+          value: number;
+          rating: "good" | "needs-improvement" | "poor";
+          path: string;
+          locale?: string | null;
+          navigation_type?: string | null;
+          ip_hash?: string | null;
+          user_agent?: string | null;
+          occurred_at?: string;
+        };
+        Update: Partial<
+          Database["public"]["Tables"]["web_vitals"]["Insert"]
+        >;
+        Relationships: [];
+      };
     };
     Views: Record<string, never>;
     // is_admin() lives in the `private` schema (not exposed via the
