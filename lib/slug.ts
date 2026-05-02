@@ -1,33 +1,26 @@
-// URL-slug helper.
-//
-// Used by the admin product form to auto-generate slugs from the
-// English name. Keep it simple: lowercase ASCII letters, digits, and
-// dashes. Admins can always type a slug manually if the auto value
-// isn't what they want.
+import { transliterate } from "./slug/transliterate";
+
+const ASCII_LETTERS_DIGITS = /^[\x00-\x7F]+$/;
 
 /**
  * Generate a slug from an arbitrary string.
  *
- * - Lowercases the input
- * - Strips diacritics (NFD-normalize then drop combining marks)
- * - Converts non-alphanumeric runs to single dashes
- * - Trims leading and trailing dashes
- *
- * Non-ASCII letters (e.g. Georgian) are removed entirely. If you want
- * a Georgian slug, type it in directly — transliteration is too lossy
- * to do automatically at this scale.
+ * - For Georgian or mixed-script input, delegates to BGN/PCGN
+ *   transliteration in lib/slug/transliterate.ts.
+ * - For pure-ASCII input keeps the old fast path: lowercase, strip
+ *   diacritics, collapse non-alphanumerics to hyphens, trim, cap at 80.
  */
 export function slugify(input: string): string {
+  if (!input) return "";
+  if (!ASCII_LETTERS_DIGITS.test(input)) {
+    return transliterate(input);
+  }
   return input
     .normalize("NFD")
-    // Drop combining diacritical marks.
     .replace(/[̀-ͯ]/g, "")
     .toLowerCase()
-    // Replace any sequence of non a-z0-9 with a single dash.
     .replace(/[^a-z0-9]+/g, "-")
-    // Trim leading/trailing dashes.
     .replace(/^-+|-+$/g, "")
-    // Cap length at a reasonable URL size.
     .slice(0, 80);
 }
 
