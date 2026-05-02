@@ -150,3 +150,9 @@ A snapshot of what's already done versus what to do before you go live.
 - [ ] Submit `sitemap.xml` to Google Search Console and Bing Webmaster Tools
 - [ ] Run `supabase db advisors` and resolve any warnings
 - [ ] Rotate the `service_role` key after launch and confirm it lives only in server env (never `NEXT_PUBLIC_`)
+
+## Scheduled maintenance
+
+- [ ] **2026-05-16 (2 weeks after Plan 2 ship date 2026-05-02):** A scheduled agent will open a cleanup PR.
+  - Remove `suggestSlugAction` from `app/(admin)/admin/(dashboard)/products/actions.ts` if no caller imports it (live preview now runs client-side via `lib/slug.slugify`).
+  - Prune `not_found_log` rows older than 60 days whose `path` now resolves through a redirect — keeps the SEO dashboard's "Recent 404s" list usefully short.
