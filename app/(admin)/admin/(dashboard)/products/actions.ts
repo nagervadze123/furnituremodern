@@ -165,7 +165,7 @@ export async function updateProductAction(
   _prev: ActionState,
   formData: FormData
 ): Promise<ActionState> {
-  await requireAdmin();
+  const admin = await requireAdmin();
 
   let parsed;
   try {
@@ -264,6 +264,18 @@ export async function updateProductAction(
     slug: string;
     categories: { slug: string } | null;
   };
+
+  // Append-only audit row whenever the slug actually changed. Done
+  // before the redirect upsert so a partial failure leaves history
+  // present without redirects (we can replay the redirects), rather
+  // than the inverse (redirects pointing at slugs we have no record of).
+  if (next.slug !== prev.slug) {
+    await supabase.from("product_slug_history").insert({
+      product_id: productId,
+      old_slug: prev.slug,
+      changed_by: admin.userId,
+    });
+  }
 
   // If the slug or category changed, write 301 redirects so old URLs
   // still resolve. We add ONE redirect per locale because URLs are
