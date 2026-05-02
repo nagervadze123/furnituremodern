@@ -55,9 +55,35 @@ const nextConfig: NextConfig = {
       { source: "/:path*", headers: securityHeaders },
       // OG images regenerate cheaply; cache them for an hour at the
       // edge with a day of stale-while-revalidate so social unfurlers
-      // never wait on cold renders.
+      // never wait on cold renders. Two sources because path-to-regexp
+      // can't match the top-level /opengraph-image and the nested
+      // /[locale]/[category]/[slug]/opengraph-image with a single
+      // pattern (named segments are greedy and need a leading slash).
       {
-        source: "/:path*opengraph-image",
+        source: "/opengraph-image",
+        headers: [
+          {
+            key: "Cache-Control",
+            value: "public, max-age=3600, s-maxage=3600, stale-while-revalidate=86400",
+          },
+        ],
+      },
+      {
+        source: "/:path+/opengraph-image",
+        headers: [
+          {
+            key: "Cache-Control",
+            value: "public, max-age=3600, s-maxage=3600, stale-while-revalidate=86400",
+          },
+        ],
+      },
+      // sitemap.xml is served by Next's MetadataRoute.Sitemap, which
+      // doesn't expose a Response object — its `revalidate = 3600`
+      // declaration controls ISR, not the response headers crawlers
+      // see. Override here so search engines and unfurlers cache the
+      // last good copy for an hour with a day of SWR fallback.
+      {
+        source: "/sitemap.xml",
         headers: [
           {
             key: "Cache-Control",
