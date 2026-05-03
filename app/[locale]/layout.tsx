@@ -16,7 +16,7 @@ import { Header } from "@/components/layout/header";
 import { Footer } from "@/components/layout/footer";
 import { JsonLd } from "@/components/json-ld";
 import { HtmlLangSync } from "@/components/layout/html-lang-sync";
-import { CookieConsent } from "@/components/cookie-consent";
+import { Banner as CookieConsent } from "@/components/consent/banner";
 import { AnalyticsLoader } from "@/components/analytics-loader";
 import { PageViewTracker } from "@/components/analytics/page-view-tracker";
 import { WebVitalsReporter } from "@/components/web-vitals-reporter";

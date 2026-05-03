@@ -125,8 +125,7 @@
       },
       "buttons": {
         "accept_all": "Accept all",
-        "necessary_only": "Necessary only",
-        "customize": "Customize"
+        "necessary_only": "Necessary only"
       }
     },
     "settings": {

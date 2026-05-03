@@ -57,8 +57,9 @@ A snapshot of what's already done versus what to do before you go live.
 - [x] `/admin/redirects` for manual entries
 
 ### Cookie consent + analytics
-- [x] First-party banner (`components/cookie-consent.tsx`), localStorage, ka/en
-- [x] `components/analytics.tsx` only loads when `NEXT_PUBLIC_ANALYTICS_DOMAIN` is set AND consent has been given
+- [x] Granular first-party banner (`components/consent/banner.tsx`), `fm_consent` cookie, ka/en
+- [x] Settings sheet (`components/consent/settings-sheet.tsx`) with per-category toggles, reachable from the footer's Manage cookies link
+- [x] `components/analytics-loader.tsx` only loads provider scripts (GA4 / GTM / Meta / Plausible) after the user grants analytics or marketing consent
 - [x] No third-party CMP, no extra JS payload, no cookies until consented
 
 ### SEO
@@ -151,7 +152,7 @@ A snapshot of what's already done versus what to do before you go live.
 
 ### Configuration
 - [ ] Set `NEXT_PUBLIC_SITE_URL` to your real domain in production
-- [ ] Set `NEXT_PUBLIC_ANALYTICS_DOMAIN` if you want analytics enabled (and replace the placeholder `<Script>` in `components/analytics.tsx` with your provider)
+- [ ] Set the provider env vars you want enabled (`NEXT_PUBLIC_GTM_ID`, `NEXT_PUBLIC_GA4_MEASUREMENT_ID`, `NEXT_PUBLIC_META_PIXEL_ID`, `NEXT_PUBLIC_PLAUSIBLE_DOMAIN`). With none set, `components/analytics-loader.tsx` mounts no scripts.
 - [ ] Verify `lib/site-config.ts` GPS coordinates point at your actual showroom
 
 ### Optional improvements

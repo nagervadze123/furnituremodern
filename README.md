@@ -45,7 +45,11 @@ Copy `.env.example` to `.env.local` and fill in what you need.
 | `NEXT_PUBLIC_SUPABASE_URL`       | For DB mode     | Supabase project URL. When set together with the anon key, the app reads catalogue data from Supabase. |
 | `NEXT_PUBLIC_SUPABASE_ANON_KEY`  | For DB mode     | Supabase publishable key. Safe to ship to the browser. |
 | `SUPABASE_SERVICE_ROLE_KEY`      | Admin panel     | Server-only key used by the admin panel and seed scripts. **Never** prefix with `NEXT_PUBLIC_`. |
-| `NEXT_PUBLIC_ANALYTICS_DOMAIN`   | Optional        | When set, the analytics placeholder script is loaded after the user accepts cookies. When empty, nothing is loaded and no cookies are written. |
+| `NEXT_PUBLIC_GTM_ID`             | Optional        | Google Tag Manager container ID. When set, GTM owns GA4 + Meta and the direct loaders are skipped. Loaded only after consent. |
+| `NEXT_PUBLIC_GA4_MEASUREMENT_ID` | Optional        | GA4 measurement ID. Loaded directly when `NEXT_PUBLIC_GTM_ID` is unset. Loaded only after consent. |
+| `NEXT_PUBLIC_META_PIXEL_ID`      | Optional        | Meta Pixel ID. Loaded directly when `NEXT_PUBLIC_GTM_ID` is unset. Loaded only after consent. |
+| `NEXT_PUBLIC_PLAUSIBLE_DOMAIN`   | Optional        | Plausible site domain. Always loads independently of GTM mode. Loaded only after consent. |
+| `NEXT_PUBLIC_RUM_SAMPLE_RATE`    | Optional        | 0..1 sampling rate for the first-party RUM beacon. Default `1` (capture every event). |
 | `REVALIDATE_WEBHOOK_URL`         | Multi-deploy    | Peer deployment's `/api/revalidate` endpoint. When set, every admin write POSTs here so the peer's ISR cache invalidates too. Leave unset for single-deployment setups. |
 | `REVALIDATE_SECRET`              | Multi-deploy    | Shared secret for the webhook. Generate with `openssl rand -hex 32`. The **same** value must be set on every peer. Required if `REVALIDATE_WEBHOOK_URL` is set. |
 
@@ -154,8 +158,9 @@ furnituremodern/
 │   ├── layout/                        Header, Footer, DesktopNav, MobileNav, ...
 │   ├── sections/                      Hero, FeaturedCategories, ProductCard, ...
 │   ├── ui/                            shadcn/ui primitives (base-nova style, base-ui)
-│   ├── analytics.tsx                  Loads analytics ONLY after cookie consent
-│   ├── cookie-consent.tsx             First-party consent banner (localStorage)
+│   ├── consent/                       Granular cookie banner, settings sheet, manage link
+│   ├── analytics-loader.tsx           Loads provider scripts ONLY after consent
+│   ├── analytics/                     page-view-tracker, view-item-tracker, ...
 │   └── json-ld.tsx
 │
 ├── content/                           Local TS fallback (used when Supabase is unset)
@@ -242,22 +247,20 @@ You can also add manual redirects from `/admin/redirects`.
 
 ## 10. Cookie consent + analytics
 
-`components/cookie-consent.tsx` shows a small banner on the first visit. The user's choice (accepted / declined) lives in `localStorage` and emits a `fm-consent-change` window event.
-
-`components/analytics.tsx` listens for that event and renders a `<Script>` tag **only** when both:
-- `NEXT_PUBLIC_ANALYTICS_DOMAIN` is set, AND
-- the user has accepted.
-
-It currently emits a `console.debug` line as a placeholder — swap in your real analytics provider's snippet (Plausible, Fathom, Umami, etc.).
-
-## Consent + Privacy
-
 The site uses a granular cookie-consent system with two opt-in categories:
 
 - **Analytics** (page views, Web Vitals, ecommerce events). Off by default.
 - **Marketing** (advertising attribution). Off by default. No marketing platform is currently enabled.
 
 The user's choice is stored in a first-party `fm_consent` cookie as JSON of shape `{ analytics: boolean; marketing: boolean; updatedAt: string }`. Storage is cookie-only — no localStorage. Legacy `"accepted"` / `"declined"` string values are migrated on read.
+
+UI surfaces:
+
+- `components/consent/banner.tsx` — first-load banner with **Accept all** / **Necessary only** buttons. Renders only when no choice has been made.
+- `components/consent/settings-sheet.tsx` — granular per-category sheet, reachable from the footer's **Manage cookies** link or the privacy page.
+- `components/consent/manage-link.tsx` — reusable trigger that opens the settings sheet.
+
+`components/analytics-loader.tsx` mounts provider scripts (`<Script>` tags) only after `choice.analytics === true` or `choice.marketing === true`. The `lib/analytics/track()` API is a no-op until consent is granted, so component event calls (`view_item`, `select_item`, etc.) are safe before consent.
 
 The bilingual privacy policy lives at `/[locale]/privacy`. Visitors can revisit and change their preferences at any time via the **Manage cookies** link in the footer.
 

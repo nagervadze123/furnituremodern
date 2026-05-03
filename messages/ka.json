@@ -125,8 +125,7 @@
       },
       "buttons": {
         "accept_all": "მივიღო ყველა",
-        "necessary_only": "მხოლოდ აუცილებელი",
-        "customize": "პერსონალიზაცია"
+        "necessary_only": "მხოლოდ აუცილებელი"
       }
     },
     "settings": {
