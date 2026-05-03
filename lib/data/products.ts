@@ -192,9 +192,13 @@ export async function getProducts(
 
     const { data, error } = await query;
     if (error) {
-      // Don't crash the page — log and fall through to local fallback.
-       
       console.error("[data/products] Supabase query failed:", error.message);
+      // In production with Supabase configured, never silently serve
+      // local placeholder data — that would show wrong prices/URLs to
+      // real users and search engines. Return an empty list instead.
+      // In development we fall through to the local catalog so devs
+      // can keep working through transient DB outages.
+      if (process.env.NODE_ENV === "production") return [];
       return localFallbackList(options);
     }
 
@@ -247,15 +251,17 @@ export async function getProductBySlug(
     if (category) query = query.eq("categories.slug", category);
 
     const { data, error } = await query;
-    if (error || !data || data.length === 0) {
-      if (error) {
-         
-        console.error("[data/products] Supabase lookup failed:", error.message);
-      }
-      // Fall through to local lookup so the page can still render
-      // during development outages.
+    if (error) {
+      console.error("[data/products] Supabase lookup failed:", error.message);
+      // Production: never substitute placeholder catalog data on a
+      // query error — return null so the route renders 404 cleanly.
+      // Development: fall through to local lookup so devs can keep
+      // working through transient DB outages.
+      if (process.env.NODE_ENV === "production") return null;
       return localFallbackBySlug(slug, category);
     }
+
+    if (!data || data.length === 0) return null;
 
     const base = getStoragePublicUrlBase();
     return mapSupabase(
@@ -334,6 +340,12 @@ export async function getAllProductPaths(): Promise<ProductPath[]> {
           updatedAt: row.updated_at ?? undefined,
         }));
     }
+    if (error) {
+      console.error("[data/products] getAllProductPaths failed:", error.message);
+    }
+    // Production: do not generate placeholder paths on DB error — that
+    // would publish stale URLs in the sitemap. Empty list is safer.
+    if (process.env.NODE_ENV === "production") return [];
   }
   return localAll().map((p) => ({ category: p.category, slug: p.slug }));
 }

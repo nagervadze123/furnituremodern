@@ -48,8 +48,14 @@ const intlMiddleware = createIntlMiddleware(routing);
 // 1. Redirects table lookup
 // ---------------------------------------------------------------------------
 // We avoid hammering the DB on every request by skipping the lookup
-// for paths that obviously aren't user-facing (admin, _next, etc.) and
-// by short-circuiting when Supabase isn't configured.
+// for paths that obviously aren't user-facing (admin, _next, etc.),
+// short-circuiting when Supabase isn't configured, and caching both
+// hits and misses in-memory per cold-start with a short TTL.
+//
+// The cache lives at module scope. In Vercel's serverless deploy each
+// invocation has its own instance, so we still hit the DB on cold
+// starts, but warm instances reuse the entry until TTL expires. New
+// redirects published via the admin appear within REDIRECT_CACHE_TTL_MS.
 //
 // Returns one of three shapes so the caller can decide whether the
 // response needs CSP applied: 30x redirects don't (the browser never
@@ -58,21 +64,91 @@ type RedirectMatch =
   | { kind: "redirect"; response: NextResponse }
   | { kind: "gone"; response: NextResponse };
 
+type RedirectRow = { to_path: string; status_code: number };
+type CacheEntry = { value: RedirectRow | null; expiresAt: number };
+
+const REDIRECT_CACHE_TTL_MS = 60_000;
+const REDIRECT_CACHE_MAX_ENTRIES = 500;
+const redirectCache = new Map<string, CacheEntry>();
+
+function getCachedRedirect(pathname: string): CacheEntry | undefined {
+  const entry = redirectCache.get(pathname);
+  if (!entry) return undefined;
+  if (entry.expiresAt < Date.now()) {
+    redirectCache.delete(pathname);
+    return undefined;
+  }
+  return entry;
+}
+
+function setCachedRedirect(pathname: string, value: RedirectRow | null) {
+  // Bound the cache so a flood of unique paths can't grow it indefinitely.
+  // When at capacity, drop the oldest insertion (Map preserves order).
+  if (redirectCache.size >= REDIRECT_CACHE_MAX_ENTRIES) {
+    const firstKey = redirectCache.keys().next().value;
+    if (firstKey !== undefined) redirectCache.delete(firstKey);
+  }
+  redirectCache.set(pathname, {
+    value,
+    expiresAt: Date.now() + REDIRECT_CACHE_TTL_MS,
+  });
+}
+
+// Likely-redirect heuristic. Public marketing URLs all match
+// `/<locale>/...`; metadata routes (e.g. opengraph-image, sitemap)
+// are excluded by the matcher already, but RSC prefetches and root
+// `/` need to skip the DB. Anything with a file extension is also
+// skipped (real files served from /public).
+function isPathRedirectCandidate(pathname: string): boolean {
+  if (pathname === "/") return false;
+  if (pathname.startsWith("/admin")) return false;
+  if (pathname.startsWith("/_next")) return false;
+  if (pathname.startsWith("/_vercel")) return false;
+  if (pathname.startsWith("/api")) return false;
+  if (pathname === "/sitemap.xml") return false;
+  if (pathname === "/robots.txt") return false;
+  // Paths with a file extension in the last segment are static files.
+  const lastSegment = pathname.split("/").pop() ?? "";
+  if (lastSegment.includes(".")) return false;
+  return true;
+}
+
+function buildRedirectResponse(
+  request: NextRequest,
+  row: RedirectRow
+): RedirectMatch {
+  if (row.status_code === 410) {
+    // Rewrite to the locale's /gone route handler so the response
+    // carries HTTP 410 with a localized body. Locale is the first
+    // path segment; default to ka if the URL has none.
+    const locale = request.nextUrl.pathname.split("/")[1] || "ka";
+    const goneUrl = request.nextUrl.clone();
+    goneUrl.pathname = `/${locale}/gone`;
+    return { kind: "gone", response: NextResponse.rewrite(goneUrl) };
+  }
+
+  // Preserve the query string from the incoming URL.
+  const url = request.nextUrl.clone();
+  url.pathname = row.to_path;
+  return {
+    kind: "redirect",
+    response: NextResponse.redirect(url, { status: row.status_code }),
+  };
+}
+
 async function checkRedirect(
   request: NextRequest
 ): Promise<RedirectMatch | null> {
   if (!isSupabaseConfigured()) return null;
 
   const { pathname } = request.nextUrl;
-  // Don't query the DB for admin paths or static assets.
-  if (
-    pathname.startsWith("/admin") ||
-    pathname.startsWith("/_next") ||
-    pathname.startsWith("/_vercel") ||
-    pathname === "/sitemap.xml" ||
-    pathname === "/robots.txt"
-  ) {
-    return null;
+  if (!isPathRedirectCandidate(pathname)) return null;
+
+  // Check cache first — both hits and misses are cached so repeated
+  // requests for the same path don't re-hit Supabase within the TTL.
+  const cached = getCachedRedirect(pathname);
+  if (cached) {
+    return cached.value ? buildRedirectResponse(request, cached.value) : null;
   }
 
   // Anonymous client — RLS allows public reads on `redirects`.
@@ -100,25 +176,24 @@ async function checkRedirect(
     .limit(1)
     .maybeSingle();
 
-  if (error || !data) return null;
-
-  if (data.status_code === 410) {
-    // Rewrite to the locale's /gone route handler so the response
-    // carries HTTP 410 with a localized body. Locale is the first
-    // path segment; default to ka if the URL has none.
-    const locale = pathname.split("/")[1] || "ka";
-    const goneUrl = request.nextUrl.clone();
-    goneUrl.pathname = `/${locale}/gone`;
-    return { kind: "gone", response: NextResponse.rewrite(goneUrl) };
+  if (error) {
+    // Don't cache errors — a transient DB failure shouldn't suppress
+    // redirects for the next minute. Just fall through and let the
+    // request continue without a redirect.
+    return null;
   }
 
-  // Preserve the query string from the incoming URL.
-  const url = request.nextUrl.clone();
-  url.pathname = data.to_path;
-  return {
-    kind: "redirect",
-    response: NextResponse.redirect(url, { status: data.status_code }),
+  if (!data) {
+    setCachedRedirect(pathname, null);
+    return null;
+  }
+
+  const row: RedirectRow = {
+    to_path: data.to_path,
+    status_code: data.status_code,
   };
+  setCachedRedirect(pathname, row);
+  return buildRedirectResponse(request, row);
 }
 
 // ---------------------------------------------------------------------------

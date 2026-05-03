@@ -5,6 +5,20 @@
 
 import { z } from "zod";
 import { isValidSlug } from "@/lib/slug";
+import { categories as supportedCategories } from "@/lib/site-config";
+
+// Categories are CODE-DEFINED, not fully DB-defined: the public site
+// renders a category only if its slug is enumerated in
+// `lib/site-config.ts` AND has editorial copy in
+// `content/category-intros.ts`. Admin-created rows whose slug is not
+// already supported in code would never be displayed, so we block
+// creating them up front rather than silently dropping the row at
+// render time. To add a new category: add it to site-config + a copy
+// entry in content/category-intros.ts, ship the code, then create the
+// row in the admin.
+const SUPPORTED_CATEGORY_SLUGS = supportedCategories.map(
+  (c) => c.slug
+) as readonly string[];
 
 // ---------------------------------------------------------------------------
 // Auth
@@ -56,7 +70,13 @@ export const categorySchema = z.object({
     .string()
     .min(1, "Slug is required")
     .max(80)
-    .refine(isValidSlug, "Slug must be lowercase, dash-separated ASCII"),
+    .refine(isValidSlug, "Slug must be lowercase, dash-separated ASCII")
+    .refine(
+      (s) => SUPPORTED_CATEGORY_SLUGS.includes(s),
+      `Categories are code-defined: pick one of ${SUPPORTED_CATEGORY_SLUGS.join(
+        ", "
+      )}. To add a new category, update lib/site-config.ts and content/category-intros.ts first, then create it here.`
+    ),
   name_ka: z.string().min(1, "Georgian name is required").max(200),
   name_en: z.string().min(1, "English name is required").max(200),
   description_ka: z.string().max(2000).default(""),

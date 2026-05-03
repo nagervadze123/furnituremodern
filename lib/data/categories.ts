@@ -4,6 +4,16 @@
 //
 // • Supabase backed when `NEXT_PUBLIC_SUPABASE_URL` is set.
 // • Local TS fallback otherwise (so offline builds keep working).
+//
+// IMPORTANT — categories are code-defined, not fully DB-defined.
+// `isCategorySlug` rejects any slug that is not enumerated in
+// `lib/site-config.ts`. The route tree, JSON-LD, sitemap, and
+// editorial copy in `content/category-intros.ts` all depend on that
+// fixed list. The admin schema (`lib/admin/schemas.ts`) blocks
+// creating Supabase rows with unsupported slugs so this filter is a
+// belt-and-braces safeguard rather than a silent loss path. To add a
+// new category, ship the site-config + content change first, then
+// create the row in the admin.
 
 import "server-only";
 
@@ -42,7 +52,17 @@ type SupabaseCategoryRow = {
 };
 
 function mapSupabase(row: SupabaseCategoryRow): DataCategory | null {
-  if (!isCategorySlug(row.slug)) return null;
+  if (!isCategorySlug(row.slug)) {
+    // Should never happen now that the admin schema rejects unsupported
+    // slugs; surface it loudly if a row slips through (e.g. inserted
+    // directly into Postgres) so the maintainer notices instead of
+    // wondering why the category page doesn't appear.
+    console.warn(
+      "[data/categories] dropping unsupported category slug %s — add it to lib/site-config.ts first",
+      row.slug
+    );
+    return null;
+  }
   return {
     slug: row.slug as CategorySlug,
     name: { ka: row.name_ka, en: row.name_en },
@@ -79,10 +99,14 @@ export async function getCategories(
         .filter((c): c is DataCategory => c !== null);
     }
     if (error) {
-       
       console.error("[data/categories] Supabase query failed:", error.message);
     }
-    // Fall through to local fallback so the page renders.
+    // Production: do not silently substitute the local placeholder
+    // category list on a DB error. Return empty so the page can render
+    // a controlled empty state instead of misleading content.
+    if (process.env.NODE_ENV === "production") return [];
+    // Development/offline: fall through to the local fallback so devs
+    // can keep working without Supabase.
   }
 
   return localCategories.map(mapLocal);
@@ -110,6 +134,14 @@ export async function getCategoryBySlug(
     if (!error && data && data.length > 0) {
       return mapSupabase(data[0] as SupabaseCategoryRow);
     }
+    if (error) {
+      console.error("[data/categories] Supabase lookup failed:", error.message);
+    }
+    // Production: don't substitute a local placeholder row on a DB
+    // error or empty result — return null so the route renders a 404.
+    if (process.env.NODE_ENV === "production") return null;
+    // Development: fall through to the local catalog so offline work
+    // keeps rendering.
   }
 
   const idx = localCategories.findIndex((c) => c.slug === slug);

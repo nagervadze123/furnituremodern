@@ -278,12 +278,26 @@ export async function updateProductAction(
   // before the redirect upsert so a partial failure leaves history
   // present without redirects (we can replay the redirects), rather
   // than the inverse (redirects pointing at slugs we have no record of).
+  //
+  // The product row is already updated at this point — if either of
+  // the SEO writes below fails, we surface a clear error to the admin
+  // instead of a misleading "Saved." so they know to retry. Re-saving
+  // is idempotent: history insert is append-only (and the slug match
+  // gate prevents duplicates per save), redirects upsert by from_path.
   if (next.slug !== prev.slug) {
-    await supabase.from("product_slug_history").insert({
-      product_id: productId,
-      old_slug: prev.slug,
-      changed_by: admin.userId,
-    });
+    const { error: historyErr } = await supabase
+      .from("product_slug_history")
+      .insert({
+        product_id: productId,
+        old_slug: prev.slug,
+        changed_by: admin.userId,
+      });
+    if (historyErr) {
+      return {
+        ok: false,
+        message: `Product saved, but recording the slug history failed: ${historyErr.message}. Re-save to retry, or fix the redirect/history rows manually.`,
+      };
+    }
   }
 
   // If the slug or category changed, write 301 redirects so old URLs
@@ -302,9 +316,15 @@ export async function updateProductAction(
       status_code: 301,
     }));
     // upsert so re-saving the same slug doesn't fail on the unique constraint.
-    await supabase
+    const { error: redirectErr } = await supabase
       .from("redirects")
       .upsert(rows, { onConflict: "from_path", ignoreDuplicates: false });
+    if (redirectErr) {
+      return {
+        ok: false,
+        message: `Product saved, but creating the redirect from the old URL failed: ${redirectErr.message}. Re-save to retry, or add the redirect manually.`,
+      };
+    }
   }
 
   await revalidatePublicSurfaces(next.categories?.slug, next.slug);
