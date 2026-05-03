@@ -1,9 +1,10 @@
-import { describe, it, expect, vi } from "vitest";
+import { describe, it, expect, vi, afterEach } from "vitest";
 import {
   parseStoredConsent,
   serializeConsent,
   writeConsent,
   getConsentServerSide,
+  readConsentFromBrowser,
 } from "./store";
 import { CONSENT_COOKIE_MAX_AGE, CONSENT_COOKIE_NAME } from "./types";
 
@@ -223,13 +224,105 @@ describe("getConsentServerSide", () => {
   });
 });
 
-describe("useConsent", () => {
-  it.skip("hook behavior is exercised indirectly", () => {
-    // The vitest config uses `environment: "node"` and the
-    // `lib/**/*.test.ts` glob; running React's `useSyncExternalStore`
-    // would need a jsdom environment plus React Testing Library wiring,
-    // both of which are out of scope for the consent-core task. The
-    // hook's logic is exercised indirectly through the
-    // `parseStoredConsent` and `writeConsent` test blocks above.
+describe("readConsentFromBrowser snapshot stability", () => {
+  // Regression: parseStoredConsent constructs a fresh object on every
+  // call, so without caching readConsentFromBrowser() would return a
+  // different reference each render. useSyncExternalStore diffs with
+  // Object.is and would loop forever, crashing the renderer the moment
+  // a cookie is set. These tests pin the cache invariant.
+  const originalDocument = (globalThis as { document?: unknown }).document;
+
+  afterEach(() => {
+    if (originalDocument === undefined) {
+      // @ts-expect-error — restore SSR-like state
+      delete globalThis.document;
+    } else {
+      // @ts-expect-error — restore real document
+      globalThis.document = originalDocument;
+    }
+  });
+
+  it("returns the same reference on consecutive calls when the cookie is unchanged", () => {
+    const json = JSON.stringify({
+      analytics: true,
+      marketing: false,
+      updatedAt: "2026-05-03T00:00:00.000Z",
+    });
+    // @ts-expect-error — synthetic document
+    globalThis.document = { cookie: `fm_consent=${encodeURIComponent(json)}` };
+
+    const a = readConsentFromBrowser();
+    const b = readConsentFromBrowser();
+    const c = readConsentFromBrowser();
+    expect(a).not.toBeNull();
+    expect(a).toBe(b);
+    expect(b).toBe(c);
+  });
+
+  it("returns null on consecutive calls when no consent cookie is set", () => {
+    // @ts-expect-error — synthetic document with empty cookie
+    globalThis.document = { cookie: "" };
+    expect(readConsentFromBrowser()).toBeNull();
+    expect(readConsentFromBrowser()).toBeNull();
+  });
+
+  it("returns the legacy-migrated reference stably for repeated reads of an 'accepted' cookie", () => {
+    // legacy fixture: the parser builds a new ConsentChoice with a
+    // fresh updatedAt every parse — without caching this would change
+    // reference every call.
+    // @ts-expect-error — synthetic document
+    globalThis.document = { cookie: "fm_consent=accepted" };
+    const a = readConsentFromBrowser();
+    const b = readConsentFromBrowser();
+    expect(a?.analytics).toBe(true);
+    expect(a).toBe(b);
+  });
+
+  it("returns a new reference after the cookie value changes", () => {
+    // @ts-expect-error — synthetic document
+    globalThis.document = {
+      cookie: `fm_consent=${encodeURIComponent(
+        JSON.stringify({
+          analytics: true,
+          marketing: true,
+          updatedAt: "2026-05-03T00:00:00.000Z",
+        })
+      )}`,
+    };
+    const a = readConsentFromBrowser();
+
+    // @ts-expect-error — synthetic document
+    globalThis.document = {
+      cookie: `fm_consent=${encodeURIComponent(
+        JSON.stringify({
+          analytics: false,
+          marketing: false,
+          updatedAt: "2026-05-03T01:00:00.000Z",
+        })
+      )}`,
+    };
+    const b = readConsentFromBrowser();
+
+    expect(a).not.toBe(b);
+    expect(a?.analytics).toBe(true);
+    expect(b?.analytics).toBe(false);
+  });
+
+  it("clears the cached snapshot when the cookie is removed", () => {
+    // @ts-expect-error — synthetic document
+    globalThis.document = {
+      cookie: `fm_consent=${encodeURIComponent(
+        JSON.stringify({
+          analytics: true,
+          marketing: false,
+          updatedAt: "2026-05-03T00:00:00.000Z",
+        })
+      )}`,
+    };
+    expect(readConsentFromBrowser()).not.toBeNull();
+
+    // @ts-expect-error — synthetic empty cookie
+    globalThis.document = { cookie: "" };
+    expect(readConsentFromBrowser()).toBeNull();
   });
 });

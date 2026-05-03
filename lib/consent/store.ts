@@ -133,26 +133,50 @@ export function writeConsent(
   return full;
 }
 
+// Snapshot cache for `useSyncExternalStore`. React diffs the snapshot
+// reference with `Object.is` between renders; if `readConsentFromBrowser`
+// returned a fresh `{ analytics, marketing, updatedAt }` object each
+// call (which `parseStoredConsent` does), React sees a different
+// reference every render, re-renders, calls getSnapshot again, gets
+// another new object, and loops until the renderer crashes. We cache
+// the parsed result keyed on the raw URL-encoded cookie value so the
+// reference is stable until the cookie actually changes.
+let cachedRaw: string | null = null;
+let cachedSnapshot: ConsentChoice | null = null;
+
 export function readConsentFromBrowser(): ConsentChoice | null {
   if (typeof document === "undefined") return null;
-  const cookie = document.cookie;
-  if (!cookie) return null;
 
+  const cookie = document.cookie;
   const prefix = `${CONSENT_COOKIE_NAME}=`;
-  const parts = cookie.split("; ");
-  for (const part of parts) {
-    if (part.startsWith(prefix)) {
-      const value = part.slice(prefix.length);
-      let decoded: string;
-      try {
-        decoded = decodeURIComponent(value);
-      } catch {
-        return null;
+  let raw: string | null = null;
+  if (cookie) {
+    const parts = cookie.split("; ");
+    for (const part of parts) {
+      if (part.startsWith(prefix)) {
+        raw = part.slice(prefix.length);
+        break;
       }
-      return parseStoredConsent(decoded);
     }
   }
-  return null;
+
+  if (raw === cachedRaw) return cachedSnapshot;
+
+  cachedRaw = raw;
+  if (raw === null) {
+    cachedSnapshot = null;
+    return null;
+  }
+
+  let decoded: string;
+  try {
+    decoded = decodeURIComponent(raw);
+  } catch {
+    cachedSnapshot = null;
+    return null;
+  }
+  cachedSnapshot = parseStoredConsent(decoded);
+  return cachedSnapshot;
 }
 
 export function getConsentServerSide(
