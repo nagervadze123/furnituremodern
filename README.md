@@ -8,8 +8,8 @@ Built with Next.js 16 (App Router), TypeScript (strict), Tailwind CSS v4, shadcn
 
 ## 1. Prerequisites
 
-- **Node.js 20+** (built and tested on Node 22)
-- **npm** (ships with Node)
+- **Node.js 22.12+** (the engine field in `package.json` accepts `^20.19` or `>=22.12`; CI + Vercel pin to `.nvmrc` = 22.12.0).
+- **npm** (ships with Node).
 - A **Supabase project** if you want a database-backed catalogue and admin panel. Without it, the site happily runs against a local TS fallback (see `content/`).
 
 ```bash
@@ -30,10 +30,22 @@ npm install
 npm run dev      # localhost:3000
 npm run build    # production build
 npm start        # serve the built site
-npm run lint     # ESLint
+npm run lint     # ESLint — must report 0 issues
+npm test         # vitest (unit tests, ~290 tests across 22 files)
+npm run analyze  # webpack production build with @next/bundle-analyzer
 ```
 
 Open **http://localhost:3000** — you'll be redirected to `/ka`. English: **http://localhost:3000/en**. Admin: **http://localhost:3000/admin**.
+
+### Environments
+
+| Environment | URL pattern | Build | Notes |
+| ----------- | ----------- | ----- | ----- |
+| Local | `http://localhost:3000` | `npm run dev` | Hot reload; service worker tears itself down on every load. Optional Supabase via `.env.local`. |
+| Vercel preview | `https://<branch>-furnituremodern.vercel.app` | Auto on every PR push | Real env vars from Vercel project; does NOT receive production traffic. |
+| Vercel production | the production domain (set `NEXT_PUBLIC_SITE_URL`) | Auto on every push to `origin/main` | Receives end-user traffic; do not iterate against production. |
+
+**Content workflow.** Content edits (products, prices, images, slugs) happen on the **live Vercel admin only**. The localhost admin is for development; its writes do not propagate to Vercel. The cross-deployment revalidation webhook flows localhost → Vercel only and only when both peers have `REVALIDATE_WEBHOOK_URL` + `REVALIDATE_SECRET` configured (it's intentionally unset on Vercel for production).
 
 ## 4. Environment variables
 
@@ -88,15 +100,16 @@ The schema sets up:
 
 Do **not** add `private` to your project's "Exposed schemas" list in Project Settings → API. The schema is intentionally hidden from PostgREST.
 
-### Updating an existing database
+### Database workflow: migrations vs `schema.sql`
 
-`supabase/schema.sql` is **destructive** — the `DROP TABLE … CASCADE` block at the top wipes existing rows. Only run it on a fresh project.
-
-For databases that already hold data, apply the dated files in `supabase/migrations/` instead. Each statement is wrapped with `IF EXISTS` / `IF NOT EXISTS` so re-running is safe:
+`supabase/migrations/*.sql` is the **source of truth for production**. Each file is dated, additive, and wrapped in `IF EXISTS` / `IF NOT EXISTS` so re-running is safe. Apply with:
 
 ```bash
 psql "$SUPABASE_DB_URL" -f supabase/migrations/2026-05-02-slug-system.sql
+# or via Supabase MCP / Dashboard SQL editor
 ```
+
+`supabase/schema.sql` is a **bootstrap-only artifact**. It opens with a `DROP TABLE … CASCADE` block — running it against a populated production database wipes every row. Use it ONLY to spin up a fresh Supabase project. The destructive header is documented in the file itself; do not remove it.
 
 A fresh `schema.sql` already includes every migration up through its date — there is no need to layer the migrations on top.
 
@@ -492,6 +505,36 @@ Two files own the production security posture:
 
 The full contract lives in `lib/security/csp.test.ts`. Future hardening items (HSTS preload submission, `style-src` nonce, `payment=(self)`) are tracked in `CHECKLIST.md` under "Security headers — phased work".
 
-## 15. Known notes
+## 15. Testing
+
+`npm test` runs Vitest in CI mode (current baseline: ~290 tests across 22 files). The suite is unit-only — UI surfaces are smoke-tested manually per the steps in `CHECKLIST.md`.
+
+| Area | Coverage |
+| ---- | -------- |
+| `lib/security/csp.test.ts` | The full CSP contract: nonce-based `script-src`, no `'unsafe-eval'` in production, conditional analytics provider domains, the static security headers from `next.config.ts`. |
+| `lib/consent/*.test.ts` | Cookie + localStorage round-tripping, legacy `"accepted"` / `"declined"` migration, default state, schema validation. |
+| `lib/analytics/*.test.ts` | Provider activation rules (GTM-vs-direct), consent gating in `track()`, GA4 / GTM / Meta / Plausible payload shapes, `view_item` / `select_item` mappings. |
+| `lib/api/vitals.test.ts` | Bot UA detection, sanity bounds per metric, `Sec-GPC` / `DNT` honoring, payload schema. |
+| `lib/api/log-404.test.ts` | Rate limiter window, slug-conflict heuristic. |
+| `lib/seo/*.test.ts` | Sitemap shape, llms.txt generator, IndexNow URL submission, slug history merging. |
+| `lib/og/*.test.ts` | Dimension constants, font loader contract, ImageResponse cache header. |
+| `lib/observability.test.ts` | No-op contract per env / NODE_ENV; never throws. |
+| `lib/slug.test.ts`, `lib/transliterate.test.ts` | Slug generation + Georgian-to-Latin transliteration. |
+
+When adding a feature: write the test first, watch it fail, ship the implementation, watch it pass. UI changes are validated in a browser; logic changes are validated in Vitest.
+
+## 16. Deferred items / roadmap
+
+The full backlog lives in `CHECKLIST.md`:
+
+- **"Final pre-launch verification"** — must-do items before flipping DNS (HSTS preload submission, Lighthouse mobile, Rich Results Test, OG platform smoke, real photos + descriptions, Supabase PITR).
+- **"Phase 4 priorities"** — security tightening (`style-src` nonce, HSTS preload), Sentry, accessibility AAA, CI on PRs, dev/prod Supabase split.
+- **"Phase 5 priorities"** — design overhaul, multi-image gallery, real photos integrated, dynamic categories.
+- **"Phase 6 priorities"** — cart + checkout, BOG / TBC payment integration, `Permissions-Policy: payment=(self)`.
+- **"Phase 7 priorities"** — accounts, wishlist, reviews, AggregateRating + Person schemas.
+
+Plan markdowns under `docs/superpowers/plans/` capture the historical decisions for each phase as it shipped.
+
+## 17. Known notes
 
 - `npm audit` reports a moderate PostCSS vulnerability inside Next.js's bundled deps. The auto-fix downgrades Next; this is upstream and will resolve on the next Next.js patch.

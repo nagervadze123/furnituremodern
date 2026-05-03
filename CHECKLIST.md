@@ -294,3 +294,75 @@ For each page: record date tested, tool URL used, pass/fail, and any warnings th
   ```
 
 - [ ] **RUM sampling upgrade.** Today the reporter samples per-event (set by `NEXT_PUBLIC_RUM_SAMPLE_RATE`, default `1.0`). Per-event sampling at low rates leaves low-traffic pages without coverage. When traffic exceeds ~100k events/day, switch to **session-based sampling**: roll the dice once per page-load (or per session) and either send all metrics for that session or none. Sketch: derive a 0..1 number from `crypto.randomUUID()` once at module import, compare against the rate, and gate every metric on that single decision instead of `Math.random()` per metric.
+
+- [ ] **Quarterly checklist sweep.** Re-read this file end-to-end and prune items that no longer apply. Update Phase X priorities below to reflect what's actually shipped vs. still planned.
+
+---
+
+## Final pre-launch verification (run on production deployment)
+
+Before flipping DNS / launch announcement, walk this list against the live `https://<domain>/` build. Every item should be smoke-tested in a browser, not assumed.
+
+- [ ] **Custom domain attached to Vercel and HSTS preload submitted** at https://hstspreload.org/ once the apex is on HTTPS. The header in `next.config.ts` already advertises `preload`; submission is the explicit step. Do **not** submit while still on `*.vercel.app`.
+- [ ] **Real product photos uploaded** to the Supabase Storage `product-images` bucket; placeholder `picsum.photos` is no longer referenced in any seeded row. (Grep `content/products.ts` and the live DB.)
+- [ ] **Real Georgian descriptions, SKUs, materials, dimensions, weights** populated for every product in the live admin. Empty fields silently drop the matching JSON-LD property — Rich Results Test will flag them.
+- [ ] **Business config reviewed in `lib/site-config.ts`** — phone, address, social links, `openingHours`, `geo`, `priceRange`, `paymentAccepted`, `returnPolicy`, `shipping`, brand accent + tagline (ka/en).
+- [ ] **Vercel env vars set with real values** — GA4, GTM (or both), Meta Pixel, Plausible, Google/Bing/Yandex/Facebook verification, IndexNow, `NEXT_PUBLIC_SITE_URL`. Confirm no `NEXT_PUBLIC_` prefix on `SUPABASE_SERVICE_ROLE_KEY`.
+- [ ] **Rich Results Test** on home, one category, one product URL — record date + result here:
+  - Home: ___ / pass / warnings: ___
+  - Category: ___ / pass / warnings: ___
+  - Product: ___ / pass / warnings: ___
+- [ ] **Lighthouse mobile** on three deployed URLs (run against production, not preview) — record:
+  - Home: P:__ / SEO:__ / A11y:__ / BP:__
+  - Category: P:__ / SEO:__ / A11y:__ / BP:__
+  - Product: P:__ / SEO:__ / A11y:__ / BP:__
+- [ ] **Consent flow on production:** fresh incognito → banner appears → "Accept all" sets `fm_consent` cookie with both true → settings sheet toggles persist → "Necessary only" sets opposite → no console errors → GA4 / Meta / Plausible network requests fire ONLY after accept.
+- [ ] **Slug history works:** rename a product slug in `/admin` → wait ~5 sec → old URL 301-redirects to new URL → `product_slug_history` row exists.
+- [ ] **410 path works:** soft-delete a product with the "gone" choice → old URL returns 410 with the branded `/[locale]/gone` body.
+- [ ] **`/sitemap.xml` lists** every published product + category in both locales with `hreflang="ka"`, `hreflang="en"`, and `x-default`. `/admin/*` absent.
+- [ ] **`/llms.txt` and `/llms-full.txt` render** with Georgian first, "Last regenerated:" timestamp, no `undefined` tokens.
+- [ ] **OG image platform smoke** — Facebook Sharing Debugger, X Card Validator, LinkedIn Post Inspector, WhatsApp/Telegram preview all return the branded ImageResponse (not the root fallback) with Georgian glyphs (no tofu).
+- [ ] **Replace placeholder Georgian privacy policy text** in `/[locale]/privacy` with legal-counsel-reviewed copy.
+- [ ] **Permissions-Policy values** confirmed appropriate for shipped surfaces: `payment=()` until payment forms exist (Phase 6), then flip to `payment=(self)`.
+- [ ] **Supabase Point-in-Time Recovery** enabled on the live project (paid plan). Test a restore drill before launch announcement.
+
+---
+
+## Phase 4 priorities (post Plan 3)
+
+- **Security hardening**
+  - Tighten `style-src` CSP to nonce-based (drop `'unsafe-inline'` once Next/shadcn no longer inject runtime styles). Add regression test in `lib/security/csp.test.ts`.
+  - Submit HSTS to the preload list once the apex is on HTTPS.
+- **Observability**
+  - Install `@sentry/nextjs`.
+  - Wire `lib/observability.ts` (`logError` + `logEvent`) to real Sentry calls. Public signatures stay stable.
+  - Add `sentry.client.config.ts` / `sentry.server.config.ts`. Configure `beforeSend` to enforce the no-PII contract (no IP, email, cookies, session tokens).
+- **Accessibility**
+  - WCAG AAA pass on colour contrast and keyboard flows.
+  - Tab-order audit on header, banner, settings sheet, admin forms.
+- **Developer experience / CI-CD**
+  - GitHub Actions on PRs: lint + test + build.
+  - Lighthouse CI on preview deploys with budget assertions.
+  - Run `supabase db advisors` and resolve any warnings.
+- **Dev/Prod Supabase split** — separate project for development experiments so an accidental destructive query never touches production rows.
+- **Scheduled jobs** — pg_cron job that prunes `web_vitals` rows older than 90 days; same for the `not_found_log` cleanup currently scheduled manually for 2026-05-16.
+
+## Phase 5 priorities
+
+- **Premium design overhaul** — typography, spacing, hero, product detail UX.
+- **Multi-image product gallery** with drag-drop ordering and primary selection.
+- **Real product photos integrated** — LCP retargeted to ≤ 2.5s, Lighthouse Performance ≥ 95.
+- **Dynamic categories from Supabase** — remove the hard-coded list in `lib/navigation.ts` / `lib/site-config.ts`.
+
+## Phase 6 priorities
+
+- Cart + checkout.
+- **Bank of Georgia E-Commerce or TBC E-Commerce** payment integration. NOT Stripe — Stripe does not serve Georgia cleanly.
+- Order management + customer order emails.
+- Update `Permissions-Policy` to `payment=(self)` once the payment surface ships.
+
+## Phase 7 priorities
+
+- User accounts, wishlist, reviews.
+- `AggregateRating` schema once reviews exist (already wired in `lib/schema.ts` — just needs data).
+- `Person` schema for testimonials.
