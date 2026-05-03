@@ -84,13 +84,21 @@ export function LoginForm({ next, initialError }: Props) {
           type="email"
           autoComplete="username"
           required
+          aria-required="true"
+          // Link the visible field error to the input via
+          // aria-describedby so AT users hear the error after the
+          // field name. WCAG 3.3.1 Error Identification.
+          aria-describedby={fieldErrors.email ? "email-error" : undefined}
+          aria-invalid={fieldErrors.email ? true : undefined}
           // text-base on phones (sm:text-sm at desktop) prevents iOS
           // Safari from auto-zooming to the focused input. min-h-11
           // ensures comfortable thumb-typing.
           className="mt-1 block w-full min-h-11 rounded-md border border-input bg-background px-3 py-2 text-base shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring sm:text-sm"
         />
         {fieldErrors.email ? (
-          <p className="mt-1 text-xs text-destructive">{fieldErrors.email}</p>
+          <p id="email-error" className="mt-1 text-xs text-destructive">
+            {fieldErrors.email}
+          </p>
         ) : null}
       </div>
 
@@ -104,25 +112,44 @@ export function LoginForm({ next, initialError }: Props) {
           type="password"
           autoComplete="current-password"
           required
+          aria-required="true"
+          aria-describedby={
+            fieldErrors.password ? "password-error" : undefined
+          }
+          aria-invalid={fieldErrors.password ? true : undefined}
           // text-base on phones (sm:text-sm at desktop) prevents iOS
           // Safari from auto-zooming to the focused input. min-h-11
           // ensures comfortable thumb-typing.
           className="mt-1 block w-full min-h-11 rounded-md border border-input bg-background px-3 py-2 text-base shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring sm:text-sm"
         />
         {fieldErrors.password ? (
-          <p className="mt-1 text-xs text-destructive">
+          <p id="password-error" className="mt-1 text-xs text-destructive">
             {fieldErrors.password}
           </p>
         ) : null}
       </div>
 
-      {errorMessage ? (
-        <p className="rounded-md border border-destructive/30 bg-destructive/10 px-3 py-2 text-sm text-destructive">
-          {errorMessage}
-        </p>
-      ) : null}
+      {/*
+        Form-level error region. role="alert" + aria-live="assertive"
+        because failed login is a security-critical message — the
+        admin should hear it interrupting any in-progress reading.
+        Wrap is stable so the announcement still fires when the
+        message string switches between empty and a value. WCAG 3.3.1.
+      */}
+      <div role="alert" aria-live="assertive">
+        {errorMessage ? (
+          <p className="rounded-md border border-destructive/30 bg-destructive/10 px-3 py-2 text-sm text-destructive">
+            {errorMessage}
+          </p>
+        ) : null}
+      </div>
 
-      <Button type="submit" disabled={pending} className="min-h-11 w-full">
+      <Button
+        type="submit"
+        disabled={pending}
+        aria-busy={pending || undefined}
+        className="min-h-11 w-full"
+      >
         {pending ? "Signing in…" : "Sign in"}
       </Button>
     </form>

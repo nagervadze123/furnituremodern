@@ -534,6 +534,29 @@ Two files own the production security posture:
 
 The full contract lives in `lib/security/csp.test.ts`. Future hardening items (HSTS preload submission, `style-src` nonce, `payment=(self)`) are tracked in `CHECKLIST.md` under "Security headers — phased work".
 
+## 14b. Accessibility
+
+The site targets **WCAG 2.1 AAA where it doesn't compromise the brand**, with **AA as the floor**. Phase 4 Task 4 brought the audit through these gates:
+
+- **Skip link** (header.tsx) — first focusable element on every page; targets `<main id="main-content">`. Localized via `nav.skipToContent` (ka + en).
+- **Focus management** — global `:focus-visible` ring in `globals.css`; modal focus trap + Escape close handled natively by base-ui Dialog (Sheet, MobileNav, SettingsSheet).
+- **Form a11y** — every input in admin forms has explicit `<label htmlFor>`, `aria-required` on required fields, `aria-describedby` linking the visible error/hint, `aria-invalid` when invalid, and submit buttons set `aria-busy` while pending. Form-level messages live in `role="status"` (success) or `role="alert"` (login failure) wrappers so AT users hear them.
+- **Landmarks** — separate `<header>`, `<main>`, `<footer>`. Footer link groups (Explore, Legal, Social) are wrapped in `<nav aria-labelledby>` so each shows up distinctly in the AT page outline.
+- **External links** — social links open in a new window and append a visually-hidden " (opens in a new window)" hint per WCAG 3.2.5.
+- **Modal triggers** — the "Manage cookies" button in the footer exposes `aria-haspopup="dialog"` and `aria-expanded`.
+- **Reduced motion** — `@media (prefers-reduced-motion: reduce)` rule in `globals.css` collapses View Transitions, animations, and CSS transitions to ~0s. Sheet animations use `motion-reduce:transition-none` for the same effect.
+- **Color contrast** — `lib/a11y/contrast.ts` implements the WCAG luminance formula; `lib/a11y/contrast.test.ts` pins the brand-token findings:
+  - foreground / background → **15.1:1** (AAA body pass with margin)
+  - muted / background → **4.7:1** (AA body pass; AAA body fail — used only for eyebrows/captions/hints)
+  - accent / background → **4.3:1** (AA non-text + AA-large pass; AA body fail — used only as focus ring + OG-card decoration band, never as runtime body-text color)
+
+  The accent and muted shortfalls are documented in `lib/site-config.ts` as known trade-offs with proposed darker replacements (`#9a4a25` / `#7d3a18` for accent; `#5a4f3f` for muted) — operator confirms before any swap.
+
+**Verification gate** (operator-run, not CI):
+
+- Lighthouse Accessibility on `/ka`, `/ka/sofas`, `/ka/sofas/[product]`, `/ka/privacy`, `/admin/login`, `/admin` — target ≥ 98 each. Run via `npm run build && npm start`, then Chrome DevTools → Lighthouse.
+- Manual NVDA (Windows) or VoiceOver (macOS) walkthrough on the same routes plus the consent banner + settings sheet flow. Record findings in `CHECKLIST.md` "Final pre-launch verification".
+
 ## 15. Testing
 
 `npm test` runs Vitest in CI mode (current baseline: ~290 tests across 22 files). The suite is unit-only — UI surfaces are smoke-tested manually per the steps in `CHECKLIST.md`.
@@ -550,6 +573,8 @@ The full contract lives in `lib/security/csp.test.ts`. Future hardening items (H
 | `lib/observability.test.ts` | No-op contract per env / NODE_ENV; Sentry forwarding when DSN set; never throws even if SDK transport itself throws. |
 | `lib/observability/scrub.test.ts` | `beforeSend` scrubbers strip IP, cookies, IP-bearing headers, User-Agent (server + client), and URL query strings + Authorization headers (client). |
 | `lib/slug.test.ts`, `lib/transliterate.test.ts` | Slug generation + Georgian-to-Latin transliteration. |
+| `lib/a11y/contrast.test.ts` | WCAG luminance + contrast-ratio math, plus pinned invariants for `siteConfig.brand.*` so a future palette tweak that drops below the documented thresholds breaks the build instead of silently regressing. |
+| `lib/api/csp-report.test.ts` | CSP violation report parser (legacy `report-uri` shape + modern Reporting-API shape), browser-extension noise filter, rate limiter. |
 
 When adding a feature: write the test first, watch it fail, ship the implementation, watch it pass. UI changes are validated in a browser; logic changes are validated in Vitest.
 

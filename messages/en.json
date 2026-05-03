@@ -36,7 +36,9 @@
     "explore": "Explore",
     "languages": "Languages",
     "legal": "Legal",
-    "privacy_link": "Privacy policy"
+    "privacy_link": "Privacy policy",
+    "opens_in_new_window": "(opens in a new window)",
+    "social_label": "Social media"
   },
   "breadcrumbs": {
     "home": "Home",

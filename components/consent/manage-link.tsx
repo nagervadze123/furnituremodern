@@ -19,7 +19,17 @@ export function ManageLink({
   const [open, setOpen] = useState(false);
   return (
     <>
-      <button type="button" className={className} onClick={() => setOpen(true)}>
+      <button
+        type="button"
+        className={className}
+        onClick={() => setOpen(true)}
+        // aria-haspopup tells AT this control opens a dialog, not just
+        // navigates somewhere. aria-expanded reflects open state so
+        // the announcement updates as the sheet toggles. WCAG 4.1.2
+        // (Name, Role, Value).
+        aria-haspopup="dialog"
+        aria-expanded={open}
+      >
         {t("label")}
       </button>
       <SettingsSheet open={open} onOpenChange={setOpen} />

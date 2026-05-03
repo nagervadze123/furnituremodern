@@ -120,12 +120,21 @@ A snapshot of what's already done versus what to do before you go live.
 - [x] Mobile-first responsive
 
 ### Accessibility
-- [x] Skip-to-content link
-- [x] Visible focus rings (`:focus-visible`)
+- [x] Skip-to-content link (header.tsx, localized via `nav.skipToContent`)
+- [x] `<main id="main-content">` target landmark in `app/[locale]/layout.tsx`
+- [x] Visible focus rings (`:focus-visible` global rule in globals.css)
 - [x] Lang attribute per locale
 - [x] All interactive elements keyboard-accessible
 - [x] aria-current on active breadcrumb / locale
-- [x] WCAG AA contrast
+- [x] WCAG AA contrast on body + headings (foreground on background measured 15.1:1)
+- [x] Forms: every input has explicit `<label htmlFor>` + `aria-required` on required, errors associated via `aria-describedby` with `aria-invalid` (login-form, product-form, settings-sheet)
+- [x] Form-level status messages wrapped in `role="status" aria-live="polite"` (success/info) or `role="alert" aria-live="assertive"` (login failure). WCAG 4.1.3.
+- [x] Submit buttons set `aria-busy` while a transition is pending (login-form, product-form)
+- [x] Modal triggers (ManageLink) set `aria-haspopup="dialog"` + `aria-expanded`
+- [x] Footer link groups wrapped in `<nav aria-labelledby>` so AT users get separate Explore / Legal / Social landmarks
+- [x] External social links append a visually-hidden " (opens in a new window)" hint — WCAG 3.2.5 (AAA, Change on Request)
+- [x] Reduced motion: `@media (prefers-reduced-motion: reduce)` rule in globals.css collapses View Transitions, animations, and transitions to ~0s
+- [x] Sheet (base-ui Dialog) provides modal focus trap + Escape close natively; `motion-reduce:transition-none` on the Settings sheet content for the animation specifically
 
 ### Build hygiene
 - [x] `npm run build` passes with **zero errors and zero warnings**
@@ -143,10 +152,10 @@ A snapshot of what's already done versus what to do before you go live.
 
 `lib/site-config.ts` exports a `brand` block that the OG image templates in `lib/og/` read at render time. Confirm the values below match the launch identity before pushing to production — every share preview on Facebook / X / LinkedIn / WhatsApp / Telegram / Slack / Discord uses them.
 
-- [ ] **Brand accent** — `siteConfig.brand.accent` (`#b85c38` warm terracotta). Confirm against the print/web brand guide.
-- [ ] **Brand background** — `siteConfig.brand.background` (`#fbf8f3` warm off-white). Confirm contrast against the foreground colour reads ≥ AA.
+- [ ] **Brand accent** — `siteConfig.brand.accent` (`#b85c38` warm terracotta). Confirm against the print/web brand guide. **Phase 4 Task 4 contrast finding:** white text on this accent is 4.3:1 — passes AA non-text (3:1) and AA-large body (3:1) but fails AA body (4.5:1) and AAA body (7:1). Today the value is used only as a focus-ring color and OG-card decoration band, never as a runtime body-text color, so it sits in the non-text bucket where 3:1 is the floor. Operator must approve before any future use as accent CTA text or body color, OR adopt one of the tightened replacements proposed in `lib/site-config.ts` comments (`#9a4a25` for AA body, `#7d3a18` for AAA body).
+- [ ] **Brand background** — `siteConfig.brand.background` (`#fbf8f3` warm off-white). Confirm contrast against the foreground colour reads ≥ AA. Measured: foreground/background reads 15.1:1 — AAA pass with margin.
 - [ ] **Brand foreground** — `siteConfig.brand.foreground` (`#28201a` deep neutral).
-- [ ] **Brand muted text** — `siteConfig.brand.muted` (`#7a6f5e` muted earth) for eyebrows and footer captions.
+- [ ] **Brand muted text** — `siteConfig.brand.muted` (`#7a6f5e` muted earth) for eyebrows and footer captions. **Phase 4 Task 4 contrast finding:** 4.7:1 against the brand background — AA body pass, AAA body fail (target 7:1). Used only for non-primary text (eyebrows, footer captions, form hints), so AA is the appropriate target. Operator may bump to `#5a4f3f` (~7.1:1) if AAA across the board is required.
 - [ ] **Brand monogram** — `siteConfig.brand.logoMonogram` (`F`). Swap to a 2-char monogram (e.g. `FM`) if the design system prefers it.
 - [ ] **Brand tagline (ka)** — `siteConfig.brand.tagline.ka` (`ხელნაკეთი ავეჯი თბილისში`). Confirm copy.
 - [ ] **Brand tagline (en)** — `siteConfig.brand.tagline.en` (`Handmade modern furniture from Tbilisi`). Confirm copy.
@@ -317,6 +326,21 @@ Before flipping DNS / launch announcement, walk this list against the live `http
   - Home: P:__ / SEO:__ / A11y:__ / BP:__
   - Category: P:__ / SEO:__ / A11y:__ / BP:__
   - Product: P:__ / SEO:__ / A11y:__ / BP:__
+- [ ] **Lighthouse Accessibility ≥ 98** on every primary public + admin route. Run against production via Chrome DevTools → Lighthouse (mobile preset). Phase 4 Task 4 raised the documented target from ≥ 95 to ≥ 98; record any flagged item that resists fixing as a "false positive" with a one-line justification:
+  - `/ka`: A11y:__
+  - `/ka/sofas`: A11y:__
+  - `/ka/sofas/[product]` (one real product): A11y:__
+  - `/ka/privacy`: A11y:__
+  - `/admin/login`: A11y:__
+  - `/admin`: A11y:__
+- [ ] **Manual screen-reader walk** with NVDA (Windows) or VoiceOver (macOS) on `/ka`, `/ka/sofas`, one `/ka/sofas/[product]`, `/ka/privacy`, plus the consent banner flow and the footer "Manage cookies" sheet. Verify:
+  - skip-to-content link is the first focusable element and works
+  - heading hierarchy on each page reads in document order
+  - consent banner is announced when it appears (`role="region"` + `aria-live="polite"`)
+  - settings sheet announces as a modal dialog and traps focus
+  - admin forms: every field's label is announced, required fields say "required", invalid fields say "invalid" + the visible error
+  - submit buttons announce as "busy" while a transition is pending
+- [ ] **Brand color confirmation** — operator decides whether the documented contrast trade-offs (accent at 4.3:1, muted at 4.7:1 against background) stay or get tightened to the proposed darker replacements in `lib/site-config.ts`. The `lib/a11y/contrast.test.ts` invariants will need updating in lockstep with any swap.
 - [ ] **Consent flow on production:** fresh incognito → banner appears → "Accept all" sets `fm_consent` cookie with both true → settings sheet toggles persist → "Necessary only" sets opposite → no console errors → GA4 / Meta / Plausible network requests fire ONLY after accept.
 - [ ] **Slug history works:** rename a product slug in `/admin` → wait ~5 sec → old URL 301-redirects to new URL → `product_slug_history` row exists.
 - [ ] **410 path works:** soft-delete a product with the "gone" choice → old URL returns 410 with the branded `/[locale]/gone` body.
@@ -344,9 +368,14 @@ Before flipping DNS / launch announcement, walk this list against the live `http
   - ~~Add `sentry.client.config.ts` / `sentry.server.config.ts`. Configure `beforeSend` to enforce the no-PII contract (no IP, email, cookies, session tokens).~~ Done — also added `sentry.edge.config.ts` and `instrumentation.ts`. Scrubbers live in `lib/observability/scrub.ts`.
   - Set `SENTRY_AUTH_TOKEN` + `SENTRY_ORG` + `SENTRY_PROJECT` in Vercel (production env only) so source maps upload on deploys.
   - Phase 5+ revisit: Sentry Replay (requires explicit consent flow); browser profiling integration.
-- **Accessibility**
-  - WCAG AAA pass on colour contrast and keyboard flows.
-  - Tab-order audit on header, banner, settings sheet, admin forms.
+- **Accessibility** _(Phase 4 Task 4 audit landed; sub-items below remain.)_
+  - ~~Lock contrast invariants for brand tokens (`lib/a11y/contrast.test.ts`).~~ Done.
+  - ~~Form a11y: `htmlFor`/`id`, `aria-required`, `aria-describedby`, `aria-invalid`, `aria-busy`, `role="status"`/`"alert"` regions on login + product forms.~~ Done.
+  - ~~Footer landmarks (`<nav aria-labelledby>` per group), external-link "(opens in a new window)" hint.~~ Done.
+  - ~~`aria-haspopup="dialog"` + `aria-expanded` on the cookie ManageLink trigger.~~ Done.
+  - Operator: run Lighthouse Accessibility on the six checklist routes and confirm ≥ 98. (See "Final pre-launch verification" above.)
+  - Operator: NVDA/VoiceOver walk on the consent + sheet + admin forms. (See "Final pre-launch verification" above.)
+  - Operator: brand-color confirmation — accept current accent/muted ratios or pick a darker replacement (`lib/site-config.ts` comments).
 - **Developer experience / CI-CD**
   - GitHub Actions on PRs: lint + test + build.
   - Lighthouse CI on preview deploys with budget assertions.

@@ -36,7 +36,9 @@
     "explore": "მენიუ",
     "languages": "ენები",
     "legal": "სამართლებრივი",
-    "privacy_link": "კონფიდენციალურობის პოლიტიკა"
+    "privacy_link": "კონფიდენციალურობის პოლიტიკა",
+    "opens_in_new_window": "(იხსნება ახალ ფანჯარაში)",
+    "social_label": "სოციალური ქსელები"
   },
   "breadcrumbs": {
     "home": "მთავარი",

@@ -80,6 +80,33 @@ export const getCategoryName = (slug: CategorySlug, locale: Locale): string => {
 // so muted-warm-earth reads as a furniture brand rather than a generic
 // SaaS gradient. Values marked PLACEHOLDER are confirmed before launch
 // in CHECKLIST.md ("Brand identity confirmation").
+//
+// Phase 4 Task 4 (accessibility) contrast audit — measured ratios on
+// the documented sRGB hex values, computed via the WCAG 2.x relative
+// luminance formula:
+//   • foreground #28201a on background #fbf8f3        → 15.1:1  ✅ AAA body
+//   • muted      #7a6f5e on background #fbf8f3        →  4.7:1  ✅ AA body  / ⚠️ AAA fails (target 7:1)
+//   • accent     #b85c38 on background #fbf8f3        →  4.3:1  ⚠️ AA body fails (target 4.5:1) / ✅ AA large
+//   • background #fbf8f3 on accent     #b85c38        →  4.3:1  ⚠️ same — accent CTA white-on-terracotta
+//
+// The accent and muted shortfalls are kept against the operator's
+// brand identity. Treatment in the live UI:
+//   • Accent (oklch ≈ same hex) is used as the focus-ring color and
+//     OG-card decoration band — both NON-TEXT uses where 3:1 is the
+//     WCAG floor; the 4.3:1 ratio passes that comfortably.
+//   • Accent is NOT used as a body-text color anywhere in the runtime
+//     UI. If an accent CTA is added, the white-on-accent ratio fails
+//     AA body and must use AA-large sizing (≥18pt or ≥14pt bold).
+//   • Muted text appears in eyebrows, footer captions, and form hints —
+//     none of which are the primary reading text. WCAG body 7:1 AAA is
+//     a stretch goal here; AA 4.5:1 is the floor and we sit above it.
+//
+// Tightened replacement candidates (NOT applied — operator confirms):
+//   • Accent darkened to #9a4a25 hits 6.0:1 on background, AA body pass.
+//   • Accent darkened to #7d3a18 hits ~8:1, AAA pass.
+//   • Muted darkened to #5a4f3f hits ~7.1:1, AAA pass.
+// See CHECKLIST.md "Brand identity confirmation" for the operator
+// decision row.
 export const brandTokens = {
   // One short brand line per locale, used as the OG/Twitter subtitle on
   // home and root images. Kept terse so it fits one render line.

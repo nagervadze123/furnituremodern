@@ -34,20 +34,32 @@ export async function Footer() {
         </div>
 
         <div className="min-w-0">
-          <h2 className="text-sm font-semibold text-foreground">
-            {t("explore")}
-          </h2>
-          <ul className="mt-3 flex flex-col text-sm">
-            {/* Driven by lib/navigation.ts so the footer stays in sync
-                with the header automatically. */}
-            {footerExploreNav.map((item) => (
-              <li key={item.href}>
-                <Link href={item.href} className={footerLinkClass}>
-                  {tNav(item.labelKey)}
-                </Link>
-              </li>
-            ))}
-          </ul>
+          {/*
+            Wrapped in <nav> with aria-label so AT users get a labelled
+            "Explore" landmark in the page outline, distinct from the
+            primary header nav. WCAG 1.3.1 / 4.1.2 (Landmark roles).
+            The visible <h2> is still rendered for sighted users; nav
+            label and heading text intentionally match.
+          */}
+          <nav aria-labelledby="footer-explore-heading" className="min-w-0">
+            <h2
+              id="footer-explore-heading"
+              className="text-sm font-semibold text-foreground"
+            >
+              {t("explore")}
+            </h2>
+            <ul className="mt-3 flex flex-col text-sm">
+              {/* Driven by lib/navigation.ts so the footer stays in sync
+                  with the header automatically. */}
+              {footerExploreNav.map((item) => (
+                <li key={item.href}>
+                  <Link href={item.href} className={footerLinkClass}>
+                    {tNav(item.labelKey)}
+                  </Link>
+                </li>
+              ))}
+            </ul>
+          </nav>
         </div>
 
         <div className="min-w-0">
@@ -80,21 +92,27 @@ export async function Footer() {
         </div>
 
         <div className="min-w-0">
-          <h2 className="text-sm font-semibold text-foreground">
-            {t("legal")}
-          </h2>
-          <ul className="mt-3 flex flex-col text-sm">
-            <li>
-              <Link href="/privacy" className={footerLinkClass}>
-                {t("privacy_link")}
-              </Link>
-            </li>
-            <li>
-              {/* Re-opens the cookie settings sheet. Client island
-                  inside an otherwise server-rendered footer. */}
-              <ManageLink className={footerLinkClass} />
-            </li>
-          </ul>
+          {/* Same labelled-landmark pattern as the Explore section. */}
+          <nav aria-labelledby="footer-legal-heading" className="min-w-0">
+            <h2
+              id="footer-legal-heading"
+              className="text-sm font-semibold text-foreground"
+            >
+              {t("legal")}
+            </h2>
+            <ul className="mt-3 flex flex-col text-sm">
+              <li>
+                <Link href="/privacy" className={footerLinkClass}>
+                  {t("privacy_link")}
+                </Link>
+              </li>
+              <li>
+                {/* Re-opens the cookie settings sheet. Client island
+                    inside an otherwise server-rendered footer. */}
+                <ManageLink className={footerLinkClass} />
+              </li>
+            </ul>
+          </nav>
         </div>
       </div>
       <div className="border-t border-border/50">
@@ -105,7 +123,18 @@ export async function Footer() {
           <p className="break-words">
             © {year} {siteConfig.legalName}. {t("rights")}.
           </p>
-          <div className="flex flex-wrap items-center gap-x-4 gap-y-1">
+          {/*
+            Social links open in a new window. WCAG 3.2.5 (AAA, Change
+            on Request) recommends warning users when a link leaves the
+            current document. We append a visually-hidden suffix per
+            link so screen readers announce "Instagram, opens in a new
+            window" without altering the visible UI. aria-label on the
+            <nav> identifies this as the social-media landmark.
+          */}
+          <nav
+            aria-label={t("social_label")}
+            className="flex flex-wrap items-center gap-x-4 gap-y-1"
+          >
             <a
               href={siteConfig.social.instagram}
               target="_blank"
@@ -113,6 +142,7 @@ export async function Footer() {
               className="-mx-2 inline-flex min-h-10 items-center rounded px-2 transition-colors hover:text-foreground"
             >
               Instagram
+              <span className="sr-only"> {t("opens_in_new_window")}</span>
             </a>
             <a
               href={siteConfig.social.facebook}
@@ -121,8 +151,9 @@ export async function Footer() {
               className="-mx-2 inline-flex min-h-10 items-center rounded px-2 transition-colors hover:text-foreground"
             >
               Facebook
+              <span className="sr-only"> {t("opens_in_new_window")}</span>
             </a>
-          </div>
+          </nav>
         </div>
       </div>
     </footer>

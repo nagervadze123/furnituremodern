@@ -6,7 +6,7 @@
 
 "use client";
 
-import { useActionState, useEffect, useMemo, useRef, useState } from "react";
+import { useActionState, useEffect, useId, useMemo, useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
 import {
   suggestSlugAction,
@@ -93,134 +93,195 @@ export function ProductForm({
 
   return (
     <form action={formAction} className="space-y-6">
-      {state.message ? (
-        <p
-          className={
-            state.ok
-              ? "rounded-md border border-emerald-500/30 bg-emerald-500/10 px-3 py-2 text-sm text-emerald-700"
-              : "rounded-md border border-destructive/30 bg-destructive/10 px-3 py-2 text-sm text-destructive"
-          }
-        >
-          {state.message}
-        </p>
-      ) : null}
+      {/*
+        Form-level message. role="status" + aria-live="polite" makes
+        screen readers announce success/failure without interrupting,
+        WCAG 4.1.3 (Status Messages). Wrapping in a stable region with
+        role="status" guarantees the announcement even when the message
+        node mounts/unmounts on each submit cycle.
+      */}
+      <div role="status" aria-live="polite">
+        {state.message ? (
+          <p
+            className={
+              state.ok
+                ? "rounded-md border border-emerald-500/30 bg-emerald-500/10 px-3 py-2 text-sm text-emerald-700"
+                : "rounded-md border border-destructive/30 bg-destructive/10 px-3 py-2 text-sm text-destructive"
+            }
+          >
+            {state.message}
+          </p>
+        ) : null}
+      </div>
 
       <div className="grid gap-6 md:grid-cols-2">
-        <Field label="English name" error={fieldErrors.name_en}>
-          <input
-            name="name_en"
-            value={nameEn}
-            onChange={(e) => setNameEn(e.target.value)}
-            required
-            className={inputClass}
-          />
+        <Field label="English name" name="name_en" error={fieldErrors.name_en}>
+          {(ids) => (
+            <input
+              id={ids.input}
+              name="name_en"
+              value={nameEn}
+              onChange={(e) => setNameEn(e.target.value)}
+              required
+              aria-required="true"
+              aria-describedby={ids.describedBy}
+              aria-invalid={fieldErrors.name_en ? true : undefined}
+              className={inputClass}
+            />
+          )}
         </Field>
-        <Field label="Georgian name (ქართული)" error={fieldErrors.name_ka}>
-          <input
-            name="name_ka"
-            value={nameKa}
-            onChange={(e) => setNameKa(e.target.value)}
-            required
-            className={inputClass}
-          />
+        <Field label="Georgian name (ქართული)" name="name_ka" error={fieldErrors.name_ka}>
+          {(ids) => (
+            <input
+              id={ids.input}
+              name="name_ka"
+              value={nameKa}
+              onChange={(e) => setNameKa(e.target.value)}
+              required
+              aria-required="true"
+              aria-describedby={ids.describedBy}
+              aria-invalid={fieldErrors.name_ka ? true : undefined}
+              className={inputClass}
+            />
+          )}
         </Field>
       </div>
 
       <div className="grid gap-6 md:grid-cols-2">
         <Field
           label="Slug"
+          name="slug"
           error={fieldErrors.slug}
           hint="Lowercase, dashes, ASCII only. Auto-filled from the English name."
         >
-          <input
-            name="slug"
-            value={slug}
-            onChange={(e) => {
-              slugAuthoredRef.current = true;
-              setSlug(e.target.value);
-            }}
-            required
-            className={inputClass + " font-mono"}
-          />
-          {previewSlug && previewSlug !== slug.trim() ? (
-            <p
-              className="mt-1 text-xs text-muted-foreground"
-              aria-live="polite"
-            >
-              Preview: <code className="font-mono">{previewSlug}</code>
-            </p>
-          ) : null}
+          {(ids) => (
+            <>
+              <input
+                id={ids.input}
+                name="slug"
+                value={slug}
+                onChange={(e) => {
+                  slugAuthoredRef.current = true;
+                  setSlug(e.target.value);
+                }}
+                required
+                aria-required="true"
+                aria-describedby={ids.describedBy}
+                aria-invalid={fieldErrors.slug ? true : undefined}
+                className={inputClass + " font-mono"}
+              />
+              {previewSlug && previewSlug !== slug.trim() ? (
+                <p
+                  className="mt-1 text-xs text-muted-foreground"
+                  aria-live="polite"
+                >
+                  Preview: <code className="font-mono">{previewSlug}</code>
+                </p>
+              ) : null}
+            </>
+          )}
         </Field>
-        <Field label="Category" error={fieldErrors.category_id}>
-          <select
-            name="category_id"
-            defaultValue={defaults.category_id}
-            required
-            className={inputClass}
-          >
-            <option value="" disabled>
-              Choose…
-            </option>
-            {categories.map((c) => (
-              <option key={c.id} value={c.id}>
-                {c.name_en}
+        <Field label="Category" name="category_id" error={fieldErrors.category_id}>
+          {(ids) => (
+            <select
+              id={ids.input}
+              name="category_id"
+              defaultValue={defaults.category_id}
+              required
+              aria-required="true"
+              aria-describedby={ids.describedBy}
+              aria-invalid={fieldErrors.category_id ? true : undefined}
+              className={inputClass}
+            >
+              <option value="" disabled>
+                Choose…
               </option>
-            ))}
-          </select>
+              {categories.map((c) => (
+                <option key={c.id} value={c.id}>
+                  {c.name_en}
+                </option>
+              ))}
+            </select>
+          )}
         </Field>
       </div>
 
       <div className="grid gap-6 md:grid-cols-2">
         <Field
           label="English description"
+          name="description_en"
           error={fieldErrors.description_en}
         >
-          <textarea
-            name="description_en"
-            defaultValue={defaults.description_en}
-            rows={4}
-            className={inputClass}
-          />
+          {(ids) => (
+            <textarea
+              id={ids.input}
+              name="description_en"
+              defaultValue={defaults.description_en}
+              rows={4}
+              aria-describedby={ids.describedBy}
+              aria-invalid={fieldErrors.description_en ? true : undefined}
+              className={inputClass}
+            />
+          )}
         </Field>
         <Field
           label="Georgian description (აღწერა)"
+          name="description_ka"
           error={fieldErrors.description_ka}
         >
-          <textarea
-            name="description_ka"
-            defaultValue={defaults.description_ka}
-            rows={4}
-            className={inputClass}
-          />
+          {(ids) => (
+            <textarea
+              id={ids.input}
+              name="description_ka"
+              defaultValue={defaults.description_ka}
+              rows={4}
+              aria-describedby={ids.describedBy}
+              aria-invalid={fieldErrors.description_ka ? true : undefined}
+              className={inputClass}
+            />
+          )}
         </Field>
       </div>
 
       <div className="grid gap-6 sm:grid-cols-3">
-        <Field label="Price (GEL)" error={fieldErrors.price}>
-          <input
-            type="number"
-            name="price"
-            min={0}
-            step={1}
-            defaultValue={String(defaults.price)}
-            required
-            className={inputClass}
-          />
+        <Field label="Price (GEL)" name="price" error={fieldErrors.price}>
+          {(ids) => (
+            <input
+              id={ids.input}
+              type="number"
+              name="price"
+              min={0}
+              step={1}
+              defaultValue={String(defaults.price)}
+              required
+              aria-required="true"
+              aria-describedby={ids.describedBy}
+              aria-invalid={fieldErrors.price ? true : undefined}
+              className={inputClass}
+            />
+          )}
         </Field>
-        <Field label="Sort order" error={fieldErrors.sort_order}>
-          <input
-            type="number"
-            name="sort_order"
-            step={1}
-            defaultValue={String(defaults.sort_order)}
-            className={inputClass}
-          />
+        <Field label="Sort order" name="sort_order" error={fieldErrors.sort_order}>
+          {(ids) => (
+            <input
+              id={ids.input}
+              type="number"
+              name="sort_order"
+              step={1}
+              defaultValue={String(defaults.sort_order)}
+              aria-describedby={ids.describedBy}
+              aria-invalid={fieldErrors.sort_order ? true : undefined}
+              className={inputClass}
+            />
+          )}
         </Field>
         <input type="hidden" name="currency" value="GEL" />
       </div>
 
       {/* Checkbox rows wrap on narrow phones; min-h-10 gives each row a
-          tappable hit zone even though the checkbox itself is small. */}
+          tappable hit zone even though the checkbox itself is small.
+          Wrapping the input INSIDE the <label> implicitly associates
+          them — no htmlFor required (WCAG 1.3.1, 4.1.2). */}
       <div className="flex flex-wrap gap-x-6 gap-y-3">
         <label className="flex min-h-10 items-center gap-2 text-sm">
           <input
@@ -243,7 +304,15 @@ export function ProductForm({
       </div>
 
       <div className="flex items-center gap-3 pt-2">
-        <Button type="submit" disabled={pending} className="min-h-11">
+        <Button
+          type="submit"
+          disabled={pending}
+          // aria-busy announces loading state to AT users — pairs with
+          // the visible "Saving…" label and the disabled attribute.
+          // WCAG 4.1.3 Status Messages.
+          aria-busy={pending || undefined}
+          className="min-h-11"
+        >
           {pending ? "Saving…" : submitLabel}
         </Button>
       </div>
@@ -260,26 +329,64 @@ export function ProductForm({
 const inputClass =
   "block w-full min-w-0 min-h-10 rounded-md border border-input bg-background px-3 py-2 text-base shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring sm:text-sm";
 
+// Field wraps a labelled input with hint + error rendering, returning
+// stable ids to the child renderer so the caller can wire htmlFor on
+// the label, aria-describedby on the input (for hint + error), and
+// aria-invalid when there's an error. Generated once per Field via
+// useId() so SSR + CSR ids always match (WCAG 1.3.1, 4.1.2).
 function Field({
   label,
+  name,
   error,
   hint,
   children,
 }: {
   label: string;
+  // `name` participates in the generated ids so the resulting DOM
+  // attribute reads as "field-name_en" instead of an opaque hash —
+  // easier to spot in browser devtools when debugging an a11y tree.
+  name: string;
   error?: string;
   hint?: string;
-  children: React.ReactNode;
+  children: (ids: {
+    input: string;
+    hint: string;
+    error: string;
+    /**
+     * Concatenated id list for `aria-describedby`, or undefined when
+     * there's nothing to describe. Always reference both the hint and
+     * the error so the announcement order is stable.
+     */
+    describedBy: string | undefined;
+  }) => React.ReactNode;
 }) {
+  const reactId = useId();
+  const ids = {
+    input: `${reactId}-${name}`,
+    hint: `${reactId}-${name}-hint`,
+    error: `${reactId}-${name}-error`,
+  };
+  const describedByParts: string[] = [];
+  if (hint && !error) describedByParts.push(ids.hint);
+  if (error) describedByParts.push(ids.error);
+  const describedBy =
+    describedByParts.length > 0 ? describedByParts.join(" ") : undefined;
+
   return (
     <div>
-      <label className="block text-sm font-medium">{label}</label>
-      <div className="mt-1">{children}</div>
+      <label htmlFor={ids.input} className="block text-sm font-medium">
+        {label}
+      </label>
+      <div className="mt-1">{children({ ...ids, describedBy })}</div>
       {hint && !error ? (
-        <p className="mt-1 text-xs text-muted-foreground">{hint}</p>
+        <p id={ids.hint} className="mt-1 text-xs text-muted-foreground">
+          {hint}
+        </p>
       ) : null}
       {error ? (
-        <p className="mt-1 text-xs text-destructive">{error}</p>
+        <p id={ids.error} className="mt-1 text-xs text-destructive">
+          {error}
+        </p>
       ) : null}
     </div>
   );
