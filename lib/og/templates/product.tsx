@@ -63,9 +63,11 @@ export function buildProductTemplate(
 
   // Square layouts compress: render base template with the image as a
   // small thumbnail above the headline. Landscape: image takes the
-  // right column.
-  const imageHeight = square ? 240 : 420;
-  const imageWidth = square ? 240 : 420;
+  // right column. Sized to leave breathing room next to the title
+  // column at OG_DIMENSIONS (1200×630) — pushing this larger causes
+  // long Georgian product names to overlap the image.
+  const imageHeight = square ? 220 : 360;
+  const imageWidth = square ? 220 : 360;
 
   const rightSlot = (
     <div
@@ -108,5 +110,9 @@ export function buildProductTemplate(
     size,
     footerText,
     rightSlot,
+    // Smaller title size for product cards so a long Georgian compound
+    // name (e.g. "სელის სამადგილიანი დივანი") wraps inside the title
+    // column without bleeding into the right-side product image.
+    titleScale: square ? 0.85 : 0.7,
   });
 }

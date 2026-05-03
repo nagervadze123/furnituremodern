@@ -19,6 +19,7 @@ import {
   headlineFontFamily,
   OG_FONT_FAMILY,
 } from "./index";
+import { loadOgFonts, OG_FONT_FILE_SPECS } from "./fonts";
 
 type AnyElement = ReactElement<{
   style?: Record<string, unknown>;
@@ -218,6 +219,69 @@ describe("buildErrorTemplate", () => {
     });
     const titles = flatten(tree).map((el) => firstText(el.props?.children));
     expect(titles).toContain("410");
+  });
+});
+
+describe("loadOgFonts (regression test for tofu-glyph bug)", () => {
+  it("registers a Noto Serif Georgian variant whose binary contains the Georgian glyph table", async () => {
+    const fonts = await loadOgFonts();
+    const georgianGlyphs = fonts.filter(
+      (f) =>
+        f.name === OG_FONT_FAMILY.georgianSerif &&
+        // The Georgian-subset woff is the larger of the two
+        // Noto Serif Georgian files because it ships ~70 distinct
+        // ka glyphs vs. the slim Latin fallback. We assert >= 18 KB
+        // so a regression that ships only the Latin subset (which is
+        // ~14 KB and contains zero Georgian codepoints) fails loudly.
+        f.data.byteLength >= 18_000
+    );
+    expect(
+      georgianGlyphs.length,
+      `expected at least one Noto Serif Georgian font with the Georgian subset; got ${fonts
+        .filter((f) => f.name === OG_FONT_FAMILY.georgianSerif)
+        .map((f) => f.data.byteLength)
+        .join(", ")} byte sizes`
+    ).toBeGreaterThanOrEqual(2);
+  });
+
+  it("registers Fraunces with non-empty Latin binary", async () => {
+    const fonts = await loadOgFonts();
+    const fraunces = fonts.filter(
+      (f) => f.name === OG_FONT_FAMILY.latinDisplay
+    );
+    expect(fraunces.length).toBeGreaterThanOrEqual(2);
+    for (const f of fraunces) {
+      expect(f.data.byteLength).toBeGreaterThan(5_000);
+    }
+  });
+
+  it("returns at least one entry per (family × weight) combination configured", async () => {
+    const fonts = await loadOgFonts();
+    const expectedFamilies = [
+      OG_FONT_FAMILY.georgianSerif,
+      OG_FONT_FAMILY.latinDisplay,
+    ];
+    for (const family of expectedFamilies) {
+      for (const weight of [400, 700] as const) {
+        const matches = fonts.filter(
+          (f) => f.name === family && f.weight === weight
+        );
+        expect(
+          matches.length,
+          `expected ≥ 1 font for ${family} @${weight}`
+        ).toBeGreaterThanOrEqual(1);
+      }
+    }
+  });
+
+  it("OG_FONT_FILE_SPECS lists every font file that loadOgFonts reads", () => {
+    // Sanity check — keeps the spec list and the loader in sync.
+    expect(OG_FONT_FILE_SPECS.length).toBeGreaterThan(0);
+    for (const spec of OG_FONT_FILE_SPECS) {
+      expect(spec.filePath).toMatch(/\.(woff2?|ttf|otf)$/);
+      expect(spec.name).toBeTruthy();
+      expect([400, 700]).toContain(spec.weight);
+    }
   });
 });
 

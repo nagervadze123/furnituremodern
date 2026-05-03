@@ -1,20 +1,35 @@
-// Runtime font loader for ImageResponse rendering.
+// Build-time font loader for ImageResponse rendering.
 //
-// Satori (the renderer behind next/og) needs the font binary as an
-// ArrayBuffer, not a CSS reference. The cleanest cross-runtime way to
-// get one is to fetch Google Fonts' CSS API with an old User-Agent —
-// that forces TTF/OTF responses (modern UAs get woff2, which Satori
-// does not parse). The bytes are cached by Next's fetch cache so we
-// only hit the network on cold renders.
+// Satori (the renderer behind next/og) needs an actual font binary —
+// ttf, otf, or woff. The previous runtime-fetch approach against
+// fonts.googleapis.com with a legacy IE6 User-Agent silently returned
+// EOT (Embedded OpenType, IE-only) which Satori cannot parse, so the
+// Georgian font never registered and `ka` text rendered as tofu.
 //
-// Two families are loaded:
-//   • Noto Serif Georgian — paired with `font-georgian-serif` in the
-//     site CSS, used for Georgian headlines on OG cards.
-//   • Fraunces — the Latin display face already configured at the
-//     layout level (`--font-display`), used for English headlines.
+// We now read the font binaries straight out of `node_modules` via the
+// @fontsource packages — no network, no User-Agent gymnastics, no
+// CSS-parsing edge cases. Each family ships its unicode-range subsets
+// as separate woff files; we register every relevant subset under the
+// same family name so Satori auto-picks the right glyph per char.
 //
-// Each family is fetched at weight 400 (regular) and 700 (bold). The
-// resulting array is the shape ImageResponse's `fonts` option expects.
+// Subsets loaded (kept tight so the bundle stays well under Satori's
+// 500 KB ceiling):
+//   • Noto Serif Georgian — `georgian` + `latin`     (400 + 700)
+//   • Fraunces            — `latin`    + `latin-ext` (400 + 700)
+//
+// Why both subsets per family?
+//   • Georgian text mixes Georgian glyphs with ASCII digits/punctuation
+//     (e.g. "კატეგორია · სოფა" or a price like "2 400 GEL") — without
+//     the Latin subset registered, those code points fall through to
+//     Satori's default font and break visual cohesion.
+//   • Fraunces ships the GEL currency-symbol-like glyphs in latin-ext.
+//
+// The `node:fs/promises` import below makes this module strictly
+// server-only without needing the `server-only` marker — it would
+// throw at bundle time if pulled into a client component.
+
+import { readFile } from "node:fs/promises";
+import { join } from "node:path";
 
 import type { Locale } from "@/i18n/routing";
 
@@ -47,70 +62,129 @@ export type OgFont = {
   weight: 400 | 700;
 };
 
-// Forces Google Fonts to serve a TTF file rather than woff2 — needed
-// because Satori only parses ttf/otf/woff. Old IE UA does the trick.
-const LEGACY_UA =
-  "Mozilla/4.0 (compatible; MSIE 6.0; Windows NT 5.0)";
+type FontSpec = {
+  name: string;
+  weight: 400 | 700;
+  /** Path inside the project root pointing at a ttf/otf/woff binary. */
+  filePath: string;
+};
 
-async function fetchGoogleFontTtf(
-  family: string,
-  weight: 400 | 700
-): Promise<ArrayBuffer | null> {
-  const cssUrl = `https://fonts.googleapis.com/css2?family=${encodeURIComponent(
-    family
-  )}:wght@${weight}&display=swap`;
+// Concrete files we ship to Satori. Paths are relative to project root
+// so they survive `process.cwd()` resolution at build time and inside
+// the .next build output. The fontsource files are flat (no subset
+// directories) which keeps these paths predictable.
+const FONT_FILES: FontSpec[] = [
+  // --- Noto Serif Georgian: Georgian subset (the entire reason we
+  // bundle this family — has the U+10A0..U+10FF + U+2D00..U+2D2F glyphs).
+  {
+    name: OG_FONT_FAMILY.georgianSerif,
+    weight: 400,
+    filePath:
+      "node_modules/@fontsource/noto-serif-georgian/files/noto-serif-georgian-georgian-400-normal.woff",
+  },
+  {
+    name: OG_FONT_FAMILY.georgianSerif,
+    weight: 700,
+    filePath:
+      "node_modules/@fontsource/noto-serif-georgian/files/noto-serif-georgian-georgian-700-normal.woff",
+  },
+  // --- Noto Serif Georgian: Latin subset for ASCII digits/punctuation
+  // that appear inside Georgian copy (e.g. price "2 400 GEL").
+  {
+    name: OG_FONT_FAMILY.georgianSerif,
+    weight: 400,
+    filePath:
+      "node_modules/@fontsource/noto-serif-georgian/files/noto-serif-georgian-latin-400-normal.woff",
+  },
+  {
+    name: OG_FONT_FAMILY.georgianSerif,
+    weight: 700,
+    filePath:
+      "node_modules/@fontsource/noto-serif-georgian/files/noto-serif-georgian-latin-700-normal.woff",
+  },
+  // --- Fraunces: Latin (primary) + latin-ext (covers the long dash and
+  // a few extra Latin code points used in eyebrows like "Furnituremodern").
+  {
+    name: OG_FONT_FAMILY.latinDisplay,
+    weight: 400,
+    filePath:
+      "node_modules/@fontsource/fraunces/files/fraunces-latin-400-normal.woff",
+  },
+  {
+    name: OG_FONT_FAMILY.latinDisplay,
+    weight: 700,
+    filePath:
+      "node_modules/@fontsource/fraunces/files/fraunces-latin-700-normal.woff",
+  },
+  {
+    name: OG_FONT_FAMILY.latinDisplay,
+    weight: 400,
+    filePath:
+      "node_modules/@fontsource/fraunces/files/fraunces-latin-ext-400-normal.woff",
+  },
+  {
+    name: OG_FONT_FAMILY.latinDisplay,
+    weight: 700,
+    filePath:
+      "node_modules/@fontsource/fraunces/files/fraunces-latin-ext-700-normal.woff",
+  },
+];
 
+async function readFontFile(spec: FontSpec): Promise<OgFont | null> {
+  // turbopackIgnore prevents Turbopack from chasing the dynamic
+  // path.join() into the rest of the project tree (which fires its
+  // "whole project was traced unintentionally" build warning) — the
+  // path is build-time-only and resolves under node_modules anyway.
+  const absolute = join(
+    /* turbopackIgnore: true */ process.cwd(),
+    spec.filePath
+  );
   try {
-    const cssRes = await fetch(cssUrl, {
-      headers: { "User-Agent": LEGACY_UA },
-      // Long-lived cache — fonts don't change. revalidation tied to
-      // build cadence is fine.
-      next: { revalidate: 60 * 60 * 24 * 30 },
-    });
-    if (!cssRes.ok) return null;
-    const css = await cssRes.text();
-    const match = css.match(
-      /src:\s*url\(([^)]+)\)\s*format\(['"]?(truetype|opentype)['"]?\)/
+    const buf = await readFile(absolute);
+    if (buf.byteLength === 0) {
+      console.warn(
+        `[lib/og/fonts] empty font file at ${spec.filePath} — Satori will fall back`
+      );
+      return null;
+    }
+    // Copy into a fresh ArrayBuffer so the slice the caller receives
+    // owns its own memory (avoids odd Satori parsing on Node Buffer's
+    // shared underlying storage).
+    const ab = buf.buffer.slice(
+      buf.byteOffset,
+      buf.byteOffset + buf.byteLength
+    ) as ArrayBuffer;
+    return {
+      name: spec.name,
+      data: ab,
+      style: "normal",
+      weight: spec.weight,
+    };
+  } catch (err) {
+    console.warn(
+      `[lib/og/fonts] failed to read ${spec.filePath}: ${
+        err instanceof Error ? err.message : String(err)
+      }`
     );
-    if (!match) return null;
-    const fontUrl = match[1]!.trim().replace(/^['"]|['"]$/g, "");
-    const fontRes = await fetch(fontUrl, {
-      next: { revalidate: 60 * 60 * 24 * 30 },
-    });
-    if (!fontRes.ok) return null;
-    return await fontRes.arrayBuffer();
-  } catch {
-    // Network/egress restrictions or Google Fonts hiccup — caller
-    // falls back to Satori's default font so the image still renders.
     return null;
   }
 }
 
 /**
- * Load both font families at 400 + 700 in parallel. Any individual
- * fetch that fails is silently dropped — Satori falls back to its
- * built-in sans for that family. The image still renders.
+ * Read every font subset registered above. Satori uses the order to
+ * resolve glyphs: the first registration with the right family that
+ * contains the codepoint wins. Failures are logged (visible during
+ * build) and skipped — Satori falls back to its default font for any
+ * missing family, so the image still renders, but Georgian text would
+ * regress to tofu — which is exactly the bug we're fixing here.
  */
 export async function loadOgFonts(): Promise<OgFont[]> {
-  const requests: Array<{ family: string; weight: 400 | 700 }> = [
-    { family: OG_FONT_FAMILY.georgianSerif, weight: 400 },
-    { family: OG_FONT_FAMILY.georgianSerif, weight: 700 },
-    { family: OG_FONT_FAMILY.latinDisplay, weight: 400 },
-    { family: OG_FONT_FAMILY.latinDisplay, weight: 700 },
-  ];
-
-  const results = await Promise.all(
-    requests.map(async ({ family, weight }) => {
-      const data = await fetchGoogleFontTtf(family, weight);
-      if (!data) return null;
-      return {
-        name: family,
-        data,
-        style: "normal" as const,
-        weight,
-      } satisfies OgFont;
-    })
-  );
-
+  const results = await Promise.all(FONT_FILES.map(readFontFile));
   return results.filter((f): f is OgFont => f !== null);
 }
+
+/**
+ * Test hook — exposes the spec list so tests can iterate every font
+ * file the loader will read without duplicating the path strings.
+ */
+export const OG_FONT_FILE_SPECS: ReadonlyArray<FontSpec> = FONT_FILES;

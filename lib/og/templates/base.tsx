@@ -31,6 +31,12 @@ export type BaseTemplateProps = {
   monogram?: string;
   /** Optional right-side region used by the product template. */
   rightSlot?: JSX.Element;
+  /**
+   * Scale title + subtitle font sizes by this factor. Used by the
+   * product template to keep long Georgian product names from
+   * overflowing into the right-side image column at 0.75 (96px → 72px).
+   */
+  titleScale?: number;
 };
 
 /** A discreet dot-grid pattern rendered as a background SVG data URI. */
@@ -57,6 +63,7 @@ export function buildBaseTemplate(props: BaseTemplateProps): JSX.Element {
     size = OG_DIMENSIONS,
     monogram = siteConfig.brand.logoMonogram,
     rightSlot,
+    titleScale = 1,
   } = props;
 
   const square = isSquare(size);
@@ -70,8 +77,8 @@ export function buildBaseTemplate(props: BaseTemplateProps): JSX.Element {
   const accentBandWidth = square ? 0 : 8;
   const accentBandHeight = square ? 8 : 0;
   const monogramSize = square ? 64 : 88;
-  const titleSize = square ? 60 : 96;
-  const subtitleSize = square ? 24 : 32;
+  const titleSize = Math.round((square ? 60 : 96) * titleScale);
+  const subtitleSize = Math.round((square ? 24 : 32) * titleScale);
   const eyebrowSize = square ? 18 : 24;
   const footerSize = square ? 16 : 22;
 
