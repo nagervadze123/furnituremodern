@@ -12,6 +12,7 @@ import { NextIntlClientProvider, hasLocale } from "next-intl";
 import { setRequestLocale } from "next-intl/server";
 import { notFound } from "next/navigation";
 import { headers } from "next/headers";
+import { CSPProvider } from "@base-ui/react/csp-provider";
 import { Header } from "@/components/layout/header";
 import { Footer } from "@/components/layout/footer";
 import { JsonLd } from "@/components/json-ld";
@@ -72,7 +73,21 @@ export default async function LocaleLayout({
   const nonce = (await headers()).get("x-nonce") ?? undefined;
 
   return (
-    <>
+    // CSPProvider stamps the per-request nonce onto every <style> tag
+    // base-ui injects internally (e.g. ScrollArea's scrollbar-hide
+    // stylesheet, Slider thumb sizing, Tabs indicator measurement).
+    // base-ui's positioner-driven primitives (DropdownMenu,
+    // NavigationMenu) still set inline `style=""` attributes via
+    // floating-ui — those CAN'T be nonce'd, which is why production
+    // CSP keeps 'unsafe-inline' on style-src; the parallel
+    // Content-Security-Policy-Report-Only header surfaces those style
+    // attributes as telemetry so Phase 4 follow-ups can pick the
+    // right enforcement shape (style-src-elem strict +
+    // style-src-attr 'unsafe-inline', or 'unsafe-hashes' with a hash
+    // list). Wrapping with CSPProvider now is forward-compatible: the
+    // moment we tighten style-src, base-ui's <style> tags already
+    // carry the nonce.
+    <CSPProvider nonce={nonce}>
       {/* Keeps document.documentElement.lang in sync with the active locale. */}
       <HtmlLangSync locale={locale} />
 
@@ -106,6 +121,6 @@ export default async function LocaleLayout({
             in development. Renders nothing. */}
         <ServiceWorkerRegister />
       </NextIntlClientProvider>
-    </>
+    </CSPProvider>
   );
 }

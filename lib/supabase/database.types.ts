@@ -262,6 +262,46 @@ export type Database = {
         >;
         Relationships: [];
       };
+      csp_violations: {
+        Row: {
+          id: string;
+          disposition: "enforce" | "report";
+          document_uri: string;
+          referrer: string | null;
+          violated_directive: string;
+          effective_directive: string | null;
+          original_policy: string | null;
+          blocked_uri: string | null;
+          source_file: string | null;
+          line_number: number | null;
+          column_number: number | null;
+          script_sample: string | null;
+          status_code: number | null;
+          ip_hash: string | null;
+          occurred_at: string;
+        };
+        Insert: {
+          id?: string;
+          disposition: "enforce" | "report";
+          document_uri: string;
+          referrer?: string | null;
+          violated_directive: string;
+          effective_directive?: string | null;
+          original_policy?: string | null;
+          blocked_uri?: string | null;
+          source_file?: string | null;
+          line_number?: number | null;
+          column_number?: number | null;
+          script_sample?: string | null;
+          status_code?: number | null;
+          ip_hash?: string | null;
+          occurred_at?: string;
+        };
+        Update: Partial<
+          Database["public"]["Tables"]["csp_violations"]["Insert"]
+        >;
+        Relationships: [];
+      };
     };
     Views: {
       // Admin RUM tile aggregate. Read-only — Supabase exposes views

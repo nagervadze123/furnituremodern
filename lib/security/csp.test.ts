@@ -1,5 +1,9 @@
 import { describe, it, expect } from "vitest";
-import { buildCsp } from "./csp";
+import {
+  buildCsp,
+  CSP_REPORT_PATH,
+  CSP_REPORT_TO_NAME,
+} from "./csp";
 import { readAnalyticsConfig } from "@/lib/analytics/config";
 
 const NONCE = "TESTNONCETESTNONCETEST==";
@@ -19,6 +23,18 @@ function devCsp(args: Partial<Parameters<typeof buildCsp>[0]> = {}) {
     nonce: NONCE,
     isDev: true,
     supabaseOrigin: SUPABASE,
+    ...args,
+  });
+}
+
+function reportOnlyCsp(
+  args: Partial<Parameters<typeof buildCsp>[0]> = {}
+) {
+  return buildCsp({
+    nonce: NONCE,
+    isDev: false,
+    supabaseOrigin: SUPABASE,
+    mode: "report-only",
     ...args,
   });
 }
@@ -198,5 +214,64 @@ describe("buildCsp — Sentry ingest origin", () => {
     // weakened to allow direct loading from sentry.io.
     expect(getDirective(csp, "script-src")).not.toContain("sentry.io");
     expect(getDirective(csp, "script-src-elem")).not.toContain("sentry.io");
+  });
+});
+
+describe("buildCsp — violation reporting", () => {
+  it("emits report-uri pointing at /api/csp-report", () => {
+    expect(getDirective(prodCsp(), "report-uri")).toBe(CSP_REPORT_PATH);
+  });
+
+  it("emits report-to with the Reporting-Endpoints name", () => {
+    expect(getDirective(prodCsp(), "report-to")).toBe(CSP_REPORT_TO_NAME);
+  });
+
+  it("CSP_REPORT_PATH is /api/csp-report (route handler stays in sync)", () => {
+    expect(CSP_REPORT_PATH).toBe("/api/csp-report");
+  });
+
+  it("CSP_REPORT_TO_NAME matches the Reporting-Endpoints declaration", () => {
+    // proxy.ts sets `Reporting-Endpoints: ${CSP_REPORT_TO_NAME}=…`,
+    // so the constant has to be a single token (no spaces, no quotes).
+    expect(CSP_REPORT_TO_NAME).toMatch(/^[a-z0-9-]+$/i);
+  });
+
+  it("emits both report directives in dev mode too", () => {
+    // Dev keeps the directives so a developer testing locally can hit
+    // /api/csp-report and verify wiring before deploy.
+    expect(getDirective(devCsp(), "report-uri")).toBe(CSP_REPORT_PATH);
+    expect(getDirective(devCsp(), "report-to")).toBe(CSP_REPORT_TO_NAME);
+  });
+});
+
+describe("buildCsp — report-only mode (Phase 4 strict style-src)", () => {
+  it("style-src is nonce-only with no 'unsafe-inline'", () => {
+    const style = getDirective(reportOnlyCsp(), "style-src");
+    expect(style).toContain(`'nonce-${NONCE}'`);
+    expect(style).toContain("'self'");
+    expect(style).not.toContain("'unsafe-inline'");
+  });
+
+  it("enforce mode keeps 'unsafe-inline' for base-ui compatibility", () => {
+    // Documents the deliberate trade-off: strict style-src would
+    // break base-ui's positioner-driven primitives that set inline
+    // style attributes via floating-ui. The Report-Only header
+    // surfaces those violations without blocking.
+    expect(getDirective(prodCsp(), "style-src")).toContain("'unsafe-inline'");
+  });
+
+  it("preserves report-uri / report-to under report-only", () => {
+    const csp = reportOnlyCsp();
+    expect(getDirective(csp, "report-uri")).toBe(CSP_REPORT_PATH);
+    expect(getDirective(csp, "report-to")).toBe(CSP_REPORT_TO_NAME);
+  });
+
+  it("report-only script-src remains as strict as enforce", () => {
+    // The Report-Only header tightens style-src; everything else
+    // stays as strict as production. A regression that loosens
+    // script-src under report-only would silently erode the policy.
+    const reportOnly = getDirective(reportOnlyCsp(), "script-src");
+    const enforce = getDirective(prodCsp(), "script-src");
+    expect(reportOnly).toBe(enforce);
   });
 });

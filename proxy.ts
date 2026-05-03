@@ -25,7 +25,11 @@ import {
 } from "./lib/supabase/env";
 import type { Database } from "./lib/supabase/database.types";
 import { generateNonce } from "./lib/security/nonce";
-import { buildCsp } from "./lib/security/csp";
+import {
+  buildCsp,
+  CSP_REPORT_PATH,
+  CSP_REPORT_TO_NAME,
+} from "./lib/security/csp";
 import { readAnalyticsConfig } from "./lib/analytics/config";
 
 // Computed once per cold start. The Supabase URL doesn't change at
@@ -295,6 +299,21 @@ async function checkAdminAuth(
 //   the nonce token and applies it automatically to framework scripts,
 //   page bundles, and <Script> components. Without setting the request
 //   header, framework scripts are unsigned and get blocked.
+//
+// Two CSP strings, one nonce:
+//   • The enforce CSP (kept on `Content-Security-Policy`) preserves
+//     'unsafe-inline' on style-src for base-ui compatibility.
+//   • The report-only CSP (sent on `Content-Security-Policy-Report-Only`
+//     in production) tightens style-src to nonce-only so the browser
+//     reports violations without blocking. Both use the SAME nonce so a
+//     successful render passes the enforce policy AND surfaces every
+//     style-src delta as a report. See lib/security/csp.ts header for
+//     the rollout plan.
+//
+// Reporting endpoints:
+//   • report-uri /api/csp-report (legacy) — covered inside buildCsp().
+//   • report-to csp-endpoint (modern) — the endpoint name resolves
+//     against the Reporting-Endpoints HTTP header set below.
 function applyCspToResponse(
   request: NextRequest,
   response: NextResponse
@@ -334,6 +353,37 @@ function applyCspToResponse(
   );
 
   response.headers.set("Content-Security-Policy", csp);
+
+  // Production-only: ship the strict variant under the Report-Only
+  // header. Browsers parse it side-by-side with the enforce policy
+  // and POST violations to /api/csp-report without blocking the
+  // page. Skipped in dev to keep the dev console clean (HMR + React
+  // dev runtime trigger their own inline-style work).
+  if (!isDev) {
+    const reportOnlyCsp = buildCsp({
+      nonce,
+      isDev,
+      supabaseOrigin: SUPABASE_ORIGIN,
+      analytics: ANALYTICS_CONFIG,
+      sentryIngestOrigin: SENTRY_INGEST_ORIGIN,
+      mode: "report-only",
+    });
+    response.headers.set(
+      "Content-Security-Policy-Report-Only",
+      reportOnlyCsp
+    );
+  }
+
+  // Reporting-Endpoints declares the named endpoint that the
+  // `report-to` directive in the CSP refers to. Format is a
+  // structured-header dictionary; the URL is the path browsers POST
+  // reports to. Sent on every response (including dev) so the report
+  // path is reachable for both enforce and report-only headers.
+  response.headers.set(
+    "Reporting-Endpoints",
+    `${CSP_REPORT_TO_NAME}="${CSP_REPORT_PATH}"`
+  );
+
   return response;
 }
 

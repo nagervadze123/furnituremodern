@@ -72,6 +72,7 @@ DROP TABLE IF EXISTS public.redirects            CASCADE;
 DROP TABLE IF EXISTS public.not_found_log        CASCADE;
 DROP TABLE IF EXISTS public.web_vitals           CASCADE;
 DROP TABLE IF EXISTS public.analytics_event      CASCADE;
+DROP TABLE IF EXISTS public.csp_violations       CASCADE;
 DROP TABLE IF EXISTS public.admin_users          CASCADE;
 
 -- ---------------------------------------------------------------------------
@@ -504,6 +505,54 @@ SELECT
 FROM public.web_vitals
 WHERE occurred_at >= now() - interval '7 days'
 GROUP BY metric;
+
+-- ---------------------------------------------------------------------------
+-- csp_violations — Content-Security-Policy violation reports.
+-- ---------------------------------------------------------------------------
+-- Phase 4 Task 3 ships a Content-Security-Policy-Report-Only header that
+-- tightens style-src to nonce-only. Browsers POST violation reports to
+-- /api/csp-report; the route handler forwards them to Sentry AND inserts
+-- a row here for persistent admin review (Sentry retention is short, the
+-- Supabase row gives us a 1-month rolling window admins can query).
+--
+-- Same security shape as analytics_event / web_vitals: RLS on, no anon
+-- INSERT, service-role writes via /api/csp-report, admin reads + deletes.
+-- The route filters chrome-extension:// blocked-uri values out before
+-- insert (browser-extension noise, not real attacks).
+CREATE TABLE public.csp_violations (
+  id                  uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  disposition         text NOT NULL CHECK (disposition IN ('enforce','report')),
+  document_uri        text NOT NULL,
+  referrer            text NULL,
+  violated_directive  text NOT NULL,
+  effective_directive text NULL,
+  original_policy     text NULL,
+  blocked_uri         text NULL,
+  source_file         text NULL,
+  line_number         integer NULL,
+  column_number       integer NULL,
+  script_sample       text NULL,
+  status_code         integer NULL,
+  ip_hash             text NULL,
+  occurred_at         timestamptz NOT NULL DEFAULT now()
+);
+
+CREATE INDEX csp_violations_directive_idx
+  ON public.csp_violations (violated_directive);
+CREATE INDEX csp_violations_document_uri_idx
+  ON public.csp_violations (document_uri);
+CREATE INDEX csp_violations_occurred_at_idx
+  ON public.csp_violations (occurred_at DESC);
+
+ALTER TABLE public.csp_violations ENABLE ROW LEVEL SECURITY;
+
+CREATE POLICY "csp_violations_admin_select"
+ON public.csp_violations FOR SELECT
+USING (private.is_admin());
+
+CREATE POLICY "csp_violations_admin_delete"
+ON public.csp_violations FOR DELETE
+USING (private.is_admin());
 
 -- ---------------------------------------------------------------------------
 -- Storage bucket: product-images

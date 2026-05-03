@@ -6,17 +6,31 @@
 //   • Development script-src includes 'unsafe-eval' because React's dev
 //     runtime evaluates strings at runtime to reconstruct server-side
 //     error stacks; without it the dev console fills with CSP errors.
-//   • style-src keeps 'unsafe-inline' even in production. Tailwind v4
-//     emits a static stylesheet but Next.js framework code occasionally
-//     injects small inline styles, and shadcn/base-ui primitives ship
-//     style attributes. CHECKLIST.md tracks the Phase 4 hardening to
-//     move style-src to nonce-based. Style injection is a much smaller
-//     attack surface than script injection (no JS execution).
+//   • Production style-src keeps 'unsafe-inline' as a known trade-off.
+//     base-ui's anchor positioning (DropdownMenu, NavigationMenu) sets
+//     style attributes via floating-ui; CSP nonces apply to <style>
+//     elements only, not style="" attributes — so a strict
+//     `style-src 'self' 'nonce-X'` would break those primitives. Style
+//     injection is a much smaller attack surface than script injection
+//     (no JS execution). Phase 4 Task 3 instead ships a parallel
+//     Content-Security-Policy-Report-Only header (built via
+//     mode: "report-only") that DOES enforce the strict style-src.
+//     Report-Only doesn't block — the browser only fires a violation
+//     report — so production is unaffected. After ~1 week of telemetry
+//     in /api/csp-report, a follow-up task can pick the right
+//     enforcement shape (e.g. style-src-elem strict + style-src-attr
+//     'unsafe-inline', or 'unsafe-hashes' with a hash list, or full
+//     strict if base-ui adds nonce-attr support).
 //   • frame-ancestors 'none' is mirrored by X-Frame-Options: DENY in
 //     next.config.ts. Two headers, same answer — defense in depth.
 //   • upgrade-insecure-requests forces any http:// subresource to
 //     https://. Combined with HSTS this guarantees no mixed-content
 //     downgrades survive a build.
+//   • report-uri /api/csp-report + report-to csp-endpoint feed
+//     /api/csp-report. The Reporting-Endpoints HTTP header (set in
+//     proxy.ts) declares the csp-endpoint name. report-uri is the
+//     legacy directive that wider browser sets honor; report-to is the
+//     modern Reporting API replacement. Both are emitted for coverage.
 //
 // connect-src is computed from the configured Supabase origin so the
 // browser client can hit auth/REST/Realtime; we add the wss:// peer for
@@ -52,7 +66,25 @@ type BuildCspArgs = {
   // major version starts injecting inline scripts, halt the upgrade
   // and document the workaround here rather than relaxing script-src.
   sentryIngestOrigin?: string;
+  // "enforce" (default) emits the production-strict CSP that keeps
+  // 'unsafe-inline' on style-src for base-ui compatibility.
+  // "report-only" emits the same CSP but with a strict
+  // `style-src 'self' 'nonce-X'` (no 'unsafe-inline'); proxy.ts ships
+  // this string under the Content-Security-Policy-Report-Only header so
+  // browsers report violations without blocking. See file header for
+  // the rollout plan.
+  mode?: "enforce" | "report-only";
 };
+
+// Path the browser POSTs CSP violation reports to. Imported by proxy.ts
+// when it sets the Reporting-Endpoints header so the two stay in sync.
+export const CSP_REPORT_PATH = "/api/csp-report";
+
+// Named endpoint declared in the Reporting-Endpoints HTTP header
+// (proxy.ts) and referenced by the report-to CSP directive. Browsers
+// use this name to look up the destination URL from
+// Reporting-Endpoints.
+export const CSP_REPORT_TO_NAME = "csp-endpoint";
 
 // Domains required by each provider's loader + beacon endpoints.
 // Sourced from each vendor's published CSP guidance.
@@ -91,6 +123,7 @@ export function buildCsp({
   supabaseOrigin,
   analytics,
   sentryIngestOrigin,
+  mode = "enforce",
 }: BuildCspArgs): string {
   const connectSrc = ["'self'"];
   if (supabaseOrigin) {
@@ -140,7 +173,13 @@ export function buildCsp({
   // <script> tags) diverge.
   const scriptSrcElem = scriptSrc;
 
-  const styleSrc = "'self' 'unsafe-inline'";
+  // Enforce mode keeps 'unsafe-inline' for base-ui style attributes
+  // (see file header). Report-only mode tightens to nonce-only so the
+  // parallel header surfaces violations without blocking.
+  const styleSrc =
+    mode === "report-only"
+      ? `'self' 'nonce-${nonce}'`
+      : "'self' 'unsafe-inline'";
 
   // img-src deliberately keeps the broad `https:` to cover product
   // photography hosted on a CDN we haven't named yet (see
@@ -171,6 +210,13 @@ export function buildCsp({
     "base-uri 'self'",
     "form-action 'self'",
     "upgrade-insecure-requests",
+    // Both reporting directives are emitted. report-uri is the legacy
+    // Level-2 directive that Firefox/Safari honor; report-to is the
+    // modern Reporting-API directive that Chrome/Edge prefer (and
+    // ignore the legacy one when it's present). Browsers that don't
+    // recognize report-to silently fall back to report-uri.
+    `report-uri ${CSP_REPORT_PATH}`,
+    `report-to ${CSP_REPORT_TO_NAME}`,
   ];
 
   return directives.join("; ");

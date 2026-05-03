@@ -77,6 +77,18 @@ const securityHeaders = [
   // etc.). Combined with COOP this sets up the cross-origin-isolated
   // posture future SharedArrayBuffer / high-precision timer needs require.
   { key: "Cross-Origin-Resource-Policy", value: "same-origin" },
+  // COEP locks the document into a cross-origin-isolated context so
+  // future SharedArrayBuffer / performance.now() high-precision
+  // pathways are unlocked. `credentialless` is the relaxed variant of
+  // `require-corp` — it lets us embed cross-origin <img>/<script> that
+  // do NOT carry a CORP header, as long as the request is sent without
+  // credentials (cookies, client certs). This matters for Phase 6 when
+  // ad / pixel hosts that don't ship CORP headers need to render
+  // without breaking isolation. The strict `require-corp` variant
+  // would block every such resource. Browser support: Chrome 110+,
+  // Edge 110+, Firefox 110+. Safari currently ignores the header (no
+  // isolation gained, no breakage either).
+  { key: "Cross-Origin-Embedder-Policy", value: "credentialless" },
   // Allow the browser to start DNS resolution speculatively for off-page
   // links. Safe with CSP in place (the actual fetches still get filtered).
   { key: "X-DNS-Prefetch-Control", value: "on" },
