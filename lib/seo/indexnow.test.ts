@@ -7,12 +7,12 @@ import {
 
 describe("readIndexNowConfig", () => {
   it("returns null when INDEXNOW_KEY is missing", () => {
-    expect(readIndexNowConfig({} as NodeJS.ProcessEnv)).toBeNull();
+    expect(readIndexNowConfig({} as unknown as NodeJS.ProcessEnv)).toBeNull();
   });
 
   it("returns null when INDEXNOW_KEY is whitespace", () => {
     expect(
-      readIndexNowConfig({ INDEXNOW_KEY: "   " } as NodeJS.ProcessEnv)
+      readIndexNowConfig({ INDEXNOW_KEY: "   " } as unknown as NodeJS.ProcessEnv)
     ).toBeNull();
   });
 
@@ -20,7 +20,7 @@ describe("readIndexNowConfig", () => {
     const c = readIndexNowConfig({
       INDEXNOW_KEY: "abc123",
       INDEXNOW_HOST: "example.com",
-    } as NodeJS.ProcessEnv);
+    } as unknown as NodeJS.ProcessEnv);
     expect(c?.host).toBe("example.com");
     expect(c?.key).toBe("abc123");
   });
@@ -30,7 +30,7 @@ describe("readIndexNowConfig", () => {
     // check it's non-null when the key is set and host env is empty.
     const c = readIndexNowConfig({
       INDEXNOW_KEY: "abc123",
-    } as NodeJS.ProcessEnv);
+    } as unknown as NodeJS.ProcessEnv);
     // Either a valid host fallback or null if NEXT_PUBLIC_SITE_URL
     // wasn't set in the test runner — both are acceptable.
     if (c !== null) {
@@ -42,7 +42,7 @@ describe("readIndexNowConfig", () => {
     const c = readIndexNowConfig({
       INDEXNOW_KEY: "abc123",
       INDEXNOW_HOST: "example.com",
-    } as NodeJS.ProcessEnv);
+    } as unknown as NodeJS.ProcessEnv);
     expect(c?.keyLocation).toMatch(/\/indexnow\.txt$/);
   });
 });
@@ -78,7 +78,7 @@ describe("submitIndexNowWith", () => {
     const fetchSpy = vi.fn();
     await submitIndexNowWith(["https://example.com/a"], {
       fetch: fetchSpy as unknown as typeof fetch,
-      env: {} as NodeJS.ProcessEnv,
+      env: {} as unknown as NodeJS.ProcessEnv,
     });
     expect(fetchSpy).not.toHaveBeenCalled();
   });
@@ -90,7 +90,7 @@ describe("submitIndexNowWith", () => {
       env: {
         INDEXNOW_KEY: "abc",
         INDEXNOW_HOST: "example.com",
-      } as NodeJS.ProcessEnv,
+      } as unknown as NodeJS.ProcessEnv,
     });
     expect(fetchSpy).not.toHaveBeenCalled();
   });
@@ -107,7 +107,7 @@ describe("submitIndexNowWith", () => {
           INDEXNOW_KEY: "abc",
           INDEXNOW_HOST: "example.com",
           NEXT_PUBLIC_SITE_URL: "https://example.com",
-        } as NodeJS.ProcessEnv,
+        } as unknown as NodeJS.ProcessEnv,
       }
     );
     expect(fetchSpy).toHaveBeenCalledTimes(1);
@@ -132,7 +132,7 @@ describe("submitIndexNowWith", () => {
         env: {
           INDEXNOW_KEY: "abc",
           INDEXNOW_HOST: "example.com",
-        } as NodeJS.ProcessEnv,
+        } as unknown as NodeJS.ProcessEnv,
       })
     ).resolves.toBeUndefined();
     expect(log).toHaveBeenCalled();
@@ -150,7 +150,7 @@ describe("submitIndexNowWith", () => {
         env: {
           INDEXNOW_KEY: "abc",
           INDEXNOW_HOST: "example.com",
-        } as NodeJS.ProcessEnv,
+        } as unknown as NodeJS.ProcessEnv,
       })
     ).resolves.toBeUndefined();
     expect(log).toHaveBeenCalled();
@@ -176,7 +176,7 @@ describe("submitIndexNowWith", () => {
         env: {
           INDEXNOW_KEY: "abc",
           INDEXNOW_HOST: "example.com",
-        } as NodeJS.ProcessEnv,
+        } as unknown as NodeJS.ProcessEnv,
       })
     ).resolves.toBeUndefined();
     expect(log).toHaveBeenCalled();

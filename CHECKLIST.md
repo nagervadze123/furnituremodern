@@ -325,6 +325,10 @@ Before flipping DNS / launch announcement, walk this list against the live `http
 - [ ] **Replace placeholder Georgian privacy policy text** in `/[locale]/privacy` with legal-counsel-reviewed copy.
 - [ ] **Permissions-Policy values** confirmed appropriate for shipped surfaces: `payment=()` until payment forms exist (Phase 6), then flip to `payment=(self)`.
 - [ ] **Supabase Point-in-Time Recovery** enabled on the live project (paid plan). Test a restore drill before launch announcement.
+- [ ] **Confirm Vercel build uses Node 22.12+** — open a deploy log and verify the "Detected `.nvmrc` Node version: 22.12.0" line. `package.json#engines` blocks anything older locally; this checks Vercel matches.
+- [ ] **Confirm `schema.sql` guard active** — locally, run `supabase/schema.sql` against a fresh dev DB (succeeds), seed it, then run it again. The second run must error with `Refusing to run bootstrap schema.sql against a database that already contains data.` Do **not** run this against production.
+- [ ] **Confirm slug rename in production admin** produces both the new URL (200) and the redirect entry (301 from old URL); if the redirect insert fails, the admin must see an explicit red error message ("Product saved, but creating the redirect from the old URL failed: …"), not a green "Saved.".
+- [ ] **Confirm production-mode Supabase failure renders empty state, not placeholder content** — temporarily revoke the anon role's SELECT on `products` in dev (with `NODE_ENV=production` set), reload `/ka/sofas`, confirm the grid is empty rather than showing the local TS catalogue. Restore the policy when done.
 
 ---
 

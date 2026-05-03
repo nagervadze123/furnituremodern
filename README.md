@@ -8,14 +8,18 @@ Built with Next.js 16 (App Router), TypeScript (strict), Tailwind CSS v4, shadcn
 
 ## 1. Prerequisites
 
-- **Node.js 22.12+** (the engine field in `package.json` accepts `^20.19` or `>=22.12`; CI + Vercel pin to `.nvmrc` = 22.12.0).
+- **Node.js 22.12.0+** is required. `package.json#engines` enforces `>=22.12.0`; `.nvmrc` pins the recommended version (`22.12.0`); Vercel auto-detects `.nvmrc` for the build runtime.
 - **npm** (ships with Node).
 - A **Supabase project** if you want a database-backed catalogue and admin panel. Without it, the site happily runs against a local TS fallback (see `content/`).
 
 ```bash
-node --version
+nvm install      # reads .nvmrc and installs that version if missing
+nvm use          # switches the current shell to the pinned version
+node --version   # should report v22.12.0 or higher
 npm --version
 ```
+
+If you don't use `nvm`, install Node 22.12 (or any newer 22.x release) from your package manager or [nodejs.org](https://nodejs.org). Anything below 22.12 will fail `npm install` with an `engines` warning and Vitest 4 will refuse to start.
 
 ## 2. Install
 
@@ -100,18 +104,28 @@ The schema sets up:
 
 Do **not** add `private` to your project's "Exposed schemas" list in Project Settings → API. The schema is intentionally hidden from PostgREST.
 
-### Database workflow: migrations vs `schema.sql`
+### Database workflow
 
-`supabase/migrations/*.sql` is the **source of truth for production**. Each file is dated, additive, and wrapped in `IF EXISTS` / `IF NOT EXISTS` so re-running is safe. Apply with:
+This project uses two distinct paths for managing Supabase schema. They are **not** interchangeable.
 
-```bash
-psql "$SUPABASE_DB_URL" -f supabase/migrations/2026-05-02-slug-system.sql
-# or via Supabase MCP / Dashboard SQL editor
-```
+#### Migration workflow (production + ongoing dev) — DEFAULT
 
-`supabase/schema.sql` is a **bootstrap-only artifact**. It opens with a `DROP TABLE … CASCADE` block — running it against a populated production database wipes every row. Use it ONLY to spin up a fresh Supabase project. The destructive header is documented in the file itself; do not remove it.
+Source of truth: `supabase/migrations/*.sql`. Each migration is idempotent (`CREATE TABLE IF NOT EXISTS`, `ALTER TABLE … ADD COLUMN IF NOT EXISTS`, `DROP POLICY IF EXISTS …`) and applied via the Supabase MCP `apply_migration` tool or the Supabase CLI.
 
-A fresh `schema.sql` already includes every migration up through its date — there is no need to layer the migrations on top.
+Workflow when changing schema:
+
+1. Add `supabase/migrations/YYYY-MM-DD-description.sql`.
+2. Apply to dev Supabase.
+3. Verify behaviour locally.
+4. Apply to production.
+5. Update `supabase/schema.sql` to reflect the new state.
+6. Regenerate `lib/supabase/database.types.ts` if columns or RPCs changed.
+
+#### Bootstrap workflow (fresh DB only)
+
+Source: `supabase/schema.sql`. Initialises a brand-new, empty Supabase project. Contains `DROP TABLE … CASCADE` statements **plus a runtime guard** (a top-of-file `DO $$ … $$` block) that calls `RAISE EXCEPTION` if the `products` table already contains rows. This stops the file from wiping a populated database if someone pastes it into the wrong SQL editor by accident.
+
+**Never apply `schema.sql` directly to production.** A fresh `schema.sql` already includes every migration up through its date — there is no need to layer the migrations on top. To verify the guard locally, run `schema.sql` once against a fresh dev DB (succeeds), seed it, then run it again (the second run errors out with the `Refusing to run bootstrap schema.sql…` message).
 
 ## 6. Admin panel
 

@@ -25,6 +25,7 @@ import {
 } from "@/content/products";
 import { isSupabaseConfigured } from "@/lib/supabase/env";
 import { createSupabasePublicClient } from "@/lib/supabase/public";
+import { logError } from "@/lib/observability";
 
 // ---------------------------------------------------------------------------
 // Local-fallback mappers
@@ -192,7 +193,10 @@ export async function getProducts(
 
     const { data, error } = await query;
     if (error) {
-      console.error("[data/products] Supabase query failed:", error.message);
+      logError(error, {
+        route: "lib/data/products:getProducts",
+        scope: "route",
+      });
       // In production with Supabase configured, never silently serve
       // local placeholder data — that would show wrong prices/URLs to
       // real users and search engines. Return an empty list instead.
@@ -252,7 +256,10 @@ export async function getProductBySlug(
 
     const { data, error } = await query;
     if (error) {
-      console.error("[data/products] Supabase lookup failed:", error.message);
+      logError(error, {
+        route: "lib/data/products:getProductBySlug",
+        scope: "route",
+      });
       // Production: never substitute placeholder catalog data on a
       // query error — return null so the route renders 404 cleanly.
       // Development: fall through to local lookup so devs can keep
@@ -341,7 +348,10 @@ export async function getAllProductPaths(): Promise<ProductPath[]> {
         }));
     }
     if (error) {
-      console.error("[data/products] getAllProductPaths failed:", error.message);
+      logError(error, {
+        route: "lib/data/products:getAllProductPaths",
+        scope: "route",
+      });
     }
     // Production: do not generate placeholder paths on DB error — that
     // would publish stale URLs in the sitemap. Empty list is safer.

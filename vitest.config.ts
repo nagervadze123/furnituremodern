@@ -10,6 +10,12 @@ export default defineConfig({
   resolve: {
     alias: {
       "@": path.resolve(__dirname, "."),
+      // Next.js ships `server-only` as a runtime guard. The package
+      // throws on client-side import, but in vitest we run modules
+      // outside Next's compiler so the guard would error before the
+      // test runs. Stub it with the empty noop the Next compiler swaps
+      // in for server bundles.
+      "server-only": path.resolve(__dirname, "lib/test/server-only.ts"),
     },
   },
 });

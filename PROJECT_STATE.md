@@ -13,7 +13,7 @@ Last updated: 2026-05-03
 | **Phase 1** — CSP + security headers | ✅ Closed | `lib/security/csp.ts` + `next.config.ts`; nonce-based per-request CSP; full contract in `lib/security/csp.test.ts`. |
 | **Phase 2** — Slug system + URL safety | ✅ Closed | `redirects` + `product_slug_history` + `not_found_log`; soft-delete with redirect or 410; admin SEO dashboard. |
 | **Phase 3** — Consent / Analytics / RUM (+ docs) | ✅ Code complete | Granular `fm_consent`, 2-button banner + footer ManageLink, GA4/GTM/Meta/Plausible providers gated on consent, `/api/vitals` RUM endpoint, web_vitals p75 7d view + admin tile, OG cards, branded error pages, PWA baseline, AEO (`llms.txt` + `llms-full.txt`), search-console verification meta + IndexNow. |
-| **Phase 4** — Security AAA + observability + DX/CI | 🟡 Queued | See `CHECKLIST.md` "Phase 4 priorities". |
+| **Phase 4** — Security AAA + observability + DX/CI | 🟡 In progress | Task 1 (hardening) ✅ complete — see "Phase 4 — Task 1" section below. Tasks 2–6 (Sentry, style-src nonce, AAA contrast, dev/prod Supabase split, CI/CD) queued. See `CHECKLIST.md` "Phase 4 priorities". |
 | **Phase 5** — Premium design + real photos | 🟡 Queued | See `CHECKLIST.md` "Phase 5 priorities". |
 | **Phase 6** — Cart + checkout + payments (BOG/TBC) | 🟡 Queued | See `CHECKLIST.md` "Phase 6 priorities". |
 | **Phase 7** — Accounts + reviews | 🟡 Queued | See `CHECKLIST.md` "Phase 7 priorities". |
@@ -89,6 +89,57 @@ None of these refinements weakened the consent contract or the privacy posture. 
 
 **✅ COMPLETE** — code-level verification gate fully passed; documentation pass committed; deferred browser-required smoke tests are queued in `CHECKLIST.md` for the operator to run on the next production deployment.
 
+---
+
+## Phase 4 — Task 1 (hardening)
+
+**Status:** ✅ COMPLETE (commit hash recorded after push).
+
+External code review (rated 8/10 code, 6.5/10 launch readiness) flagged four real but small issues post-Plan 3. This task closes all four in a single coherent change. Architectural lock-ins (single Next app, single Vercel deploy, single Supabase project, migrations as production source of truth, service-role-only writes for analytics) were preserved.
+
+### Items shipped
+
+1. **Node 22 pin** — `package.json#engines` tightened to `>=22.12.0` (was `^20.19.0 || >=22.12.0`); `.nvmrc` already pinned to `22.12.0`; README "Prerequisites" rewritten with the `nvm install` / `nvm use` workflow. Vercel auto-detects `.nvmrc` so no Vercel config change is needed.
+2. **`schema.sql` bootstrap-only protection** (three layers) — warning header at the very top of `supabase/schema.sql`; runtime PL/pgSQL `DO $$ … $$` guard that raises an exception if `public.products` already contains rows; README "Database workflow" section rewritten with the full migrations-vs-bootstrap distinction.
+3. **Slug-change redirect error handling** — the slug-history insert and the locale-paired `redirects` upsert were extracted from `app/(admin)/admin/(dashboard)/products/actions.ts` into the testable helpers `recordSlugChange` and `writeSlugRedirects` in `lib/admin/slug-rename-effects.ts`. Strategy chosen: **A (fail-and-surface)** — the product row commits; if either side effect fails the action returns `ok: false` with an explicit message telling the admin to retry (idempotent), and `logError` from `lib/observability.ts` forwards the error so Phase 4 Sentry wiring will pick it up. PII-free context (route, slug-old, slug-new, Postgres error code) only.
+4. **Production DB fallback hardening** — `lib/data/products.ts` (`getProducts`, `getProductBySlug`, `getAllProductPaths`) and `lib/data/categories.ts` (`getCategories`, `getCategoryBySlug`) already had `NODE_ENV === "production"` branches that suppress the local-TS placeholder fallback; this task swapped their `console.error` calls for `logError` so the same Sentry wiring catches DB outages in production. Caller paths (PLP/PDP/category page/sitemap) already handle `[]` / `null` correctly via `notFound()` and empty grids — no caller changes needed.
+
+### Tests added
+
+Three new Vitest files, **17 new test cases** (test count: 290 → **307**):
+
+- `lib/admin/slug-rename-effects.test.ts` — 6 tests: success path for both helpers (returns `ok: true`, builds correct rows, no log), failure path (returns explicit retry message, forwards to `logError` with PII-free context), category-move-with-slug-change shape, and a contract test asserting no PII leaks into the log context.
+- `lib/data/products.test.ts` — 7 tests: production failure → empty/null + `logError`; development failure → local-TS fallback + `logError`; success path returns mapped rows. Covers all three exported query functions.
+- `lib/data/categories.test.ts` — 4 tests: same matrix for `getCategories` and `getCategoryBySlug`.
+
+To enable testing of `server-only`-marked modules outside the Next runtime, `vitest.config.ts` aliases `server-only` to a noop stub at `lib/test/server-only.ts`.
+
+### Files modified
+
+- `package.json` (engines field tightened)
+- `.nvmrc` (already correct; verified)
+- `README.md` (Prerequisites + Database workflow sections rewritten)
+- `supabase/schema.sql` (warning header + runtime guard prepended)
+- `app/(admin)/admin/(dashboard)/products/actions.ts` (extracted slug-rename side effects to helpers)
+- `lib/admin/slug-rename-effects.ts` (new — extracted helpers)
+- `lib/admin/slug-rename-effects.test.ts` (new)
+- `lib/data/products.ts` (`console.error` → `logError`)
+- `lib/data/products.test.ts` (new)
+- `lib/data/categories.ts` (`console.error` → `logError`)
+- `lib/data/categories.test.ts` (new)
+- `lib/test/server-only.ts` (new — vitest alias target)
+- `vitest.config.ts` (alias `server-only` → noop)
+- `CHECKLIST.md` (4 new "Final pre-launch verification" items)
+- `PROJECT_STATE.md` (this section)
+
+### Deferred to Phase 4 Tasks 2–6
+
+- **Task 2:** Wire `@sentry/nextjs`. Replace `logError`/`logEvent` bodies; configure `beforeSend` to enforce the no-PII contract.
+- **Task 3:** Tighten `style-src` CSP to nonce-based once Next/shadcn no longer inject runtime styles.
+- **Task 4:** Accessibility pass to AAA contrast + keyboard / focus order audit.
+- **Task 5:** Dev/prod Supabase project split with branched preview deploys.
+- **Task 6:** CI-on-PRs (lint + test + build + tsc + Lighthouse on a Vercel preview URL).
+
 ## Next session
 
-**Phase 4** — Security AAA + observability + accessibility AAA + DX/CI-CD + dev/prod Supabase split. Concrete items in `CHECKLIST.md` "Phase 4 priorities".
+**Phase 4 — Task 2** (Sentry wiring) is the natural next step: the `logError` plumbing landed in this task is now waiting for a real backend. After that, the remaining tasks are independent and can be sequenced by operator preference.

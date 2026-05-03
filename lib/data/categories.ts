@@ -25,6 +25,7 @@ import {
 import type { DataCategory } from "./types";
 import { isSupabaseConfigured } from "@/lib/supabase/env";
 import { createSupabasePublicClient } from "@/lib/supabase/public";
+import { logError } from "@/lib/observability";
 
 // ---------------------------------------------------------------------------
 // Mappers
@@ -99,7 +100,10 @@ export async function getCategories(
         .filter((c): c is DataCategory => c !== null);
     }
     if (error) {
-      console.error("[data/categories] Supabase query failed:", error.message);
+      logError(error, {
+        route: "lib/data/categories:getCategories",
+        scope: "route",
+      });
     }
     // Production: do not silently substitute the local placeholder
     // category list on a DB error. Return empty so the page can render
@@ -135,7 +139,10 @@ export async function getCategoryBySlug(
       return mapSupabase(data[0] as SupabaseCategoryRow);
     }
     if (error) {
-      console.error("[data/categories] Supabase lookup failed:", error.message);
+      logError(error, {
+        route: "lib/data/categories:getCategoryBySlug",
+        scope: "route",
+      });
     }
     // Production: don't substitute a local placeholder row on a DB
     // error or empty result — return null so the route renders a 404.

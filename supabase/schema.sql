@@ -1,4 +1,47 @@
 -- ---------------------------------------------------------------------------
+-- ⚠️  BOOTSTRAP-ONLY FILE — DOES NOT REPLACE MIGRATIONS
+-- ---------------------------------------------------------------------------
+-- This file recreates the entire database schema from scratch.
+-- It contains DROP TABLE statements that WILL DESTROY ALL DATA
+-- if executed against a database that contains real records.
+--
+-- USE FOR:
+--   ✅ Initialize a fresh, empty Supabase project for the first time
+--   ✅ Reset a local development database during testing
+--   ✅ Reference the canonical schema shape for code review
+--
+-- DO NOT USE FOR:
+--   ❌ Applying changes to production
+--   ❌ Applying changes to any database with real data
+--   ❌ Syncing dev → prod schema differences
+--
+-- For schema changes against existing databases, write an idempotent
+-- migration in supabase/migrations/YYYY-MM-DD-description.sql and apply
+-- it via the Supabase MCP apply_migration tool or the Supabase CLI.
+--
+-- This file is regenerated whenever migrations change; treat it as a
+-- derived artifact, not the source of truth.
+-- ---------------------------------------------------------------------------
+
+-- ---------------------------------------------------------------------------
+-- Runtime guard — refuses to run against a populated database.
+-- ---------------------------------------------------------------------------
+-- Belt-and-braces protection in case someone pastes this file into the
+-- SQL editor of a project that already has data. Fires before the first
+-- DROP, so nothing has been destroyed yet when the EXCEPTION is raised.
+DO $$
+BEGIN
+  IF EXISTS (
+    SELECT 1 FROM information_schema.tables
+    WHERE table_schema = 'public' AND table_name = 'products'
+  ) THEN
+    IF (SELECT count(*) FROM public.products) > 0 THEN
+      RAISE EXCEPTION 'Refusing to run bootstrap schema.sql against a database that already contains data. Use migrations instead. See file header for guidance.';
+    END IF;
+  END IF;
+END $$;
+
+-- ---------------------------------------------------------------------------
 -- Furnituremodern — Postgres schema (Supabase)
 -- ---------------------------------------------------------------------------
 -- Apply with one of:
@@ -18,7 +61,9 @@
 -- ---------------------------------------------------------------------------
 
 -- Always start fresh — drop in dependency order if you re-run the file.
--- (Comment these out in production once data exists.)
+-- The DO-block guard above will RAISE EXCEPTION if products already
+-- contains rows, so these DROP statements only execute against an
+-- empty database.
 DROP TABLE IF EXISTS public.product_images       CASCADE;
 DROP TABLE IF EXISTS public.product_slug_history CASCADE;
 DROP TABLE IF EXISTS public.products             CASCADE;

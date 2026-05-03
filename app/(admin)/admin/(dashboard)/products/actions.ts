@@ -21,6 +21,10 @@ import { createSupabaseAdminClient } from "@/lib/supabase/admin";
 import { productSchema } from "@/lib/admin/schemas";
 import { isValidSlug } from "@/lib/slug";
 import { detectSlugConflicts } from "@/lib/admin/slug-conflicts";
+import {
+  recordSlugChange,
+  writeSlugRedirects,
+} from "@/lib/admin/slug-rename-effects";
 import { notifyRevalidation, type PathSpec } from "@/lib/revalidation/notify";
 import { submitIndexNow, productUrls } from "@/lib/seo/indexnow";
 import { absoluteUrl } from "@/lib/site-config";
@@ -279,52 +283,36 @@ export async function updateProductAction(
   // present without redirects (we can replay the redirects), rather
   // than the inverse (redirects pointing at slugs we have no record of).
   //
-  // The product row is already updated at this point — if either of
-  // the SEO writes below fails, we surface a clear error to the admin
-  // instead of a misleading "Saved." so they know to retry. Re-saving
-  // is idempotent: history insert is append-only (and the slug match
-  // gate prevents duplicates per save), redirects upsert by from_path.
+  // Strategy: fail-and-surface (Strategy A from Phase 4 hardening).
+  // The product row is already committed; if either of the SEO writes
+  // below fails we return ok:false with an explicit message instead of
+  // a misleading "Saved." Re-saving is idempotent and observability
+  // (logError) fires from inside the helpers so the operator AND the
+  // logs both see the failure. See lib/admin/slug-rename-effects.ts.
   if (next.slug !== prev.slug) {
-    const { error: historyErr } = await supabase
-      .from("product_slug_history")
-      .insert({
-        product_id: productId,
-        old_slug: prev.slug,
-        changed_by: admin.userId,
-      });
-    if (historyErr) {
-      return {
-        ok: false,
-        message: `Product saved, but recording the slug history failed: ${historyErr.message}. Re-save to retry, or fix the redirect/history rows manually.`,
-      };
-    }
+    const result = await recordSlugChange({
+      supabase,
+      productId,
+      changedBy: admin.userId,
+      oldSlug: prev.slug,
+    });
+    if (!result.ok) return { ok: false, message: result.message };
   }
 
   // If the slug or category changed, write 301 redirects so old URLs
-  // still resolve. We add ONE redirect per locale because URLs are
-  // locale-prefixed.
+  // still resolve. One redirect per locale because URLs are locale-prefixed.
   if (
     next.slug !== prev.slug ||
     next.categories?.slug !== prev.categories.slug
   ) {
-    const oldCat = prev.categories.slug;
-    const newCat = next.categories?.slug ?? oldCat;
-    const locales = ["ka", "en"] as const;
-    const rows = locales.map((loc) => ({
-      from_path: `/${loc}/${oldCat}/${prev.slug}`,
-      to_path: `/${loc}/${newCat}/${next.slug}`,
-      status_code: 301,
-    }));
-    // upsert so re-saving the same slug doesn't fail on the unique constraint.
-    const { error: redirectErr } = await supabase
-      .from("redirects")
-      .upsert(rows, { onConflict: "from_path", ignoreDuplicates: false });
-    if (redirectErr) {
-      return {
-        ok: false,
-        message: `Product saved, but creating the redirect from the old URL failed: ${redirectErr.message}. Re-save to retry, or add the redirect manually.`,
-      };
-    }
+    const result = await writeSlugRedirects({
+      supabase,
+      oldCategorySlug: prev.categories.slug,
+      oldSlug: prev.slug,
+      newCategorySlug: next.categories?.slug ?? prev.categories.slug,
+      newSlug: next.slug,
+    });
+    if (!result.ok) return { ok: false, message: result.message };
   }
 
   await revalidatePublicSurfaces(next.categories?.slug, next.slug);
