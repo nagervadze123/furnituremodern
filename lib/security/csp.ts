@@ -41,6 +41,17 @@ type BuildCspArgs = {
   isDev: boolean;
   supabaseOrigin: string; // empty string when Supabase isn't configured
   analytics?: AnalyticsConfig;
+  // Origin of the configured Sentry ingest endpoint, parsed once at
+  // cold start from NEXT_PUBLIC_SENTRY_DSN. Empty when Sentry is not
+  // configured. Verified note: the @sentry/nextjs browser SDK is
+  // bundled into the page and loaded via Next.js's nonce-stamped
+  // <script> tags — it does NOT inject inline <script> elements, so
+  // the existing nonce/strict-dynamic script-src works unchanged. The
+  // only adjustment Sentry needs is connect-src access to the ingest
+  // origin so submitted events aren't blocked. If a future Sentry
+  // major version starts injecting inline scripts, halt the upgrade
+  // and document the workaround here rather than relaxing script-src.
+  sentryIngestOrigin?: string;
 };
 
 // Domains required by each provider's loader + beacon endpoints.
@@ -79,11 +90,15 @@ export function buildCsp({
   isDev,
   supabaseOrigin,
   analytics,
+  sentryIngestOrigin,
 }: BuildCspArgs): string {
   const connectSrc = ["'self'"];
   if (supabaseOrigin) {
     connectSrc.push(supabaseOrigin);
     connectSrc.push(supabaseOrigin.replace(/^https:/, "wss:"));
+  }
+  if (sentryIngestOrigin) {
+    connectSrc.push(sentryIngestOrigin);
   }
 
   const extraScript: string[] = [];

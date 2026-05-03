@@ -32,6 +32,23 @@ import { readAnalyticsConfig } from "./lib/analytics/config";
 // runtime, so we can cache the origin we'll plug into connect-src.
 const SUPABASE_ORIGIN = SUPABASE_URL ? new URL(SUPABASE_URL).origin : "";
 
+// Same trick for Sentry: NEXT_PUBLIC_SENTRY_DSN is build-time-inlined
+// for the browser, but proxy.ts also reads it server-side to extend
+// connect-src with the ingest origin. URL parsing is wrapped in a
+// try/catch because the DSN format is `https://<key>@<host>/<id>`,
+// and a malformed value should not crash every request — we just
+// drop it from CSP and the SDK will fail to send events on its own.
+function parseSentryIngestOrigin(): string {
+  const dsn = process.env.NEXT_PUBLIC_SENTRY_DSN;
+  if (!dsn) return "";
+  try {
+    return new URL(dsn).origin;
+  } catch {
+    return "";
+  }
+}
+const SENTRY_INGEST_ORIGIN = parseSentryIngestOrigin();
+
 // Analytics config also stable per cold start — public env vars are
 // inlined at build time. Used by buildCsp() to extend script-src /
 // connect-src for whichever providers are enabled.
@@ -289,6 +306,7 @@ function applyCspToResponse(
     isDev,
     supabaseOrigin: SUPABASE_ORIGIN,
     analytics: ANALYTICS_CONFIG,
+    sentryIngestOrigin: SENTRY_INGEST_ORIGIN,
   });
 
   // Mutate the original request.headers so that any downstream middleware

@@ -261,7 +261,8 @@ For each page: record date tested, tool URL used, pass/fail, and any warnings th
 - [ ] Force a layout-level crash: temporarily `throw` at the top of `app/[locale]/layout.tsx`, then revert: `app/global-error.tsx` renders the inline-styled English fallback, "Go home" navigates via `window.location.assign("/")`, robots meta noindex is present.
 - [ ] Note: `app/global-error.tsx` is **English-only by design**. Loading the i18n bundle is itself error-prone; reaching for it again from the very boundary that was meant to catch its failure is a footgun. Do not localize this page.
 - [ ] Visit `/${locale}/gone` (Plan 2's 410 route): regression check — still renders the localized English/Georgian copy with status 410, no changes from this task.
-- [ ] **Phase 4 task — Sentry wiring.** When Sentry is installed, replace the no-op bodies in `lib/observability.ts` (logError + logEvent) with real `Sentry.captureException`/`captureMessage` calls — see the inline TODO blocks. **Do NOT change the public `logError(error, ctx)` / `logEvent(name, payload)` signatures.** Caller imports in `app/[locale]/error.tsx`, `app/global-error.tsx`, and any future call site must keep working without edits.
+- [x] **Phase 4 task — Sentry wiring.** Done: `@sentry/nextjs` is installed and wired through `lib/observability.ts`. Public signatures (`logError(error, ctx)` / `logEvent(name, payload)`) unchanged; the SDK stays dormant when `NEXT_PUBLIC_SENTRY_DSN` is unset. PII scrubbers in `lib/observability/scrub.ts` strip IP, cookies, IP-bearing headers, the User-Agent, and (browser only) URL query strings + Authorization headers.
+- [ ] **Sentry env vars on Vercel** — set `SENTRY_AUTH_TOKEN`, `SENTRY_ORG`, `SENTRY_PROJECT` in Vercel → Project Settings → Environment Variables (**Production environment only**) before the next deploy that requires symbolicated stack traces. Without them, builds succeed but stack traces stay minified.
 
 ### PWA — manual verification
 
@@ -337,10 +338,12 @@ Before flipping DNS / launch announcement, walk this list against the live `http
 - **Security hardening**
   - Tighten `style-src` CSP to nonce-based (drop `'unsafe-inline'` once Next/shadcn no longer inject runtime styles). Add regression test in `lib/security/csp.test.ts`.
   - Submit HSTS to the preload list once the apex is on HTTPS.
-- **Observability**
-  - Install `@sentry/nextjs`.
-  - Wire `lib/observability.ts` (`logError` + `logEvent`) to real Sentry calls. Public signatures stay stable.
-  - Add `sentry.client.config.ts` / `sentry.server.config.ts`. Configure `beforeSend` to enforce the no-PII contract (no IP, email, cookies, session tokens).
+- **Observability** _(Sentry wiring landed; sub-items below remain.)_
+  - ~~Install `@sentry/nextjs`.~~ Done.
+  - ~~Wire `lib/observability.ts` (`logError` + `logEvent`) to real Sentry calls. Public signatures stay stable.~~ Done.
+  - ~~Add `sentry.client.config.ts` / `sentry.server.config.ts`. Configure `beforeSend` to enforce the no-PII contract (no IP, email, cookies, session tokens).~~ Done — also added `sentry.edge.config.ts` and `instrumentation.ts`. Scrubbers live in `lib/observability/scrub.ts`.
+  - Set `SENTRY_AUTH_TOKEN` + `SENTRY_ORG` + `SENTRY_PROJECT` in Vercel (production env only) so source maps upload on deploys.
+  - Phase 5+ revisit: Sentry Replay (requires explicit consent flow); browser profiling integration.
 - **Accessibility**
   - WCAG AAA pass on colour contrast and keyboard flows.
   - Tab-order audit on header, banner, settings sheet, admin forms.

@@ -11,10 +11,17 @@
 //      navigations animate via the browser's View Transitions API
 //      where supported (graceful no-op elsewhere; respects
 //      prefers-reduced-motion natively).
+//   6. Wrap the final config in withSentryConfig so the @sentry/nextjs
+//      build plugin can instrument server functions and (when the
+//      SENTRY_AUTH_TOKEN is present at build time) upload source maps
+//      to Sentry. The wrapper is the OUTERMOST one — it must see the
+//      finalised next-intl + bundle-analyzer config so it can wrap
+//      their webpack/turbopack hooks.
 
 import type { NextConfig } from "next";
 import createNextIntlPlugin from "next-intl/plugin";
 import withBundleAnalyzer from "@next/bundle-analyzer";
+import { withSentryConfig } from "@sentry/nextjs";
 import { buildImagesConfig } from "./lib/perf/image-config";
 
 const withNextIntl = createNextIntlPlugin("./i18n/request.ts");
@@ -205,4 +212,49 @@ const analyzer = withBundleAnalyzer({
   enabled: process.env.ANALYZE === "true",
 });
 
-export default analyzer(withNextIntl(nextConfig));
+const composedConfig = analyzer(withNextIntl(nextConfig));
+
+// withSentryConfig is the outermost wrapper. Its second arg is the
+// Sentry build-plugin config (org/project/auth-token + telemetry
+// flags); options like silent/widenClientFileUpload belong here,
+// NOT in Sentry.init().
+//
+// Source maps:
+//   • Always generated (webpack default) so client stacks can be
+//     symbolicated locally.
+//   • Uploaded to Sentry only when SENTRY_AUTH_TOKEN is set. The
+//     Vercel Sentry integration writes that var on production
+//     deploys; preview deploys leave it unset, so we don't burn the
+//     project's release quota on every PR push.
+//   • sourcemaps.filesToDeleteAfterUpload removes the .map files
+//     from the .next output once they've been uploaded to Sentry,
+//     so end users can't fetch the original source from the browser
+//     even if Sentry has them. (This replaces the v9-and-earlier
+//     `hideSourceMaps` flag.)
+//
+// webpack.treeshake.removeDebugLogging strips Sentry SDK debug log
+// statements from the production browser bundle — useful in dev,
+// pure noise in shipped code. (v10 rename of `disableLogger`.)
+//
+// webpack.automaticVercelMonitors stays false because our cron jobs
+// (e.g. any future scheduled revalidation) don't have explicit
+// names yet and we don't want Sentry inventing monitor IDs we have
+// to reconcile later. (v10 rename of `automaticVercelMonitors`.)
+export default withSentryConfig(composedConfig, {
+  org: process.env.SENTRY_ORG,
+  project: process.env.SENTRY_PROJECT,
+  authToken: process.env.SENTRY_AUTH_TOKEN,
+  silent: Boolean(process.env.CI),
+  widenClientFileUpload: true,
+  sourcemaps: {
+    filesToDeleteAfterUpload: ["**/*.js.map", "**/*.mjs.map"],
+  },
+  webpack: {
+    treeshake: {
+      removeDebugLogging: true,
+    },
+    automaticVercelMonitors: false,
+  },
+  // Skip the telemetry beacon Sentry sends to itself on each build.
+  telemetry: false,
+});

@@ -178,3 +178,25 @@ describe("buildCsp — analytics provider domains", () => {
     expect(csp).not.toContain("https://connect.facebook.net");
   });
 });
+
+describe("buildCsp — Sentry ingest origin", () => {
+  it("omits the Sentry ingest origin when sentryIngestOrigin is empty", () => {
+    const connect = getDirective(prodCsp(), "connect-src");
+    expect(connect).not.toContain("ingest.sentry.io");
+    expect(connect).not.toContain("ingest.us.sentry.io");
+  });
+
+  it("adds only the Sentry ingest origin to connect-src (never script-src)", () => {
+    const csp = prodCsp({
+      sentryIngestOrigin: "https://o12345.ingest.us.sentry.io",
+    });
+    expect(getDirective(csp, "connect-src")).toContain(
+      "https://o12345.ingest.us.sentry.io"
+    );
+    // Sentry must not appear in script-src — bundled SDK uses the
+    // existing nonce/strict-dynamic path; script-src must not be
+    // weakened to allow direct loading from sentry.io.
+    expect(getDirective(csp, "script-src")).not.toContain("sentry.io");
+    expect(getDirective(csp, "script-src-elem")).not.toContain("sentry.io");
+  });
+});

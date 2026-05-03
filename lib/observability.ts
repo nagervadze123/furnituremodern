@@ -1,27 +1,37 @@
-// Observability shim. Swap-target for @sentry/nextjs in Phase 4.
+// Observability facade in front of @sentry/nextjs.
 //
 // The public API — logError(error, ctx) and logEvent(name, payload) —
-// is the contract Phase 4 must keep. When Sentry is installed, the
-// no-op bodies below get replaced with calls into the real SDK; no
-// caller has to change.
+// is the stable contract that error boundaries and the slug action
+// fallback path bind to. Callers must not import from @sentry/nextjs
+// directly; route every error/event through this file so the privacy
+// scrubbers (lib/observability/scrub.ts), DSN-unset no-op behaviour,
+// and never-throw guarantee can't be bypassed.
 //
 // Privacy contract: ObservabilityContext is intentionally narrow.
 // We never accept user identifiers, IP addresses, email addresses,
 // session tokens, or cookie values here. Pass route, digest, scope,
-// and arbitrary string tags — nothing else. Phase 4 must preserve
-// this constraint when wiring Sentry's beforeSend hook.
+// and arbitrary string tags — nothing else. The scrubbers configured
+// at SDK init enforce the contract on the way out.
 //
-// The shim never throws. If observability itself fails, that failure
-// is swallowed — surfacing it would defeat the point of a fallback
-// path that runs from inside an error boundary.
+// The shim never throws. If observability itself fails — the SDK
+// transport throws, the JSON serializer trips on a circular ref,
+// anything — that failure is swallowed. Surfacing it would defeat
+// the point of a fallback path that runs from inside an error
+// boundary, where re-throwing produces an infinite render loop.
 //
 // In dev (NODE_ENV !== "production") with no DSN configured, we emit
-// a single console.warn so a developer working locally sees that the
-// boundary fired. In production with no DSN we silently no-op.
+// a single console.warn so a developer running `npm run dev` sees
+// that the boundary fired. In production with no DSN we silently
+// no-op — production deployments without a DSN are intentional
+// (e.g. preview deploys), and console.warn would just be noise.
 //
-// When NEXT_PUBLIC_SENTRY_DSN is set today: still no-op (Sentry isn't
-// installed yet) but the dev-warn is suppressed so a half-configured
-// staging environment doesn't fill the browser console with noise.
+// When NEXT_PUBLIC_SENTRY_DSN is set we forward to Sentry. Errors go
+// through Sentry.captureException (a structured payload Sentry can
+// group, search, and assign); named events go through
+// Sentry.captureMessage at level "info" (a separate stream from
+// errors that doesn't trigger alerts).
+
+import * as Sentry from "@sentry/nextjs";
 
 export type ObservabilityContext = {
   route?: string;
@@ -63,27 +73,28 @@ function safeStringify(value: unknown): string {
   }
 }
 
+// Build the captureException options object from the narrow
+// ObservabilityContext we accept. ctx.route/scope land in `tags`
+// (Sentry indexes/filters on tags), digest goes in `extra` because
+// it's a free-form reference id we don't want users to filter by.
+// ctx.tags spreads in last so callers can override the structural
+// tags when they have a reason to.
+function buildCaptureContext(ctx: ObservabilityContext) {
+  const tags: Record<string, string> = {};
+  if (ctx.route) tags.route = ctx.route;
+  if (ctx.scope) tags.scope = ctx.scope;
+  if (ctx.tags) Object.assign(tags, ctx.tags);
+
+  const extra: Record<string, unknown> = {};
+  if (ctx.digest) extra.digest = ctx.digest;
+
+  return { tags, extra };
+}
+
 export function logError(error: unknown, ctx: ObservabilityContext = {}): void {
   try {
     if (hasDsn()) {
-      // TODO(Phase 4): call into @sentry/nextjs here.
-      //
-      //   import * as Sentry from "@sentry/nextjs";
-      //   Sentry.withScope((scope) => {
-      //     if (ctx.route) scope.setTag("route", ctx.route);
-      //     if (ctx.digest) scope.setTag("digest", ctx.digest);
-      //     if (ctx.scope) scope.setTag("boundary_scope", ctx.scope);
-      //     if (ctx.tags) {
-      //       for (const [k, v] of Object.entries(ctx.tags)) {
-      //         scope.setTag(k, v);
-      //       }
-      //     }
-      //     Sentry.captureException(error);
-      //   });
-      //
-      // The shape of logError(error, ctx) must remain stable across
-      // that swap so call sites in app/[locale]/error.tsx and
-      // app/global-error.tsx don't change.
+      Sentry.captureException(error, buildCaptureContext(ctx));
       return;
     }
 
@@ -97,7 +108,8 @@ export function logError(error: unknown, ctx: ObservabilityContext = {}): void {
       );
     }
   } catch {
-    // Swallow. Observability must never escalate.
+    // Swallow. Observability must never escalate — a thrown SDK
+    // transport call inside error.tsx would re-trigger the boundary.
   }
 }
 
@@ -107,13 +119,7 @@ export function logEvent(
 ): void {
   try {
     if (hasDsn()) {
-      // TODO(Phase 4): call into @sentry/nextjs here.
-      //
-      //   import * as Sentry from "@sentry/nextjs";
-      //   Sentry.captureMessage(name, { level: "info", extra: payload });
-      //
-      // The shape of logEvent(name, payload) must remain stable
-      // across that swap.
+      Sentry.captureMessage(name, { level: "info", extra: payload });
       return;
     }
 

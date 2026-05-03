@@ -417,7 +417,7 @@ The site ships three error-handling surfaces and a deliberate search-route stub.
 | `app/global-error.tsx` | Catastrophic fallback | Renders only when the locale layout itself crashes. **English-only by design** and fully self-contained: inline styles, hard-coded brand hex (mirroring `siteConfig.brand.{background,foreground,accent}`), no `next-intl`, no design-system imports, raw `<a>` for the home link to avoid re-triggering the boot path that just failed. Includes its own `<html>`, `<head>`, `<body>` per Next.js requirement. |
 | `app/[locale]/search/page.tsx` | Search route stub | Server Component. Backs the `SearchAction` URL template advertised by the WebSite JSON-LD shipped in Plan 1. `q` parameter is trimmed, clamped to 200 chars, and stripped of ASCII control bytes (`\x00-\x1f` and `\x7f`) before rendering as a JSX text child. Canonical URL is `/${locale}/search` (no `?q=` — Google would otherwise index every variant). |
 
-Observability shim — `lib/observability.ts`:
+Observability facade — `lib/observability.ts`:
 
 ```ts
 import { logError, logEvent } from "@/lib/observability";
@@ -426,13 +426,28 @@ logError(err, { route: "/ka", digest: err.digest, scope: "route" });
 logEvent("page_render_failed", { reason: "supabase_timeout" });
 ```
 
-The shim no-ops by default so the site has no runtime cost of an error tracker until one is wired. Behaviour:
+The facade dispatches to `@sentry/nextjs` when `NEXT_PUBLIC_SENTRY_DSN` is configured, and no-ops otherwise. Behaviour:
 
 - `NEXT_PUBLIC_SENTRY_DSN` unset, `NODE_ENV=production` → silent no-op.
 - `NEXT_PUBLIC_SENTRY_DSN` unset, `NODE_ENV=development` → single `console.warn` per call with an `[observability]` prefix so a developer can see when a boundary fired locally.
-- `NEXT_PUBLIC_SENTRY_DSN` set → still no-op today (Sentry is **not** installed in Phase 3); the code path is reserved for Phase 4.
+- `NEXT_PUBLIC_SENTRY_DSN` set → forwards to `Sentry.captureException` (errors) and `Sentry.captureMessage` at level `info` (events). Tags propagate from `ObservabilityContext.route`, `.scope`, and `.tags`; `digest` lands in `extra`.
 
-Phase 4 will install `@sentry/nextjs`, replace the bodies of `logError` and `logEvent` with real Sentry calls, and add `sentry.client.config.ts` / `sentry.server.config.ts`. **The public signatures `logError(error, ctx)` and `logEvent(name, payload)` must remain stable across that swap** — every caller (`error.tsx`, `global-error.tsx`, future surfaces) imports those names and must continue to work without edits. The privacy contract is part of the API: `ObservabilityContext` intentionally excludes user identifiers, IPs, emails, cookies, and session tokens. Phase 4 must wire Sentry's `beforeSend` hook to enforce the same constraint.
+The public signatures `logError(error, ctx)` and `logEvent(name, payload)` are the stable contract — call sites in `error.tsx`, `global-error.tsx`, and the slug action error path import these names directly. The privacy contract is part of the API: `ObservabilityContext` intentionally excludes user identifiers, IPs, emails, cookies, and session tokens, and the Sentry `beforeSend` hooks (`lib/observability/scrub.ts`) strip IP-bearing headers, cookies, the User-Agent, and URL query strings before transmission.
+
+#### Sentry runtime layout
+
+| File | Runtime | Notes |
+| --- | --- | --- |
+| `instrumentation.ts` | bootstrap | Required by Next.js 13+. Dynamically imports `sentry.server.config.ts` or `sentry.edge.config.ts` based on `NEXT_RUNTIME`. Re-exports `Sentry.captureRequestError` as `onRequestError` so App Router server-side errors reach Sentry. |
+| `sentry.server.config.ts` | Node | `tracesSampleRate: 0.1` in production, `1.0` in dev. Profiling off. `ignoreErrors: NEXT_NOT_FOUND, NEXT_REDIRECT`. `beforeSend: scrubServerEvent`. |
+| `sentry.edge.config.ts` | Edge | Same shape, lower sample rate (`0.05` prod) because the proxy runs on every request. |
+| `sentry.client.config.ts` | Browser | Default integrations only — Replay and browser profiling deliberately disabled. `sendDefaultPii: false` plus `scrubClientEvent` (strips query strings + Authorization headers in addition to the server scrubbers). Exports `onRouterTransitionStart` so the SDK can stitch client-side route transitions into transactions. |
+
+#### Source map upload (Vercel)
+
+`next.config.ts` is wrapped with `withSentryConfig`. Source maps are generated on every build but only uploaded to Sentry when `SENTRY_AUTH_TOKEN`, `SENTRY_ORG`, and `SENTRY_PROJECT` are present at build time. Set these in Vercel → Project Settings → Environment Variables, **Production environment only** (preview deploys would burn the project's release quota on every PR). Without the token, the build still completes; stack traces in Sentry stay minified until the token is added.
+
+The Sentry browser SDK is bundled into the Next.js page bundle and loads via the framework's nonce-stamped `<script>` tags — no inline scripts are injected. The CSP in `lib/security/csp.ts` adds the configured Sentry ingest origin to `connect-src` (parallel to the analytics provider entries) when `NEXT_PUBLIC_SENTRY_DSN` is set; `script-src` is unchanged.
 
 ## 13. Progressive Web App
 
@@ -532,7 +547,8 @@ The full contract lives in `lib/security/csp.test.ts`. Future hardening items (H
 | `lib/api/log-404.test.ts` | Rate limiter window, slug-conflict heuristic. |
 | `lib/seo/*.test.ts` | Sitemap shape, llms.txt generator, IndexNow URL submission, slug history merging. |
 | `lib/og/*.test.ts` | Dimension constants, font loader contract, ImageResponse cache header. |
-| `lib/observability.test.ts` | No-op contract per env / NODE_ENV; never throws. |
+| `lib/observability.test.ts` | No-op contract per env / NODE_ENV; Sentry forwarding when DSN set; never throws even if SDK transport itself throws. |
+| `lib/observability/scrub.test.ts` | `beforeSend` scrubbers strip IP, cookies, IP-bearing headers, User-Agent (server + client), and URL query strings + Authorization headers (client). |
 | `lib/slug.test.ts`, `lib/transliterate.test.ts` | Slug generation + Georgian-to-Latin transliteration. |
 
 When adding a feature: write the test first, watch it fail, ship the implementation, watch it pass. UI changes are validated in a browser; logic changes are validated in Vitest.

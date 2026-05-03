@@ -1,11 +1,30 @@
 // Tests for the observability shim. We exercise both the silent
 // production path and the dev-mode console.warn affordance, plus the
 // "must never throw" guarantee that error.tsx and global-error.tsx
-// rely on.
+// rely on. With Phase 4 wiring complete, we also assert that errors
+// reach @sentry/nextjs (mocked) when NEXT_PUBLIC_SENTRY_DSN is set.
 
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
+// Hoisted before any imports — vitest moves vi.mock() calls to the top
+// of the module so the real @sentry/nextjs is never loaded in tests.
+// The factory exposes captureException / captureMessage as vi.fn()
+// stubs that we drive and assert on below.
+vi.mock("@sentry/nextjs", () => ({
+  captureException: vi.fn(),
+  captureMessage: vi.fn(),
+}));
+
+import * as Sentry from "@sentry/nextjs";
+
 import { logError, logEvent } from "./observability";
+
+const captureException = Sentry.captureException as unknown as ReturnType<
+  typeof vi.fn
+>;
+const captureMessage = Sentry.captureMessage as unknown as ReturnType<
+  typeof vi.fn
+>;
 
 const ORIGINAL_NODE_ENV = process.env.NODE_ENV;
 const ORIGINAL_DSN = process.env.NEXT_PUBLIC_SENTRY_DSN;
@@ -30,6 +49,8 @@ describe("observability", () => {
 
   beforeEach(() => {
     warnSpy = vi.spyOn(console, "warn").mockImplementation(() => {});
+    captureException.mockReset();
+    captureMessage.mockReset();
   });
 
   afterEach(() => {
@@ -111,12 +132,101 @@ describe("observability", () => {
     expect(payload).toContain("search");
   });
 
-  it("suppresses dev warn when DSN is set (Phase 4 placeholder no-op path)", () => {
+  it("suppresses dev warn when DSN is set (Sentry path takes over)", () => {
     setEnv({ nodeEnv: "development", dsn: "https://fake@example.ingest.sentry.io/0" });
 
     logError(new Error("boom"));
     logEvent("phase4");
 
     expect(warnSpy).not.toHaveBeenCalled();
+  });
+
+  it("forwards logError to Sentry.captureException when DSN is set", () => {
+    setEnv({ nodeEnv: "production", dsn: "https://fake@example.ingest.sentry.io/0" });
+    const err = new Error("boom");
+
+    logError(err, { route: "/ka/sofas/foo", scope: "route", digest: "abc123" });
+
+    expect(captureException).toHaveBeenCalledTimes(1);
+    const [capturedError, captureCtx] = captureException.mock.calls[0]!;
+    expect(capturedError).toBe(err);
+    expect(captureCtx).toMatchObject({
+      tags: { route: "/ka/sofas/foo", scope: "route" },
+      extra: { digest: "abc123" },
+    });
+  });
+
+  it("forwards logEvent to Sentry.captureMessage with info level when DSN is set", () => {
+    setEnv({ nodeEnv: "production", dsn: "https://fake@example.ingest.sentry.io/0" });
+
+    logEvent("page_render_failed", { reason: "supabase_timeout" });
+
+    expect(captureMessage).toHaveBeenCalledTimes(1);
+    const [name, options] = captureMessage.mock.calls[0]!;
+    expect(name).toBe("page_render_failed");
+    expect(options).toMatchObject({
+      level: "info",
+      extra: { reason: "supabase_timeout" },
+    });
+  });
+
+  it("propagates custom ctx.tags through to Sentry.captureException", () => {
+    setEnv({ nodeEnv: "production", dsn: "https://fake@example.ingest.sentry.io/0" });
+
+    logError(new Error("tagged"), {
+      route: "/en/page",
+      scope: "boundary",
+      tags: { release: "phase-4", surface: "search" },
+    });
+
+    expect(captureException).toHaveBeenCalledTimes(1);
+    const [, captureCtx] = captureException.mock.calls[0]!;
+    expect(captureCtx?.tags).toMatchObject({
+      route: "/en/page",
+      scope: "boundary",
+      release: "phase-4",
+      surface: "search",
+    });
+  });
+
+  it("does not call Sentry when DSN is unset", () => {
+    setEnv({ nodeEnv: "production", dsn: undefined });
+
+    logError(new Error("boom"), { route: "/ka", scope: "route" });
+    logEvent("noop", { foo: "bar" });
+
+    expect(captureException).not.toHaveBeenCalled();
+    expect(captureMessage).not.toHaveBeenCalled();
+  });
+
+  it("still accepts unknown error shapes when DSN is set", () => {
+    setEnv({ nodeEnv: "production", dsn: "https://fake@example.ingest.sentry.io/0" });
+
+    expect(() => logError("string error")).not.toThrow();
+    expect(() => logError({ message: "plain object" })).not.toThrow();
+    expect(() => logError(null)).not.toThrow();
+    expect(() => logError(undefined)).not.toThrow();
+    expect(() => logError(new Error("real"))).not.toThrow();
+
+    // All five calls forwarded to Sentry.
+    expect(captureException).toHaveBeenCalledTimes(5);
+  });
+
+  it("swallows errors thrown by Sentry.captureException itself", () => {
+    setEnv({ nodeEnv: "production", dsn: "https://fake@example.ingest.sentry.io/0" });
+    captureException.mockImplementationOnce(() => {
+      throw new Error("Sentry transport failed");
+    });
+
+    expect(() => logError(new Error("inner"))).not.toThrow();
+  });
+
+  it("swallows errors thrown by Sentry.captureMessage itself", () => {
+    setEnv({ nodeEnv: "production", dsn: "https://fake@example.ingest.sentry.io/0" });
+    captureMessage.mockImplementationOnce(() => {
+      throw new Error("Sentry transport failed");
+    });
+
+    expect(() => logEvent("trigger")).not.toThrow();
   });
 });
