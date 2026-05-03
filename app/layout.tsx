@@ -110,6 +110,21 @@ export const metadata: Metadata = {
     card: "summary_large_image",
     images: [siteConfig.defaultOgImage],
   },
+  // PWA-related app icons. The web app manifest itself is emitted by
+  // app/manifest.ts (Next.js auto-injects <link rel="manifest"> when
+  // a manifest file exists); these declarations cover the favicon and
+  // Apple touch icon, which the manifest does not own.
+  icons: {
+    icon: [
+      { url: "/icon.svg", type: "image/svg+xml" },
+      { url: "/favicon-32x32.png", sizes: "32x32", type: "image/png" },
+      { url: "/favicon-16x16.png", sizes: "16x16", type: "image/png" },
+    ],
+    apple: [
+      { url: "/apple-touch-icon.png", sizes: "180x180", type: "image/png" },
+    ],
+    shortcut: ["/favicon.ico"],
+  },
   verification: buildVerification(),
 };
 

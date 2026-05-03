@@ -91,6 +91,27 @@ const nextConfig: NextConfig = {
           },
         ],
       },
+      // Service worker — must be revalidated on every load so a new
+      // build's SW reaches every client without waiting on a stale
+      // cached copy. Setting the JS content-type explicitly stops
+      // browsers from refusing to register an oddly-typed worker.
+      {
+        source: "/sw.js",
+        headers: [
+          {
+            key: "Content-Type",
+            value: "application/javascript; charset=utf-8",
+          },
+          {
+            key: "Cache-Control",
+            value: "public, max-age=0, must-revalidate",
+          },
+          {
+            key: "Service-Worker-Allowed",
+            value: "/",
+          },
+        ],
+      },
     ];
   },
 

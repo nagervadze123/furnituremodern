@@ -362,7 +362,83 @@ When configured, admin server actions submit affected URLs to IndexNow on:
 
 All submissions are best-effort with a 5-second timeout and never block or fail an admin save. The key file is served from `/indexnow.txt` (gated on `INDEXNOW_KEY` being set; 404 otherwise) and the submission payload references it via `keyLocation` so the IndexNow protocol's ownership check resolves cleanly.
 
-## 13. Known notes
+## 13. Progressive Web App
+
+The site ships a deliberately small PWA baseline so visitors can install it to a home screen, see a branded icon, and get a friendly offline page when their connection drops. It is **not** an offline catalogue and was designed to be easy to remove or rebrand later.
+
+### What's wired
+
+| Layer | File | Notes |
+| --- | --- | --- |
+| Web app manifest | `app/manifest.ts` | Served at `/manifest.webmanifest`. Reads brand name + short description from `lib/site-config.ts`. Georgian (`lang: ka-GE`), `start_url: /ka`, `display: standalone`. |
+| Theme color | `app/layout.tsx` (viewport) | Light + dark variants, matches `app/globals.css` palette. |
+| Icons | `public/icon.svg` (source), generator script at `scripts/generate-icons.mjs` | Placeholder "F" monogram on ink + cream. Designed to be replaced before launch. |
+| Service worker | `public/sw.js` | Versioned cache (`fm-pwa-v1`). Network-first navigation, offline fallback to `/offline.html`. Stale-while-revalidate for `/_next/static/*`. |
+| Offline fallback | `public/offline.html` | Standalone HTML, Georgian-first, no external dependencies. |
+| SW registration | `components/service-worker-register.tsx` | Production-only register; unregisters stale dev SWs. |
+
+### Icon files
+
+```
+public/
+  icon.svg                  # Source — edit this and re-run the script.
+  favicon.ico               # 16/32/48 multi-image (Windows/legacy).
+  favicon-16x16.png         # Browser tab.
+  favicon-32x32.png         # Browser tab (HiDPI).
+  apple-touch-icon.png      # 180×180 — iOS home screen.
+  icon-192.png              # Android home screen.
+  icon-512.png              # Android splash + manifest "any".
+  icon-maskable-512.png     # Android adaptive icon — full-bleed.
+```
+
+### Regenerating icons
+
+When the brand identity changes, edit the design parameters or `LETTER_PATH` in `scripts/generate-icons.mjs`, then run:
+
+```bash
+node scripts/generate-icons.mjs
+```
+
+The script uses `sharp` (already a transitive dependency of Next.js — no install needed) to rasterise an inline SVG into every PNG variant and assembles the multi-image `favicon.ico` by hand. All outputs land in `public/`. The committed PNGs are the source of truth for the live site; the script is a regeneration helper, not a build step.
+
+For a final brand drop, replace `public/icon.svg` with a designer-supplied SVG (matching the 512×512 viewBox) and re-run the script.
+
+### Service worker scope and caching policy
+
+- **Scope:** `/` (every same-origin URL).
+- **Precached on install:** offline page + the eight branding assets above.
+- **Network-first** for navigations, with an offline fallback only when the network errors.
+- **Stale-while-revalidate** for `/_next/static/*` (content-hashed, so caching is safe).
+- **Pass-through (never cached or intercepted):**
+  - `/admin/*` — admin must always be live.
+  - `/api/*` — API routes (RUM beacon, revalidation webhook, etc.).
+  - `/_next/data/*` — Next data payloads.
+  - URLs containing `/auth/` — auth callbacks.
+  - URLs with `_rsc=` — React Server Component payloads.
+  - All cross-origin requests (Supabase, analytics).
+
+The result: product/category HTML always reflects the latest ISR revalidation; admin is never cached; analytics/RUM beacons hit the network normally.
+
+### Disabling or removing the service worker
+
+If a production SW needs to be disabled in a hurry:
+
+1. Replace `public/sw.js` with an empty handler that calls `self.registration.unregister()` from `self.addEventListener("install", …)`.
+2. Bump the cache version (or change the file contents) so visitors fetch the new SW.
+3. Once telemetry confirms the population has updated, remove `<ServiceWorkerRegister />` from `app/[locale]/layout.tsx` and delete the SW files.
+
+In dev (`NODE_ENV !== "production"`), the registrar actively unregisters any leftover SWs on every page load — no extra steps needed when iterating locally.
+
+### Limitations today
+
+- No offline catalogue browsing. Visiting an uncached product offline shows the offline page.
+- No screenshots, shortcuts, or share_target entries in the manifest. Add these once final design and product taxonomy are stable.
+- No push notifications, no background sync.
+- The placeholder icon is a generic "F" monogram. Replace before launch.
+
+To extend offline behaviour later, the cleanest path is to add a category/product list cache keyed by ISR revalidation timestamps — but only after the catalogue's freshness model is finalised.
+
+## 14. Known notes
 
 - `npm audit` reports a moderate PostCSS vulnerability inside Next.js's bundled deps. The auto-fix downgrades Next; this is upstream and will resolve on the next Next.js patch.
 - `next.config.ts` CSP includes `script-src 'unsafe-inline'` because Next's hydration runtime needs it. Tighten with a nonce-based CSP later if you need stricter posture.

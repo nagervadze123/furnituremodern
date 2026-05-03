@@ -20,6 +20,7 @@ import { Banner as CookieConsent } from "@/components/consent/banner";
 import { AnalyticsLoader } from "@/components/analytics-loader";
 import { PageViewTracker } from "@/components/analytics/page-view-tracker";
 import { WebVitalsReporter } from "@/components/web-vitals-reporter";
+import { ServiceWorkerRegister } from "@/components/service-worker-register";
 import { organizationJsonLd, websiteJsonLd } from "@/lib/schema";
 import { siteConfig, absoluteUrl } from "@/lib/site-config";
 import { routing, type Locale } from "@/i18n/routing";
@@ -101,6 +102,9 @@ export default async function LocaleLayout({
             also fans out a "web_vitals" analytics event that's gated
             on cookie consent inside track(). */}
         <WebVitalsReporter />
+        {/* Registers /sw.js in production and tears down stale dev SWs
+            in development. Renders nothing. */}
+        <ServiceWorkerRegister />
       </NextIntlClientProvider>
     </>
   );

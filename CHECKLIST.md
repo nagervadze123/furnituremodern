@@ -138,6 +138,9 @@ A snapshot of what's already done versus what to do before you go live.
 - [ ] Add your real image CDN host to `images.remotePatterns` in `next.config.ts` if you serve from outside Supabase Storage
 - [ ] Replace FAQ answers in `content/faq.ts`
 - [ ] Tighten the brand-story copy in `messages/ka.json` / `messages/en.json`
+- [ ] Replace the placeholder PWA icons in `public/` (the "F" monogram). Edit `LETTER_PATH` / colours in `scripts/generate-icons.mjs` (or drop a designer SVG into `public/icon.svg`) and re-run `node scripts/generate-icons.mjs`.
+- [ ] Add real PWA screenshots to `app/manifest.ts` `screenshots` array once the final design is shipped (mobile + desktop variants).
+- [ ] Add manifest `shortcuts` entries to `app/manifest.ts` once the category/product taxonomy is final (e.g. "Sofas", "New arrivals").
 
 ### Privacy & legal
 - [ ] Confirm `privacyPolicyUpdatedAt` in `lib/site-config.ts` reflects the actual most recent edit before launch.
@@ -206,6 +209,23 @@ For each page: record date tested, tool URL used, pass/fail, and any warnings th
 - [ ] Confirm every `<script type="application/ld+json">` carries a `nonce=` attribute.
 - [ ] `/${locale}/search?q=test` returns 200 (not 404).
 - [ ] Search engine console verifications: Google, Bing, Yandex, Facebook (env vars in `.env.example`).
+
+### PWA — manual verification
+
+- [ ] `/manifest.webmanifest` loads in production and is valid JSON. Open DevTools → Application → Manifest and confirm name, short_name, theme/background colour, and every icon URL resolve without errors.
+- [ ] All icon URLs return 200: `/icon.svg`, `/favicon.ico`, `/favicon-16x16.png`, `/favicon-32x32.png`, `/apple-touch-icon.png`, `/icon-192.png`, `/icon-512.png`, `/icon-maskable-512.png`.
+- [ ] Mobile install prompt appears (Chrome: address-bar install icon, or Add to Home Screen). Installed app launches into `/ka`.
+- [ ] iOS Safari: "Add to Home Screen" shows the apple-touch-icon (no transparent background, no jagged edges).
+- [ ] Theme colour appears on the browser tab (Chrome desktop) and the system status bar (Android Chrome standalone, iOS Safari).
+- [ ] Service worker registers in production. DevTools → Application → Service Workers shows `sw.js` in `activated` state.
+- [ ] Service worker does **not** register in `npm run dev` — DevTools shows zero registrations after a dev page load (the registrar tears them down).
+- [ ] Offline fallback: in DevTools → Network → Offline, navigate to a path that wasn't loaded yet — `/offline.html` content renders. Refreshing back online recovers the live page.
+- [ ] **Admin is not cached:** open `/admin` while online, switch to offline, navigate to `/admin/products` — page does NOT load from cache (offline fallback shown instead).
+- [ ] **API not cached:** confirm `/api/vitals` (and any other `/api/*` route) does not return from the SW cache. Network tab "(disk cache)" should never appear for API responses.
+- [ ] Product/category pages reflect the latest ISR revalidation. After publishing a product change in `/admin`, the public page shows the new value within the ISR window — the SW does NOT serve a stale HTML body.
+- [ ] No console errors in production related to SW registration, manifest parsing, or icon loading.
+- [ ] No CSP violations in DevTools Console for SW or manifest fetches.
+- [ ] Lighthouse PWA audit on a production build improves the "Installable" + "PWA optimised" categories without regressing Performance, SEO, Accessibility, or Best Practices.
 
 ## Scheduled maintenance
 
