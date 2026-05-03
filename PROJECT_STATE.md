@@ -93,7 +93,7 @@ None of these refinements weakened the consent contract or the privacy posture. 
 
 ## Phase 4 — Task 1 (hardening)
 
-**Status:** ✅ COMPLETE (commit hash recorded after push).
+**Status:** ✅ COMPLETE on commit `b23685a` (2026-05-03, pushed to `origin/main`).
 
 External code review (rated 8/10 code, 6.5/10 launch readiness) flagged four real but small issues post-Plan 3. This task closes all four in a single coherent change. Architectural lock-ins (single Next app, single Vercel deploy, single Supabase project, migrations as production source of truth, service-role-only writes for analytics) were preserved.
 
