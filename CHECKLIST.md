@@ -134,6 +134,37 @@ A snapshot of what's already done versus what to do before you go live.
 ### Brand & content
 - [ ] Replace placeholder address, phone, email in `lib/site-config.ts`
 - [ ] Replace social URLs in `lib/site-config.ts`
+
+### Brand identity confirmation (drives OG / Twitter card visuals)
+
+`lib/site-config.ts` exports a `brand` block that the OG image templates in `lib/og/` read at render time. Confirm the values below match the launch identity before pushing to production — every share preview on Facebook / X / LinkedIn / WhatsApp / Telegram / Slack / Discord uses them.
+
+- [ ] **Brand accent** — `siteConfig.brand.accent` (`#b85c38` warm terracotta). Confirm against the print/web brand guide.
+- [ ] **Brand background** — `siteConfig.brand.background` (`#fbf8f3` warm off-white). Confirm contrast against the foreground colour reads ≥ AA.
+- [ ] **Brand foreground** — `siteConfig.brand.foreground` (`#28201a` deep neutral).
+- [ ] **Brand muted text** — `siteConfig.brand.muted` (`#7a6f5e` muted earth) for eyebrows and footer captions.
+- [ ] **Brand monogram** — `siteConfig.brand.logoMonogram` (`F`). Swap to a 2-char monogram (e.g. `FM`) if the design system prefers it.
+- [ ] **Brand tagline (ka)** — `siteConfig.brand.tagline.ka` (`ხელნაკეთი ავეჯი თბილისში`). Confirm copy.
+- [ ] **Brand tagline (en)** — `siteConfig.brand.tagline.en` (`Handmade modern furniture from Tbilisi`). Confirm copy.
+- [ ] Optional: drop a logo SVG into `public/` and point `siteConfig.brand.logoSvgPath` at it; the templates fall back to the monogram when this is null.
+
+### OG / Twitter card platform smoke (run after a real domain is up)
+
+The site exposes these card routes (all return `image/png` with `Cache-Control: public, max-age=3600, s-maxage=3600, stale-while-revalidate=86400`):
+
+- `/opengraph-image`, `/twitter-image`, `/twitter-image-square` (root, locale-agnostic)
+- `/[locale]/opengraph-image`, `/[locale]/twitter-image`, `/[locale]/twitter-image-square`
+- `/[locale]/[category]/opengraph-image`, `/[locale]/[category]/twitter-image`, `/[locale]/[category]/twitter-image-square`
+- `/[locale]/[category]/[slug]/opengraph-image`, `/[locale]/[category]/[slug]/twitter-image`, `/[locale]/[category]/[slug]/twitter-image-square`
+
+Run each of the platform validators below against a deployed product URL and a category URL in both locales. Record date and pass/fail.
+
+- [ ] **Facebook Sharing Debugger** — https://developers.facebook.com/tools/debug/ — paste `https://furnituremodern.vercel.app/ka/sofas/<slug>` and a `/en/...` variant. Expect 1200×630 image, no errors.
+- [ ] **X Card Validator** — paste the same URLs; card type should resolve to `summary_large_image`.
+- [ ] **LinkedIn Post Inspector** — https://www.linkedin.com/post-inspector/ — verify the OG image renders and aspect is right.
+- [ ] **WhatsApp / Telegram preview** — share a product link in a private chat; preview should show the branded card with Georgian text rendered (no tofu/squares).
+- [ ] **Slack / Discord** — paste a product URL into a sandbox channel; verify branded card appears.
+- [ ] **Supabase Storage public read** — confirm uploaded product images are anonymously readable. The OG product template fetches the primary image URL during render; a 401/403 falls back to monogram-only layout but means social cards lose the photo.
 - [ ] Replace product photos (currently `picsum.photos`) — upload to the `product-images` Storage bucket via the admin panel, or update `content/products.ts` if running offline
 - [ ] Add your real image CDN host to `images.remotePatterns` in `next.config.ts` if you serve from outside Supabase Storage
 - [ ] Replace FAQ answers in `content/faq.ts`

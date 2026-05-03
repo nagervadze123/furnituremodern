@@ -29,6 +29,16 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const locale = raw as Locale;
   const description = siteConfig.fullDescription[locale];
 
+  // Per-locale OG / Twitter image URLs. The opengraph-image and
+  // twitter-image route handlers under app/[locale]/ render branded
+  // cards in the visitor's language; pointing the metadata directly at
+  // those URLs (rather than relying on Next's auto-wire) survives the
+  // per-field replacement Next applies when a page sets openGraph.
+  const ogImage = absoluteUrl(`/${locale}/opengraph-image`);
+  const twitterImage = absoluteUrl(`/${locale}/twitter-image`);
+  const twitterImageSquare = absoluteUrl(`/${locale}/twitter-image-square`);
+  const otherLocale = routing.locales.find((l) => l !== locale);
+
   return {
     // metadataBase is repeated here (also set in the layout) so Next.js
     // can always resolve relative OG/Twitter image URLs even when the
@@ -53,17 +63,23 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
       title: siteConfig.name,
       description,
       locale: locale === "ka" ? "ka_GE" : "en_US",
+      alternateLocale: otherLocale
+        ? [otherLocale === "ka" ? "ka_GE" : "en_US"]
+        : undefined,
       // Re-stating the OG image and site name here because Next.js
       // replaces the parent's openGraph entirely when a child returns
       // its own — there is no automatic per-field merge.
       siteName: siteConfig.name,
-      images: [siteConfig.defaultOgImage],
+      images: [
+        { url: ogImage, width: 1200, height: 630 },
+        { url: twitterImageSquare, width: 600, height: 600 },
+      ],
     },
     twitter: {
       card: "summary_large_image",
       title: siteConfig.name,
       description,
-      images: [siteConfig.defaultOgImage],
+      images: [twitterImage, twitterImageSquare],
     },
   };
 }

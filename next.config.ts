@@ -77,6 +77,45 @@ const nextConfig: NextConfig = {
           },
         ],
       },
+      // Same long-tail cache policy for Twitter / X cards. Matches the
+      // top-level /twitter-image route, every nested /[locale]/.../twitter-image,
+      // and the manually-routed /twitter-image-square variants.
+      {
+        source: "/twitter-image",
+        headers: [
+          {
+            key: "Cache-Control",
+            value: "public, max-age=3600, s-maxage=3600, stale-while-revalidate=86400",
+          },
+        ],
+      },
+      {
+        source: "/:path+/twitter-image",
+        headers: [
+          {
+            key: "Cache-Control",
+            value: "public, max-age=3600, s-maxage=3600, stale-while-revalidate=86400",
+          },
+        ],
+      },
+      {
+        source: "/twitter-image-square",
+        headers: [
+          {
+            key: "Cache-Control",
+            value: "public, max-age=3600, s-maxage=3600, stale-while-revalidate=86400",
+          },
+        ],
+      },
+      {
+        source: "/:path+/twitter-image-square",
+        headers: [
+          {
+            key: "Cache-Control",
+            value: "public, max-age=3600, s-maxage=3600, stale-while-revalidate=86400",
+          },
+        ],
+      },
       // sitemap.xml is served by Next's MetadataRoute.Sitemap, which
       // doesn't expose a Response object — its `revalidate = 3600`
       // declaration controls ISR, not the response headers crawlers

@@ -1,12 +1,9 @@
-// Root OpenGraph image — served at /opengraph-image.
-// Locale-agnostic fallback used by the synthesized /_not-found, the
-// root sitemap entry, and any social unfurler that hits the bare
-// origin URL. Defaults to the Georgian tagline because /ka is the
-// canonical default locale.
+// Root Twitter card image — served at /twitter-image. Same content as
+// the root /opengraph-image but lives on its own route so platform
+// crawlers that respect the `twitter:image` tag pick the right asset.
 //
-// Runtime: Node + force-static. The image only reads from siteConfig
-// (no Supabase) so it pre-renders cleanly at build time and the CDN
-// serves the bytes on every social unfurl with zero cold-start cost.
+// Runtime: Node + force-static. Same rationale as the root OG image:
+// no Supabase reads → pre-render once at build time.
 
 import { siteConfig, SITE_HOST } from "@/lib/site-config";
 import {

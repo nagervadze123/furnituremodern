@@ -14,6 +14,18 @@ type CategoryMetadataInput = {
   description: string;
 };
 
+/** Map a Locale to its OpenGraph BCP-47 region tag. */
+function ogLocale(locale: Locale): string {
+  return locale === "ka" ? "ka_GE" : "en_US";
+}
+
+/** The other locale, formatted as openGraph.alternateLocale expects. */
+function ogAlternateLocales(locale: Locale): string[] {
+  return routing.locales
+    .filter((l) => l !== locale)
+    .map((l) => ogLocale(l));
+}
+
 // Build a Metadata object with: canonical URL, hreflang alternates for
 // every supported locale + x-default, OpenGraph, Twitter card.
 //
@@ -36,6 +48,17 @@ export function buildCategoryMetadata({
     ["x-default", absoluteUrl(`/${siteConfig.defaultLocale}${cleanPath}`)],
   ]);
 
+  // Per-route OG / Twitter image URLs. Pointing here (rather than the
+  // root /opengraph-image) lets the per-segment ImageResponse handlers
+  // produce branded, data-driven cards. The square variants are listed
+  // alongside the 1200×630 one so platforms that prefer a square tile
+  // (LinkedIn newer cards, some WhatsApp previews) have both.
+  const ogImage = absoluteUrl(`/${locale}${cleanPath}/opengraph-image`);
+  const twitterImage = absoluteUrl(`/${locale}${cleanPath}/twitter-image`);
+  const twitterImageSquare = absoluteUrl(
+    `/${locale}${cleanPath}/twitter-image-square`
+  );
+
   return {
     // Repeated on every page (alongside the layout) because Next.js
     // doesn't reliably propagate metadataBase from a static layout
@@ -52,17 +75,21 @@ export function buildCategoryMetadata({
       url: canonical,
       title,
       description,
-      locale: locale === "ka" ? "ka_GE" : "en_US",
+      locale: ogLocale(locale),
+      alternateLocale: ogAlternateLocales(locale),
+      siteName: siteConfig.name,
       // Re-state images here because Next.js's per-field merge replaces
       // the parent's openGraph entirely when a child returns its own.
-      siteName: siteConfig.name,
-      images: [siteConfig.defaultOgImage],
+      images: [
+        { url: ogImage, width: 1200, height: 630 },
+        { url: twitterImageSquare, width: 600, height: 600 },
+      ],
     },
     twitter: {
       card: "summary_large_image",
       title,
       description,
-      images: [siteConfig.defaultOgImage],
+      images: [twitterImage, twitterImageSquare],
     },
   };
 }

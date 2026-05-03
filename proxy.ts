@@ -350,7 +350,11 @@ export const config = {
   //   - root metadata routes Next.js generates itself (sitemap, robots)
   //   - ANY path that ends in `opengraph-image` (per-product OG images
   //     live deep inside the locale tree and must reach Next directly)
+  //   - ANY path that contains `twitter-image` (covers both the
+  //     auto-wired `twitter-image` and the manually-routed
+  //     `twitter-image-square` variants — both must reach Next without
+  //     the i18n middleware redirecting bare `/twitter-image` to `/ka/`)
   //   - any path containing a dot (real files like /favicon.ico, /llms.txt)
   matcher:
-    "/((?!api|_next|_vercel|sitemap.xml|robots.txt|.*opengraph-image|.*\\..*).*)",
+    "/((?!api|_next|_vercel|sitemap.xml|robots.txt|.*opengraph-image|.*twitter-image|.*\\..*).*)",
 };

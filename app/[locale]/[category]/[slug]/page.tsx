@@ -71,6 +71,21 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
     ["x-default", absoluteUrl(`/ka/${category}/${slug}`)],
   ]);
 
+  // Per-route OG / Twitter image URLs. Each product gets dedicated
+  // image route handlers (opengraph-image, twitter-image,
+  // twitter-image-square) co-located in this segment that render the
+  // product's name, price and primary photo into a branded card.
+  const ogImage = absoluteUrl(
+    `/${locale}/${category}/${slug}/opengraph-image`
+  );
+  const twitterImage = absoluteUrl(
+    `/${locale}/${category}/${slug}/twitter-image`
+  );
+  const twitterImageSquare = absoluteUrl(
+    `/${locale}/${category}/${slug}/twitter-image-square`
+  );
+  const otherLocale = routing.locales.find((l) => l !== locale);
+
   return {
     metadataBase: new URL(absoluteUrl("/")),
     title,
@@ -82,21 +97,20 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
       title,
       description,
       locale: locale === "ka" ? "ka_GE" : "en_US",
+      alternateLocale: otherLocale
+        ? [otherLocale === "ka" ? "ka_GE" : "en_US"]
+        : undefined,
       siteName: siteConfig.name,
-      // Each product gets its own dynamic OG image (see opengraph-image.tsx
-      // in this same folder). Resolved as an absolute URL so social
-      // unfurlers can fetch it directly.
       images: [
-        absoluteUrl(`/${locale}/${category}/${slug}/opengraph-image`),
+        { url: ogImage, width: 1200, height: 630 },
+        { url: twitterImageSquare, width: 600, height: 600 },
       ],
     },
     twitter: {
       card: "summary_large_image",
       title,
       description,
-      images: [
-        absoluteUrl(`/${locale}/${category}/${slug}/opengraph-image`),
-      ],
+      images: [twitterImage, twitterImageSquare],
     },
   };
 }

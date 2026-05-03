@@ -1,14 +1,8 @@
-// Per-product OpenGraph image. Auto-wired at
-// /[locale]/[category]/[slug]/opengraph-image.
+// Per-product Twitter card. Mirrors the OG variant at the same path
+// so x.com / Twitter unfurlers reading the `twitter:image` tag pick a
+// brand-correct image rather than falling back to the parent segment.
 //
-// Renders the product name, formatted price, the category eyebrow and
-// (when available) the product's primary image on the right side. Data
-// flows through the same lib/data/products.ts the page uses, so the
-// unfurled card and the page never disagree.
-//
-// Runtime: Node + force-static. Reads Supabase (or the local fallback)
-// via the data layer at build time so every published product ships
-// its own pre-rendered branded card.
+// Runtime: Node + force-static.
 
 import { notFound } from "next/navigation";
 

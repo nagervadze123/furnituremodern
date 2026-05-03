@@ -74,11 +74,45 @@ export const getCategoryName = (slug: CategorySlug, locale: Locale): string => {
   return c[locale].name;
 };
 
+// Brand identity tokens used by lib/og/* template renderers when
+// composing share-card images. Keep the palette neutral — these values
+// drive what the brand looks like on Facebook / X / LinkedIn / WhatsApp,
+// so muted-warm-earth reads as a furniture brand rather than a generic
+// SaaS gradient. Values marked PLACEHOLDER are confirmed before launch
+// in CHECKLIST.md ("Brand identity confirmation").
+export const brandTokens = {
+  // One short brand line per locale, used as the OG/Twitter subtitle on
+  // home and root images. Kept terse so it fits one render line.
+  tagline: {
+    ka: "ხელნაკეთი ავეჯი თბილისში",
+    en: "Handmade modern furniture from Tbilisi",
+  },
+  // Warm earth accent — matches the existing terracotta band already in
+  // the legacy app/opengraph-image.tsx.
+  accent: "#b85c38",
+  // Off-white render background. Slightly warmer than pure white so the
+  // image doesn't read as "default Vercel template".
+  background: "#fbf8f3",
+  // Deep neutral text. Reads as charcoal on both Slack light and dark.
+  foreground: "#28201a",
+  // Muted text colour for eyebrows and footer captions.
+  muted: "#7a6f5e",
+  // 1-2 character monogram fallback used when no logo SVG is present.
+  // Derived from the brand name's leading characters.
+  logoMonogram: "F",
+  // Optional path to a public/ SVG logo for inline use; null when absent.
+  logoSvgPath: null as string | null,
+} as const;
+
+export type BrandTokens = typeof brandTokens;
+
 // Everything else: brand, contact, social, defaults.
 export const siteConfig = {
   name: "Furnituremodern",
   // Short legal/business name used in JSON-LD as @id and Organization name.
   legalName: "Furnituremodern Ltd.",
+  // Brand identity tokens for OG/Twitter image generation.
+  brand: brandTokens,
 
   // Used as the default page title fallback and in OG tags.
   shortDescription: {

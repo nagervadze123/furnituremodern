@@ -362,6 +362,23 @@ When configured, admin server actions submit affected URLs to IndexNow on:
 
 All submissions are best-effort with a 5-second timeout and never block or fail an admin save. The key file is served from `/indexnow.txt` (gated on `INDEXNOW_KEY` being set; 404 otherwise) and the submission payload references it via `keyLocation` so the IndexNow protocol's ownership check resolves cleanly.
 
+### Open Graph + Twitter cards
+
+Every public route renders branded share cards through `next/og` `ImageResponse`. The `lib/og/` helpers (`templates/base.tsx`, `templates/product.tsx`, `templates/category.tsx`, `templates/error.tsx`, plus `fonts.ts` and `dimensions.ts`) own the layout, brand colours, and font loading; the route handlers under `app/.../opengraph-image.tsx`, `app/.../twitter-image.tsx`, and `app/.../twitter-image-square/route.tsx` thread real data through them.
+
+| Path | Size | Runtime | Source data |
+| --- | --- | --- | --- |
+| `/opengraph-image`, `/twitter-image`, `/twitter-image-square` | 1200×630 / 600×600 | Edge | `siteConfig` only |
+| `/[locale]/opengraph-image`, `/[locale]/twitter-image`, `/[locale]/twitter-image-square` | 1200×630 / 600×600 | Edge | `siteConfig` only |
+| `/[locale]/[category]/opengraph-image`, `/[locale]/[category]/twitter-image`, `/[locale]/[category]/twitter-image-square` | 1200×630 / 600×600 | Node | `getCategoryBySlug` |
+| `/[locale]/[category]/[slug]/opengraph-image`, `/[locale]/[category]/[slug]/twitter-image`, `/[locale]/[category]/[slug]/twitter-image-square` | 1200×630 / 600×600 | Node | `getProductBySlug` (+ `getCategoryBySlug` for the eyebrow) |
+
+Brand identity (accent, background, foreground, monogram, tagline) lives on `siteConfig.brand` in `lib/site-config.ts`. Override the look by editing those tokens; both Georgian and English headlines are rendered with the same code path because Noto Serif Georgian and Fraunces are fetched at runtime from Google Fonts inside `lib/og/fonts.ts`.
+
+To override an image for a specific route, drop a static `opengraph-image.png` (or `.jpg`/`.gif`) into the segment alongside `page.tsx`; Next prefers static files over generated ones. To replace the layout globally, edit `lib/og/templates/base.tsx`.
+
+All ImageResponse routes ship `Cache-Control: public, max-age=3600, s-maxage=3600, stale-while-revalidate=86400` (set both on the route's response and via `next.config.ts` `headers()`). The square variants are wired into page metadata explicitly because Next's metadata file conventions only auto-discover the canonical `opengraph-image` and `twitter-image` filenames.
+
 ## 13. Progressive Web App
 
 The site ships a deliberately small PWA baseline so visitors can install it to a home screen, see a branded icon, and get a friendly offline page when their connection drops. It is **not** an offline catalogue and was designed to be easy to remove or rebrand later.
