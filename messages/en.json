@@ -41,7 +41,25 @@
   "breadcrumbs": {
     "home": "Home",
     "search": "Search",
-    "privacy": "Privacy"
+    "privacy": "Privacy",
+    "not_found": "Not found",
+    "error": "Error"
+  },
+  "not_found": {
+    "title": "Page not found",
+    "body": "The page you tried to open doesn't exist. It may have been moved or removed.",
+    "search_hint": "Try search",
+    "browse_categories_heading": "Browse categories",
+    "recent_products_heading": "Recent products",
+    "back_home": "Back to home",
+    "meta_description": "We couldn't find that page. Browse our categories or try a search."
+  },
+  "error_boundary": {
+    "title": "Something went wrong",
+    "body": "Reloading might help, or return to the home page.",
+    "retry_button": "Try again",
+    "home_button": "Home",
+    "reference_prefix": "Reference"
   },
   "privacy": {
     "page_title": "Privacy policy",
@@ -114,7 +132,9 @@
     "comingSoonHeading": "Search is coming soon",
     "comingSoonBody": "We're still wiring up the catalogue search. In the meantime, browse the categories below.",
     "queryLabel": "You searched for",
-    "backHome": "Back to home"
+    "backHome": "Back to home",
+    "browse_categories_heading": "Browse categories",
+    "term_label": "Search term"
   },
   "consent": {
     "banner": {

@@ -241,6 +241,17 @@ For each page: record date tested, tool URL used, pass/fail, and any warnings th
 - [ ] `/${locale}/search?q=test` returns 200 (not 404).
 - [ ] Search engine console verifications: Google, Bing, Yandex, Facebook (env vars in `.env.example`).
 
+### Error pages, search stub, observability — manual
+
+- [ ] Visit `/${locale}/[invented-bad-slug]` in production: branded 404 renders, four navigation cards present, recent products section appears (when products exist) or is silently omitted (when not), breadcrumbs correct, page heading is in the user's locale, robots meta is `noindex,nofollow`. `curl -s -o /dev/null -w "%{http_code}\n" /ka/sofas/__bad__` returns **404** (not 200).
+- [ ] Temporarily `throw new Error("test")` at the top of `app/[locale]/page.tsx`, then revert: `error.tsx` renders the friendly Georgian/English message, "Try again" button calls `unstable_retry`/`reset` and recovers the page, the digest reference id is shown when present. With `NODE_ENV=development`, the dev console shows a single `[observability] logError` warning per render.
+- [ ] Visit `/${locale}/search` and confirm the stub renders the breadcrumbs, headline, four-card category grid, and a noindex meta. Visit `/${locale}/search?q=test` and confirm `q` echoes safely. Visit `/${locale}/search?q=<script>alert(1)</script>` and confirm **no script execution**, the term renders as plain text, no console errors.
+- [ ] View source on `/search`: exactly one `<meta name="robots" content="noindex,nofollow">` and the canonical URL ends with `/${locale}/search` (no `?q=`).
+- [ ] Force a layout-level crash: temporarily `throw` at the top of `app/[locale]/layout.tsx`, then revert: `app/global-error.tsx` renders the inline-styled English fallback, "Go home" navigates via `window.location.assign("/")`, robots meta noindex is present.
+- [ ] Note: `app/global-error.tsx` is **English-only by design**. Loading the i18n bundle is itself error-prone; reaching for it again from the very boundary that was meant to catch its failure is a footgun. Do not localize this page.
+- [ ] Visit `/${locale}/gone` (Plan 2's 410 route): regression check — still renders the localized English/Georgian copy with status 410, no changes from this task.
+- [ ] **Phase 4 task — Sentry wiring.** When Sentry is installed, replace the no-op bodies in `lib/observability.ts` (logError + logEvent) with real `Sentry.captureException`/`captureMessage` calls — see the inline TODO blocks. **Do NOT change the public `logError(error, ctx)` / `logEvent(name, payload)` signatures.** Caller imports in `app/[locale]/error.tsx`, `app/global-error.tsx`, and any future call site must keep working without edits.
+
 ### PWA — manual verification
 
 - [ ] `/manifest.webmanifest` loads in production and is valid JSON. Open DevTools → Application → Manifest and confirm name, short_name, theme/background colour, and every icon URL resolve without errors.

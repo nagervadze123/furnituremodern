@@ -379,6 +379,34 @@ To override an image for a specific route, drop a static `opengraph-image.png` (
 
 All ImageResponse routes ship `Cache-Control: public, max-age=3600, s-maxage=3600, stale-while-revalidate=86400` (set both on the route's response and via `next.config.ts` `headers()`). The square variants are wired into page metadata explicitly because Next's metadata file conventions only auto-discover the canonical `opengraph-image` and `twitter-image` filenames.
 
+### Error pages, search stub, observability
+
+The site ships three error-handling surfaces and a deliberate search-route stub. All are bilingual (with one self-contained exception) and marked `noindex,nofollow`:
+
+| File | Purpose | Notes |
+| --- | --- | --- |
+| `app/[locale]/not-found.tsx` | Branded 404 inside the locale tree | Server Component. Renders breadcrumbs, headline, search hint, four navigation cards (home + three categories), and up to six "Recent products" fetched via `getProducts({ limit: 6 })`. Recent-products section is silently omitted when the data layer returns an empty list. The existing `<Log404Beacon />` continues to post to `/api/log-404`. |
+| `app/[locale]/error.tsx` | Locale-scoped error boundary | Client Component. Friendly headline + body, **never** echoes `error.message` or stack. "Try again" calls `unstable_retry` (Next 16.2+) and falls back to `reset()` on older deployments. Forwards `(error, ctx)` to `logError` from `lib/observability.ts`. The error digest is the only identifier shown to the user. |
+| `app/global-error.tsx` | Catastrophic fallback | Renders only when the locale layout itself crashes. **English-only by design** and fully self-contained: inline styles, hard-coded brand hex (mirroring `siteConfig.brand.{background,foreground,accent}`), no `next-intl`, no design-system imports, raw `<a>` for the home link to avoid re-triggering the boot path that just failed. Includes its own `<html>`, `<head>`, `<body>` per Next.js requirement. |
+| `app/[locale]/search/page.tsx` | Search route stub | Server Component. Backs the `SearchAction` URL template advertised by the WebSite JSON-LD shipped in Plan 1. `q` parameter is trimmed, clamped to 200 chars, and stripped of ASCII control bytes (`\x00-\x1f` and `\x7f`) before rendering as a JSX text child. Canonical URL is `/${locale}/search` (no `?q=` — Google would otherwise index every variant). |
+
+Observability shim — `lib/observability.ts`:
+
+```ts
+import { logError, logEvent } from "@/lib/observability";
+
+logError(err, { route: "/ka", digest: err.digest, scope: "route" });
+logEvent("page_render_failed", { reason: "supabase_timeout" });
+```
+
+The shim no-ops by default so the site has no runtime cost of an error tracker until one is wired. Behaviour:
+
+- `NEXT_PUBLIC_SENTRY_DSN` unset, `NODE_ENV=production` → silent no-op.
+- `NEXT_PUBLIC_SENTRY_DSN` unset, `NODE_ENV=development` → single `console.warn` per call with an `[observability]` prefix so a developer can see when a boundary fired locally.
+- `NEXT_PUBLIC_SENTRY_DSN` set → still no-op today (Sentry is **not** installed in Phase 3); the code path is reserved for Phase 4.
+
+Phase 4 will install `@sentry/nextjs`, replace the bodies of `logError` and `logEvent` with real Sentry calls, and add `sentry.client.config.ts` / `sentry.server.config.ts`. **The public signatures `logError(error, ctx)` and `logEvent(name, payload)` must remain stable across that swap** — every caller (`error.tsx`, `global-error.tsx`, future surfaces) imports those names and must continue to work without edits. The privacy contract is part of the API: `ObservabilityContext` intentionally excludes user identifiers, IPs, emails, cookies, and session tokens. Phase 4 must wire Sentry's `beforeSend` hook to enforce the same constraint.
+
 ## 13. Progressive Web App
 
 The site ships a deliberately small PWA baseline so visitors can install it to a home screen, see a branded icon, and get a friendly offline page when their connection drops. It is **not** an offline catalogue and was designed to be easy to remove or rebrand later.

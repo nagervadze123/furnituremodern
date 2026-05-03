@@ -1,23 +1,34 @@
 // Search route stub — /[locale]/search?q=...
 //
-// We surface this as a real, indexable-ish endpoint mainly so the
-// SearchAction in WebSite JSON-LD points at a route that responds.
-// Once a real search experience exists, replace the body below with
-// the actual results UI; the URL contract (?q=) is already the one
-// schema.org SearchAction advertises.
+// We surface this as a real, resolvable endpoint mainly so the
+// SearchAction in WebSite JSON-LD (lib/schema.ts) points at a route
+// that responds. The URL contract (?q=) is the one schema.org
+// SearchAction advertises; once a real search experience exists,
+// replace the body below with the actual results UI.
 //
-// Marked noindex while it's a stub: we don't want crawlers indexing
-// an empty "coming soon" page, but we DO want the URL to resolve so
-// the SearchAction's urlTemplate validates.
+// Marked noindex,nofollow while it's a stub: we don't want crawlers
+// indexing an empty "coming soon" page, but we DO want the URL to
+// resolve so the SearchAction's urlTemplate validates.
+//
+// q-param hardening:
+//   • Trim + clamp to 200 chars so a long URL can't paint a giant
+//     string into the page.
+//   • Strip ASCII control characters (\x00-\x1f and \x7f) before
+//     rendering. React's default JSX escaping already handles HTML
+//     safety; the control-char strip is purely a display hygiene
+//     measure (zero-width / RTL override / null bytes in a URL).
+//   • Never echo q into an HTML attribute — we only render it as
+//     a JSX text child.
 
 import type { Metadata } from "next";
+import { ArrowUpRight } from "lucide-react";
 import { headers } from "next/headers";
 import { setRequestLocale, getTranslations } from "next-intl/server";
 import { Breadcrumbs, type BreadcrumbCrumb } from "@/components/sections/breadcrumbs";
 import { Link } from "@/i18n/navigation";
 import { JsonLd } from "@/components/json-ld";
 import { breadcrumbListJsonLd } from "@/lib/schema";
-import { absoluteUrl } from "@/lib/site-config";
+import { absoluteUrl, categories } from "@/lib/site-config";
 import { type Locale } from "@/i18n/routing";
 
 type Props = {
@@ -31,12 +42,23 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const t = await getTranslations({ locale, namespace: "search" });
   return {
     title: t("title"),
-    // Stub state — keep the page out of the index until search is real.
-    robots: { index: false, follow: true },
+    // Stub — keep the page out of the index AND don't follow internal
+    // links from it. Until search ships, neither index nor follow
+    // makes the right contract. The canonical URL deliberately omits
+    // ?q= so Google never sees a near-infinite set of variants.
+    robots: { index: false, follow: false },
     alternates: {
       canonical: absoluteUrl(`/${locale}/search`),
     },
   };
+}
+
+// Drop ASCII control characters before rendering. JSX text-child
+// escaping already handles HTML safety; this is for display hygiene
+// — null bytes, vertical tabs, RTL overrides — that would otherwise
+// mangle the page even though they're "safe."
+function sanitizeQuery(q: string): string {
+  return q.replace(/[\x00-\x1f\x7f]/g, "").trim().slice(0, 200);
 }
 
 export default async function SearchPage({ params, searchParams }: Props) {
@@ -57,9 +79,7 @@ export default async function SearchPage({ params, searchParams }: Props) {
     { label: tBreadcrumbs("search") },
   ];
 
-  // Trim + clamp the query so a malicious very-long URL doesn't
-  // surface a giant string into the page.
-  const trimmed = q.trim().slice(0, 200);
+  const sanitized = sanitizeQuery(q);
 
   return (
     <>
@@ -72,17 +92,28 @@ export default async function SearchPage({ params, searchParams }: Props) {
         nonce={nonce}
       />
 
-      <div className="mx-auto max-w-3xl px-4 pt-6 md:px-6 md:pt-8">
+      <div className="mx-auto max-w-6xl px-4 pt-6 md:px-6 md:pt-8">
         <Breadcrumbs items={crumbs} />
       </div>
 
-      <section className="mx-auto max-w-3xl px-4 py-12 md:px-6 md:py-16">
-        <h1 className="font-display text-4xl font-semibold tracking-tight text-foreground md:text-5xl">
-          {t("comingSoonHeading")}
+      <section
+        aria-labelledby="search-heading"
+        className="mx-auto max-w-6xl px-4 py-12 md:px-6 md:py-16"
+      >
+        <h1
+          id="search-heading"
+          className="text-balance font-display text-3xl font-semibold tracking-tight text-foreground sm:text-4xl md:text-5xl"
+        >
+          {t("title")}
         </h1>
-        {trimmed ? (
+        {sanitized ? (
           <p className="mt-4 text-base text-muted-foreground">
-            {t("queryLabel")}: <span className="font-medium text-foreground">{trimmed}</span>
+            {t("term_label")}:{" "}
+            {/* React's default JSX escaping renders user input as
+                text — never as HTML/attribute. Do not refactor this
+                into a dangerouslySetInnerHTML or a string-template
+                attribute value. */}
+            <span className="font-medium text-foreground">{sanitized}</span>
           </p>
         ) : null}
         <p className="mt-6 max-w-prose text-base leading-relaxed text-muted-foreground md:text-lg">
@@ -90,10 +121,67 @@ export default async function SearchPage({ params, searchParams }: Props) {
         </p>
         <Link
           href="/"
-          className="mt-8 inline-flex items-center text-sm font-medium text-foreground underline-offset-4 hover:underline"
+          className="mt-8 inline-flex items-center text-sm font-medium text-foreground underline-offset-4 hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
         >
           {t("backHome")} →
         </Link>
+      </section>
+
+      {/* Same four-card grid pattern as not-found.tsx — keeps the
+          stub useful (visitors land here, can still get to a
+          category) without spinning up a new design. */}
+      <section
+        aria-labelledby="search-categories-heading"
+        className="mx-auto max-w-6xl px-4 pb-16 md:px-6 md:pb-24"
+      >
+        <h2
+          id="search-categories-heading"
+          className="font-display text-xl font-semibold tracking-tight text-foreground md:text-2xl"
+        >
+          {t("browse_categories_heading")}
+        </h2>
+        <ul className="mt-6 grid gap-4 sm:grid-cols-2 md:gap-5 lg:grid-cols-4">
+          <li>
+            <Link
+              href="/"
+              className="group flex h-full min-w-0 items-start justify-between gap-3 rounded-xl bg-card p-5 ring-1 ring-foreground/10 transition-colors hover:bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+            >
+              <div className="min-w-0">
+                <h3 className="font-display text-base font-medium text-foreground">
+                  {tBreadcrumbs("home")}
+                </h3>
+                <p className="mt-1 text-sm text-muted-foreground">
+                  furnituremodern.ge
+                </p>
+              </div>
+              <ArrowUpRight
+                aria-hidden="true"
+                className="h-4 w-4 shrink-0 text-muted-foreground/70 transition-transform group-hover:-translate-y-0.5 group-hover:translate-x-0.5"
+              />
+            </Link>
+          </li>
+          {categories.map((cat) => (
+            <li key={cat.slug}>
+              <Link
+                href={`/${cat.slug}`}
+                className="group flex h-full min-w-0 items-start justify-between gap-3 rounded-xl bg-card p-5 ring-1 ring-foreground/10 transition-colors hover:bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+              >
+                <div className="min-w-0">
+                  <h3 className="font-display text-base font-medium text-foreground">
+                    {cat[locale].name}
+                  </h3>
+                  <p className="mt-1 text-sm text-muted-foreground">
+                    {cat[locale].tagline}
+                  </p>
+                </div>
+                <ArrowUpRight
+                  aria-hidden="true"
+                  className="h-4 w-4 shrink-0 text-muted-foreground/70 transition-transform group-hover:-translate-y-0.5 group-hover:translate-x-0.5"
+                />
+              </Link>
+            </li>
+          ))}
+        </ul>
       </section>
     </>
   );
