@@ -129,6 +129,20 @@ export const brandTokens = {
   logoMonogram: "F",
   // Optional path to a public/ SVG logo for inline use; null when absent.
   logoSvgPath: null as string | null,
+
+  // Phase 5 design system additions. Both PLACEHOLDER until Phase 5
+  // copy / catalogue work supplies real values; see CHECKLIST.md
+  // "Brand identity confirmation" for operator follow-ups.
+  //
+  // PLACEHOLDER — credit string used by Phase 5.4's hero (e.g.
+  // "Photo: Studio Tbilisi"). Empty string when no credit needs to
+  // appear on the rendered hero.
+  heroLandingPhotoCredit: "" as string,
+  // PLACEHOLDER — operator's flagship product slug, used by Phase 5.5
+  // home-page hero CTA to deep-link into the showcase product. Set to
+  // a real slug from the catalogue before launch; null falls back to
+  // the first featured product.
+  signatureProductSlug: null as string | null,
 } as const;
 
 export type BrandTokens = typeof brandTokens;

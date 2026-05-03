@@ -160,6 +160,8 @@ A snapshot of what's already done versus what to do before you go live.
 - [ ] **Brand tagline (ka)** — `siteConfig.brand.tagline.ka` (`ხელნაკეთი ავეჯი თბილისში`). Confirm copy.
 - [ ] **Brand tagline (en)** — `siteConfig.brand.tagline.en` (`Handmade modern furniture from Tbilisi`). Confirm copy.
 - [ ] Optional: drop a logo SVG into `public/` and point `siteConfig.brand.logoSvgPath` at it; the templates fall back to the monogram when this is null.
+- [ ] **Brand hero photo credit** — `siteConfig.brand.heroLandingPhotoCredit` (PLACEHOLDER, currently empty). Phase 5.4 surfaces this string under the home-page hero photo if non-empty. Set to e.g. `"Photo: Studio Tbilisi"` if the launch hero requires attribution; leave empty otherwise.
+- [ ] **Signature product slug** — `siteConfig.brand.signatureProductSlug` (PLACEHOLDER, currently `null`). Phase 5.5's home-page hero CTA deep-links to this product. Set to a real catalogue slug (e.g. `"walnut-frame-loveseat"`) before launch; `null` falls back to the first featured product.
 
 ### OG / Twitter card platform smoke (run after a real domain is up)
 

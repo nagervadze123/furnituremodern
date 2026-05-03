@@ -184,7 +184,8 @@ furnituremodern/
 │   ├── admin/                         Admin-only client components (forms, editors, ...)
 │   ├── layout/                        Header, Footer, DesktopNav, MobileNav, ...
 │   ├── sections/                      Hero, FeaturedCategories, ProductCard, ...
-│   ├── ui/                            shadcn/ui primitives (base-nova style, base-ui)
+│   ├── ui/                            shadcn/ui behavioral primitives (base-nova style, base-ui)
+│   ├── design/                        Visual layout primitives (Container, Section, Display, ...)
 │   ├── consent/                       Granular cookie banner, settings sheet, manage link
 │   ├── analytics-loader.tsx           Loads provider scripts ONLY after consent
 │   ├── analytics/                     page-view-tracker, view-item-tracker, ...
@@ -214,6 +215,8 @@ furnituremodern/
 │   │   ├── server.ts                  Server (RSC/Action/Route Handler) client
 │   │   ├── admin.ts                   Service-role client (server-only)
 │   │   └── database.types.ts          Hand-written Database types
+│   ├── design/                        Design tokens (colors, type, spacing, radius, shadow)
+│   ├── motion/                        CSS-only motion primitives (Reveal, Parallax, ...)
 │   ├── navigation.ts                  mainNav source of truth (NavItem[] with children)
 │   ├── site-config.ts                 Brand, contact, social, locales
 │   ├── schema.ts                      JSON-LD generators
@@ -231,6 +234,16 @@ furnituremodern/
 ├── proxy.ts                           Redirects → admin gate → next-intl
 └── .env.example
 ```
+
+### Design system
+
+The site's visual language is split into three coordinated layers:
+
+- **`lib/design/`** — design tokens. Color scales (surface 0–400, ink 100–20, accent base/soft/strong/muted, semantic, border), spacing extensions (18 / 22 / 30 / 36 / 44), the 9-step type scale, radius, multi-layered shadows, named z-index, and breakpoint aliases. Tokens live as TypeScript constants here AND as CSS variables under the `@theme` directive in `app/globals.css` so Tailwind v4 generates matching utility classes (`bg-surface-0`, `text-ink-80`, `p-22`). See `lib/design/README.md`.
+- **`lib/motion/`** — CSS-only motion primitives. `<Reveal>`, `<RevealStagger>`, `<Parallax>` plus the duration / easing / variant tokens that drive them. After a Phase 5 audit, framer-motion was rejected (28 KB gz over the 20 KB budget); the same API ships now via IntersectionObserver + CSS transitions. Every animation respects `prefers-reduced-motion` and renders statically when set. See `lib/motion/README.md`.
+- **`components/design/`** — visual layout primitives that aren't in shadcn. `<Container>`, `<Section>`, `<Eyebrow>`, typed text components (`<Display>`, `<Heading>`, `<Body>`), and `<AspectImage>` (an aspect-ratio-locked Next/Image wrapper). shadcn (`components/ui/`) keeps its role as headless behavioral primitives.
+
+The locale-aware font CSS variables (`--font-display-locale`, `--font-body-locale`) flip at the `[lang]` selector so any component using them automatically renders the correct family for `ka` (Noto Serif / Sans Georgian) or `en` (Fraunces / Inter) without a per-component locale check.
 
 ## 8. Common tasks
 

@@ -64,6 +64,68 @@
   --radius-2xl: calc(var(--radius) * 1.8);
   --radius-3xl: calc(var(--radius) * 2.2);
   --radius-4xl: calc(var(--radius) * 2.6);
+
+  /* -----------------------------------------------------------------
+     Phase 5 design system tokens — paired with lib/design/tokens.ts.
+     Adding a new token here without mirroring it in lib/design or
+     vice versa is a bug; the tokens.test.ts suite locks the TS shape.
+     ----------------------------------------------------------------- */
+
+  /* Surface scale — 0 (deepest base canvas) → 400 (most-elevated card). */
+  --color-surface-0: oklch(0.99 0.005 80);
+  --color-surface-50: oklch(0.985 0.005 80);
+  --color-surface-100: oklch(0.98 0.006 78);
+  --color-surface-200: oklch(0.97 0.007 76);
+  --color-surface-300: oklch(0.96 0.008 75);
+  --color-surface-400: oklch(1 0 0);
+
+  /* Ink scale — text contrast levels (100 = highest contrast). */
+  --color-ink-100: oklch(0.18 0.01 50);
+  --color-ink-80: oklch(0.22 0.015 60);
+  --color-ink-60: oklch(0.45 0.015 60);
+  --color-ink-40: oklch(0.55 0.015 65);
+  --color-ink-20: oklch(0.7 0.012 70);
+
+  /* Accent scale — derived from brand terracotta. */
+  --color-accent-base: oklch(0.62 0.13 38);
+  --color-accent-soft: oklch(0.92 0.04 38);
+  --color-accent-strong: oklch(0.50 0.13 38);
+  --color-accent-muted: oklch(0.78 0.05 38);
+
+  /* Semantic single-tone tokens. */
+  --color-success: oklch(0.65 0.15 145);
+  --color-warning: oklch(0.78 0.15 80);
+  --color-error: oklch(0.60 0.20 25);
+  --color-info: oklch(0.60 0.13 230);
+
+  /* Border tokens (parallel to shadcn's --border alias). */
+  --color-border-subtle: oklch(0.93 0.005 75);
+  --color-border-default: oklch(0.91 0.008 75);
+  --color-border-strong: oklch(0.85 0.01 75);
+
+  /* Premium spacing stops (additive on top of Tailwind's defaults). */
+  --spacing-18: 4.5rem;
+  --spacing-22: 5.5rem;
+  --spacing-30: 7.5rem;
+  --spacing-36: 9rem;
+  --spacing-44: 11rem;
+
+  /* Premium multi-layered shadows + AAA-friendly focus ring. */
+  --shadow-soft: 0 1px 2px rgba(0, 0, 0, 0.04), 0 2px 8px rgba(0, 0, 0, 0.04);
+  --shadow-medium: 0 2px 4px rgba(0, 0, 0, 0.05), 0 8px 24px rgba(0, 0, 0, 0.06);
+  --shadow-large: 0 4px 8px rgba(0, 0, 0, 0.06), 0 16px 48px rgba(0, 0, 0, 0.08);
+  --shadow-focus: 0 0 0 3px oklch(0.92 0.04 38);
+
+  /* Named z-index stacks. Use these instead of magic numbers — having
+     them in one place makes layer ordering auditable. */
+  --z-base: 0;
+  --z-dropdown: 10;
+  --z-sticky-header: 20;
+  --z-banner: 30;
+  --z-overlay: 40;
+  --z-modal: 50;
+  --z-popover: 60;
+  --z-toast: 70;
 }
 
 :root {
@@ -140,6 +202,25 @@
   --sidebar-accent-foreground: oklch(0.985 0.005 80);
   --sidebar-border: oklch(1 0 0 / 10%);
   --sidebar-ring: oklch(0.65 0.13 38);
+}
+
+/* Locale-aware font CSS variables for the design system layer.
+   Default and [lang="en"] resolve to Fraunces (display) + Inter (body);
+   [lang="ka"] swaps to Noto Serif / Sans Georgian. Components that
+   reference `--font-display-locale` / `--font-body-locale` (or use the
+   design primitives in components/design) automatically render the
+   right glyph family for the active locale without a per-component
+   locale check. The legacy --font-display / --font-body / --font-sans
+   cascades in @theme remain for components that mix scripts. */
+:root,
+[lang="en"] {
+  --font-display-locale: var(--font-display);
+  --font-body-locale: var(--font-body);
+}
+
+[lang="ka"] {
+  --font-display-locale: var(--font-georgian-serif);
+  --font-body-locale: var(--font-georgian-sans);
 }
 
 @layer base {
@@ -283,6 +364,44 @@
     overscroll-behavior-x: contain;
   }
 }
+
+/* ---------------------------------------------------------------------
+   lib/motion stagger reveal — CSS-only orchestration paired with the
+   <RevealStagger> primitive in lib/motion/components.tsx. The parent
+   gets `fm-stagger` immediately and `fm-stagger-revealed` once an
+   IntersectionObserver fires; the per-slot transition-delay rules
+   below cascade direct children up to 8 distinct slots, then later
+   children all share the longest delay (still cascades visually).
+
+   Note: depends on JS to add `fm-stagger-revealed`. Without JS, content
+   inside a stagger remains hidden — acceptable because the rest of
+   the site already requires JS for hydration. Components consuming
+   this primitive should make sure no-JS users still receive critical
+   content in the surrounding markup.
+
+   The CSS variables --fm-stagger-step and --fm-stagger-delay are set
+   on the parent inline so individual instances can tune cadence
+   without rewriting these rules. */
+.fm-stagger > * {
+  opacity: 0;
+  transform: translateY(24px);
+  transition:
+    opacity 400ms cubic-bezier(0, 0, 0.2, 1),
+    transform 400ms cubic-bezier(0, 0, 0.2, 1);
+  transition-delay: var(--fm-stagger-delay, 40ms);
+}
+.fm-stagger.fm-stagger-revealed > * {
+  opacity: 1;
+  transform: translateY(0);
+}
+.fm-stagger > *:nth-child(1) { transition-delay: calc(var(--fm-stagger-delay, 40ms) + var(--fm-stagger-step, 80ms) * 0); }
+.fm-stagger > *:nth-child(2) { transition-delay: calc(var(--fm-stagger-delay, 40ms) + var(--fm-stagger-step, 80ms) * 1); }
+.fm-stagger > *:nth-child(3) { transition-delay: calc(var(--fm-stagger-delay, 40ms) + var(--fm-stagger-step, 80ms) * 2); }
+.fm-stagger > *:nth-child(4) { transition-delay: calc(var(--fm-stagger-delay, 40ms) + var(--fm-stagger-step, 80ms) * 3); }
+.fm-stagger > *:nth-child(5) { transition-delay: calc(var(--fm-stagger-delay, 40ms) + var(--fm-stagger-step, 80ms) * 4); }
+.fm-stagger > *:nth-child(6) { transition-delay: calc(var(--fm-stagger-delay, 40ms) + var(--fm-stagger-step, 80ms) * 5); }
+.fm-stagger > *:nth-child(7) { transition-delay: calc(var(--fm-stagger-delay, 40ms) + var(--fm-stagger-step, 80ms) * 6); }
+.fm-stagger > *:nth-child(n+8) { transition-delay: calc(var(--fm-stagger-delay, 40ms) + var(--fm-stagger-step, 80ms) * 7); }
 
 /* View Transitions API — collapse animations to zero for users with
    prefers-reduced-motion. Browsers swap content instantly (the default
