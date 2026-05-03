@@ -22,29 +22,61 @@ const withNextIntl = createNextIntlPlugin("./i18n/request.ts");
 // Static security headers sent on every response. The Content-Security-
 // Policy is intentionally NOT here — it's set per-request from proxy.ts
 // because it carries a nonce that has to be unique per page render.
+//
+// Each header below is load-bearing. Do not silently weaken any value.
+// Pre-launch checklist in CHECKLIST.md tracks the items that have to flip
+// at a specific phase (e.g. Permissions-Policy `payment=(self)` when
+// payment forms ship in Phase 6).
 const securityHeaders = [
-  // HSTS: force HTTPS for two years, include subdomains, signal preload list eligibility.
+  // HSTS: 2 years, every subdomain, eligible for the browser preload list.
+  // 63072000 seconds = 2 years — required minimum for hstspreload.org.
+  // Do NOT lower max-age and do NOT remove `preload` once submitted; both
+  // are one-way commitments the browser caches for the full duration.
   {
     key: "Strict-Transport-Security",
     value: "max-age=63072000; includeSubDomains; preload",
   },
-  // Block MIME-type sniffing — stops a server-typed text/plain from being executed as JS.
+  // Block MIME-type sniffing — stops a server-typed text/plain from being
+  // executed as JS or other active content.
   { key: "X-Content-Type-Options", value: "nosniff" },
-  // No iframing this site, anywhere, ever (defense-in-depth alongside CSP frame-ancestors).
+  // No iframing this site, anywhere, ever. Defense-in-depth alongside the
+  // CSP `frame-ancestors 'none'` directive set in lib/security/csp.ts.
   { key: "X-Frame-Options", value: "DENY" },
-  // Send only the origin (not the full URL) on cross-origin navigation.
+  // Send only the origin (not the full URL) on cross-origin same-protocol
+  // navigations. Full URL on same-origin, nothing on HTTPS→HTTP downgrades.
   { key: "Referrer-Policy", value: "strict-origin-when-cross-origin" },
-  // Disable powerful browser features by default. interest-cohort=() opts out of FLoC.
-  // geolocation=(self) is permissive enough for delivery-zone features inside our origin.
+  // Disable powerful browser features by default. Each disabled feature is
+  // either irrelevant to this catalogue site or a known fingerprinting/
+  // tracking surface.
+  //
+  //   camera/microphone        — never used; would expose a media-capture surface.
+  //   geolocation=(self)       — reserved for a future "find nearest store" UX.
+  //   interest-cohort=()       — opts out of legacy FLoC/Topics ad targeting.
+  //   payment=()               — must flip to (self) in Phase 6 when payment forms ship.
+  //   usb / magnetometer /
+  //   gyroscope / accelerometer — block hardware-sensor APIs the catalogue
+  //                               will never need; they're common
+  //                               fingerprinting and side-channel vectors.
   {
     key: "Permissions-Policy",
-    value: "camera=(), microphone=(), geolocation=(self), interest-cohort=()",
+    value:
+      "camera=(), microphone=(), geolocation=(self), interest-cohort=(), payment=(), usb=(), magnetometer=(), gyroscope=(), accelerometer=()",
   },
-  // COOP isolates this top-level browsing context — required to be a cross-origin-isolated
-  // page and protects against side-channel leaks via window.opener.
+  // COOP isolates this top-level browsing context — required to land in a
+  // cross-origin-isolated context and prevents side-channel leaks via
+  // window.opener. Pair with CORP below for full isolation.
   { key: "Cross-Origin-Opener-Policy", value: "same-origin" },
-  // CORP restricts which origins can embed our resources. Same-origin pairs well with COOP.
+  // CORP stops other origins from embedding our responses (<img>, <script>,
+  // etc.). Combined with COOP this sets up the cross-origin-isolated
+  // posture future SharedArrayBuffer / high-precision timer needs require.
   { key: "Cross-Origin-Resource-Policy", value: "same-origin" },
+  // Allow the browser to start DNS resolution speculatively for off-page
+  // links. Safe with CSP in place (the actual fetches still get filtered).
+  { key: "X-DNS-Prefetch-Control", value: "on" },
+  // Opt the origin into per-origin agent clustering so this site sits in
+  // its own memory partition. Standard production hardening; the `?1`
+  // value is the structured-header boolean for "true".
+  { key: "Origin-Agent-Cluster", value: "?1" },
 ];
 
 const nextConfig: NextConfig = {

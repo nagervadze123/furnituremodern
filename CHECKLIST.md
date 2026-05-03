@@ -91,12 +91,16 @@ A snapshot of what's already done versus what to do before you go live.
 - [x] Entity-rich headings
 
 ### Security
-- [x] `Strict-Transport-Security` (2 years)
+- [x] `Strict-Transport-Security` 2 years, `includeSubDomains; preload` (preload submission deferred until custom domain — see "Security headers — phased work" below)
 - [x] `X-Content-Type-Options: nosniff`
-- [x] `X-Frame-Options: DENY`
+- [x] `X-Frame-Options: DENY` (paired with CSP `frame-ancestors 'none'`)
 - [x] `Referrer-Policy: strict-origin-when-cross-origin`
-- [x] `Permissions-Policy` blocking camera/microphone/geolocation
-- [x] `Content-Security-Policy` (`default-src 'self'`, restricted sources)
+- [x] `Permissions-Policy` blocks camera/microphone, opts out of FLoC, and disables payment / usb / magnetometer / gyroscope / accelerometer; geolocation scoped to `(self)`
+- [x] `Cross-Origin-Opener-Policy: same-origin`
+- [x] `Cross-Origin-Resource-Policy: same-origin`
+- [x] `X-DNS-Prefetch-Control: on`
+- [x] `Origin-Agent-Cluster: ?1`
+- [x] `Content-Security-Policy` per-request nonce + `'strict-dynamic'`; no `'unsafe-eval'` or `'unsafe-inline'` in production `script-src`; analytics provider domains conditionally included via `lib/security/csp.ts` (see `lib/security/csp.test.ts` for the full contract)
 - [x] `.env*` excluded from git
 - [x] Service-role key marked `import "server-only"`
 - [x] Every input runs through Zod
@@ -189,10 +193,17 @@ Run each of the platform validators below against a deployed product URL and a c
 - [ ] Set the provider env vars you want enabled (`NEXT_PUBLIC_GTM_ID`, `NEXT_PUBLIC_GA4_MEASUREMENT_ID`, `NEXT_PUBLIC_META_PIXEL_ID`, `NEXT_PUBLIC_PLAUSIBLE_DOMAIN`). With none set, `components/analytics-loader.tsx` mounts no scripts.
 - [ ] Verify `lib/site-config.ts` GPS coordinates point at your actual showroom
 
+### Security headers — phased work
+
+The production CSP and security-headers baseline lives in `next.config.ts` (static headers) and `lib/security/csp.ts` (per-request CSP nonce, applied via `proxy.ts`). Each header is tested in `lib/security/csp.test.ts`. The items below intentionally stay un-flipped until the matching feature ships.
+
+- [ ] **Pre-launch — submit HSTS to the preload list.** Once a real custom domain (`furnituremodern.ge` or similar) is attached and serving HTTPS, submit it at https://hstspreload.org/. Do **not** submit while the site is still on the `.vercel.app` subdomain — the preload commitment is one-way and ~6 months to reverse. The header in `next.config.ts` already advertises `preload`; submission is the explicit step.
+- [ ] **Phase 4 — tighten style-src to nonce-based.** Today `style-src 'self' 'unsafe-inline'` because Next/shadcn occasionally inject inline styles. When the framework + UI primitives no longer need it, drop `'unsafe-inline'` and apply the per-request nonce to styles too. Add a regression test in `lib/security/csp.test.ts` once flipped.
+- [ ] **Phase 6 — Permissions-Policy `payment=(self)` when payment forms ship.** Today `payment=()` (fully blocked). Update the `Permissions-Policy` value in `next.config.ts` only when the payment surface is being introduced — flipping early would silently allow payment APIs that no UI uses.
+
 ### Optional improvements
 - [ ] Wire a real `/search` route (JSON-LD already advertises one)
 - [ ] Add a `/contact` page (`localBusinessJsonLd` already supports it)
-- [ ] Tighten Content-Security-Policy: switch from `'unsafe-inline'` to nonce-based CSP
 - [ ] Add a third locale (Russian?) — see `README.md` § "Add a new locale"
 - [ ] Run a real Lighthouse mobile audit on the deployed URL — placeholder phase: Performance ≥ 90, SEO 100, Accessibility ≥ 95, Best Practices 100. After real photos: Performance ≥ 95.
 - [ ] Capture per-route First Load JS once Next 16's Turbopack build summary or analyzer pipeline reports it natively, then ratchet the bundle budget at *baseline + 5%*. Today the 180 KB target is a Lighthouse-derived ceiling, not a CI gate.

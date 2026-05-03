@@ -1,21 +1,38 @@
 // Builds the Content-Security-Policy header string used by proxy.ts.
 //
-// Two modes: development (includes 'unsafe-eval' on script-src because
-// React's dev runtime evaluates strings at runtime to reconstruct
-// server-side error stacks; without this, the dev console fills with CSP
-// errors about the eval directive being violated) and production
-// (nonce-based strict-dynamic — no 'unsafe-eval', no 'unsafe-inline' on
-// script-src).
+// Architectural lock-ins (do not weaken without explicit review):
+//   • Production script-src is nonce-based with 'strict-dynamic'. NEVER
+//     reintroduce 'unsafe-eval' or 'unsafe-inline' in production.
+//   • Development script-src includes 'unsafe-eval' because React's dev
+//     runtime evaluates strings at runtime to reconstruct server-side
+//     error stacks; without it the dev console fills with CSP errors.
+//   • style-src keeps 'unsafe-inline' even in production. Tailwind v4
+//     emits a static stylesheet but Next.js framework code occasionally
+//     injects small inline styles, and shadcn/base-ui primitives ship
+//     style attributes. CHECKLIST.md tracks the Phase 4 hardening to
+//     move style-src to nonce-based. Style injection is a much smaller
+//     attack surface than script injection (no JS execution).
+//   • frame-ancestors 'none' is mirrored by X-Frame-Options: DENY in
+//     next.config.ts. Two headers, same answer — defense in depth.
+//   • upgrade-insecure-requests forces any http:// subresource to
+//     https://. Combined with HSTS this guarantees no mixed-content
+//     downgrades survive a build.
 //
 // connect-src is computed from the configured Supabase origin so the
 // browser client can hit auth/REST/Realtime; we add the wss:// peer for
 // Realtime websockets.
 //
 // When optional analytics providers are configured we extend script-src,
-// connect-src, and (for Meta only) img-src with their published domains.
-// Domains stay out of the policy when the corresponding env var is
-// unset, so a single-deployment site with no analytics keeps the
-// strict baseline.
+// script-src-elem, connect-src, and img-src with their published
+// domains. Domains stay out of the policy when the corresponding env
+// var is unset, so a single-deployment site with no analytics keeps the
+// strict baseline. Linking domain inclusion to provider activation
+// (rather than env-var presence alone) is intentional — when GTM is set
+// it owns GA4 / Meta inside its container, so the direct loaders skip
+// and their hosts stay out of CSP. If a deployment's GTM container is
+// configured to fan out to providers whose env var is unset, those
+// fan-outs will be blocked by CSP — set the matching public env var to
+// allow them.
 
 import type { AnalyticsConfig } from "@/lib/analytics/config";
 
@@ -101,19 +118,38 @@ export function buildCsp({
   scriptHosts.push(...extraScript);
   const scriptSrc = scriptHosts.join(" ");
 
-  // Style-src stays 'unsafe-inline' even in production: Tailwind v4 emits
-  // a static stylesheet but Next.js framework code occasionally injects
-  // small inline styles that aren't worth the breakage risk to nonce.
+  // script-src-elem governs <script> element loads specifically. Without
+  // it the directive falls back to script-src, which is fine — but
+  // setting it explicitly makes the contract visible and survives any
+  // future split where script (eval-ish) and script-src-elem (real
+  // <script> tags) diverge.
+  const scriptSrcElem = scriptSrc;
+
   const styleSrc = "'self' 'unsafe-inline'";
 
-  const imgSrc = ["'self'", "data:", "blob:", "https:", ...extraImg].join(" ");
+  // img-src deliberately keeps the broad `https:` to cover product
+  // photography hosted on a CDN we haven't named yet (see
+  // CHECKLIST.md "Replace product photos"). The Supabase Storage host
+  // is listed explicitly when configured so the contract is readable
+  // even after `https:` is eventually narrowed.
+  const imgHosts = ["'self'", "data:", "blob:", "https:"];
+  if (supabaseOrigin) imgHosts.push(supabaseOrigin);
+  imgHosts.push(...extraImg);
+  const imgSrc = imgHosts.join(" ");
+
+  // next/font self-hosts most type, but ImageResponse OG templates fetch
+  // Google Fonts at render time on the server (not in the browser) — the
+  // explicit fonts.gstatic.com entry is here for resilience if any
+  // browser-side font ever ends up on that host.
+  const fontSrc = "'self' data: https://fonts.gstatic.com";
 
   const directives = [
     "default-src 'self'",
     `script-src ${scriptSrc}`,
+    `script-src-elem ${scriptSrcElem}`,
     `style-src ${styleSrc}`,
     `img-src ${imgSrc}`,
-    "font-src 'self' data:",
+    `font-src ${fontSrc}`,
     `connect-src ${connectSrc.join(" ")}`,
     "object-src 'none'",
     "frame-ancestors 'none'",

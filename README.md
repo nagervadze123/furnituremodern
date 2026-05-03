@@ -483,7 +483,15 @@ In dev (`NODE_ENV !== "production"`), the registrar actively unregisters any lef
 
 To extend offline behaviour later, the cleanest path is to add a category/product list cache keyed by ISR revalidation timestamps — but only after the catalogue's freshness model is finalised.
 
-## 14. Known notes
+## 14. Security headers
+
+Two files own the production security posture:
+
+- **`next.config.ts`** — static response headers that don't vary per request: HSTS (2 years, `includeSubDomains; preload`), `X-Content-Type-Options: nosniff`, `X-Frame-Options: DENY`, `Referrer-Policy: strict-origin-when-cross-origin`, `Permissions-Policy` (camera/mic/payment/usb/sensors disabled, FLoC opted out, geolocation scoped to `(self)`), `Cross-Origin-Opener-Policy` + `Cross-Origin-Resource-Policy: same-origin`, `X-DNS-Prefetch-Control: on`, `Origin-Agent-Cluster: ?1`. Each header carries an inline comment explaining why its value was chosen — do not weaken silently.
+- **`lib/security/csp.ts`** — Content-Security-Policy builder. Production CSP is nonce-based with `'strict-dynamic'`; no `'unsafe-eval'` or `'unsafe-inline'` in `script-src`. The nonce is generated per request in `proxy.ts` (`lib/security/nonce.ts`) and threaded through `app/[locale]/layout.tsx` to every component that emits inline scripts. Analytics provider domains are added conditionally — only when the matching `NEXT_PUBLIC_*` env var is set — so a deployment with no analytics keeps the strict baseline.
+
+The full contract lives in `lib/security/csp.test.ts`. Future hardening items (HSTS preload submission, `style-src` nonce, `payment=(self)`) are tracked in `CHECKLIST.md` under "Security headers — phased work".
+
+## 15. Known notes
 
 - `npm audit` reports a moderate PostCSS vulnerability inside Next.js's bundled deps. The auto-fix downgrades Next; this is upstream and will resolve on the next Next.js patch.
-- `next.config.ts` CSP includes `script-src 'unsafe-inline'` because Next's hydration runtime needs it. Tighten with a nonce-based CSP later if you need stricter posture.
