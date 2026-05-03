@@ -84,7 +84,10 @@ export function LoginForm({ next, initialError }: Props) {
           type="email"
           autoComplete="username"
           required
-          className="mt-1 w-full rounded-md border border-input bg-background px-3 py-2 text-sm shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+          // text-base on phones (sm:text-sm at desktop) prevents iOS
+          // Safari from auto-zooming to the focused input. min-h-11
+          // ensures comfortable thumb-typing.
+          className="mt-1 block w-full min-h-11 rounded-md border border-input bg-background px-3 py-2 text-base shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring sm:text-sm"
         />
         {fieldErrors.email ? (
           <p className="mt-1 text-xs text-destructive">{fieldErrors.email}</p>
@@ -101,7 +104,10 @@ export function LoginForm({ next, initialError }: Props) {
           type="password"
           autoComplete="current-password"
           required
-          className="mt-1 w-full rounded-md border border-input bg-background px-3 py-2 text-sm shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+          // text-base on phones (sm:text-sm at desktop) prevents iOS
+          // Safari from auto-zooming to the focused input. min-h-11
+          // ensures comfortable thumb-typing.
+          className="mt-1 block w-full min-h-11 rounded-md border border-input bg-background px-3 py-2 text-base shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring sm:text-sm"
         />
         {fieldErrors.password ? (
           <p className="mt-1 text-xs text-destructive">
@@ -116,7 +122,7 @@ export function LoginForm({ next, initialError }: Props) {
         </p>
       ) : null}
 
-      <Button type="submit" disabled={pending} className="w-full">
+      <Button type="submit" disabled={pending} className="min-h-11 w-full">
         {pending ? "Signing in…" : "Sign in"}
       </Button>
     </form>

@@ -32,7 +32,10 @@ export function Banner() {
       aria-live="polite"
       tabIndex={-1}
       onKeyDown={handleKeyDown}
-      className="fixed inset-x-0 bottom-0 z-50 border-t bg-background/95 shadow-lg backdrop-blur supports-[backdrop-filter]:bg-background/80"
+      // pb-safe pushes the banner above the iOS home-indicator strip
+      // so the bottom button isn't half-hidden under the gesture bar.
+      // px-safe + horizontal padding handles the landscape notch case.
+      className="fixed inset-x-0 bottom-0 z-50 border-t bg-background/95 px-safe pb-safe shadow-lg backdrop-blur supports-[backdrop-filter]:bg-background/80"
     >
       <h2 id="consent-banner-heading" className="sr-only">
         {t("heading")}
@@ -43,7 +46,9 @@ export function Banner() {
             aria-hidden="true"
             className="mt-0.5 h-5 w-5 flex-shrink-0 text-muted-foreground md:mt-0"
           />
-          <p className="line-clamp-2 text-sm leading-snug text-muted-foreground">
+          {/* `min-w-0` lets the paragraph shrink so the cookie icon and
+              the action buttons aren't pushed off-screen. */}
+          <p className="line-clamp-2 min-w-0 text-sm leading-snug text-muted-foreground">
             {t("body")}{" "}
             <Link
               href="/privacy"
@@ -53,12 +58,15 @@ export function Banner() {
             </Link>
           </p>
         </div>
+        {/* min-h-11 enforces the 44px hit-area on the action row even
+            when the Button's `size="sm"` would otherwise shrink it.
+            Stacked column on mobile, side-by-side at md+. */}
         <div className="flex flex-col gap-2 md:flex-row md:flex-shrink-0">
           <Button
             variant="outline"
             size="sm"
             onClick={() => decide("accept-all")}
-            className="w-full md:w-auto"
+            className="min-h-11 w-full justify-center md:w-auto"
           >
             {t("buttons.accept_all")}
           </Button>
@@ -66,7 +74,7 @@ export function Banner() {
             variant="outline"
             size="sm"
             onClick={() => decide("necessary-only")}
-            className="w-full md:w-auto"
+            className="min-h-11 w-full justify-center md:w-auto"
           >
             {t("buttons.necessary_only")}
           </Button>

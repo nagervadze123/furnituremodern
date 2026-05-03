@@ -36,13 +36,17 @@ export function DeleteProductButton({ action }: Props) {
   };
 
   return (
-    <div className="flex items-center gap-2">
+    // Wraps to a stacked column on the smallest phones so the select
+    // and the destructive button each get full row width without
+    // colliding. min-h-10 / min-h-11 give finger-friendly hit areas.
+    <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
       <select
         aria-label="Delete mode"
         value={mode}
         onChange={(e) => setMode(e.target.value as DeleteMode)}
         disabled={pending}
-        className="h-9 rounded-md border border-input bg-background px-2 text-sm"
+        // text-base on phones (sm:text-sm) avoids iOS auto-zoom on focus.
+        className="block min-h-10 rounded-md border border-input bg-background px-2 text-base sm:text-sm"
       >
         <option value="redirect">Redirect to category</option>
         <option value="gone">Mark as gone (410)</option>
@@ -53,7 +57,7 @@ export function DeleteProductButton({ action }: Props) {
         size="sm"
         onClick={handleClick}
         disabled={pending}
-        className="gap-1.5"
+        className="min-h-11 gap-1.5"
       >
         <Trash2 aria-hidden className="h-4 w-4" />
         {pending ? "Deleting…" : "Delete"}

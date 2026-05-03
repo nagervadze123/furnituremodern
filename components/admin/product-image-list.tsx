@@ -133,7 +133,13 @@ export function ProductImageList({ productId, initialImages }: Props) {
               type="button"
               onClick={() => handleDelete(img.id)}
               disabled={pending}
-              className="absolute right-2 top-2 rounded-md bg-background/90 p-1.5 text-destructive opacity-0 transition group-hover:opacity-100 disabled:opacity-50"
+              // Touch devices have no hover, so `opacity-0
+              // group-hover:opacity-100` left the delete button
+              // permanently hidden on phones/tablets. Always-visible on
+              // coarse pointers (touch); fade-in on hover for fine
+              // pointers. touch-target-coarse forces the 44×44 hit
+              // area on touch even though the visible chrome is small.
+              className="touch-target-coarse absolute right-1.5 top-1.5 inline-flex items-center justify-center rounded-md bg-background/90 p-1.5 text-destructive transition disabled:opacity-50 [@media(pointer:coarse)]:opacity-100 [@media(pointer:fine)]:opacity-0 [@media(pointer:fine)]:group-hover:opacity-100 [@media(pointer:fine)]:focus-visible:opacity-100"
               aria-label="Delete image"
             >
               <Trash2 aria-hidden className="h-4 w-4" />

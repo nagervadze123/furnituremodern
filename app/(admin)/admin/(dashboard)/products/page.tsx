@@ -53,8 +53,12 @@ export default async function AdminProductsPage({ searchParams }: Props) {
 
   return (
     <div>
-      <div className="flex items-center justify-between gap-4">
-        <div>
+      {/* The header row stacks on the smallest phones so the "New
+          product" CTA can sit full-width below the title. flex-wrap +
+          gap-y-3 absorb anything in between. min-w-0 keeps the title
+          column from forcing the CTA off-screen at narrow widths. */}
+      <div className="flex flex-wrap items-start justify-between gap-x-4 gap-y-3">
+        <div className="min-w-0">
           <h1 className="text-2xl font-semibold tracking-tight">Products</h1>
           <p className="mt-1 text-sm text-muted-foreground">
             {count ?? 0} total · page {page} of {totalPages}
@@ -62,7 +66,7 @@ export default async function AdminProductsPage({ searchParams }: Props) {
         </div>
         <Link
           href="/admin/products/new"
-          className="inline-flex h-9 items-center gap-1.5 rounded-md bg-primary px-3 text-sm font-medium text-primary-foreground hover:bg-primary/90"
+          className="inline-flex min-h-11 items-center gap-1.5 rounded-md bg-primary px-3 text-sm font-medium text-primary-foreground hover:bg-primary/90"
         >
           <Plus aria-hidden className="h-4 w-4" />
           New product
@@ -75,18 +79,20 @@ export default async function AdminProductsPage({ searchParams }: Props) {
         </p>
       ) : null}
 
-      {/* Filters */}
+      {/* Filters wrap to a 2-row layout on phones (search input full
+          width, then [select][submit]). text-base on the controls
+          dodges the iOS auto-zoom-on-focus. */}
       <form className="mt-6 flex flex-wrap gap-3">
         <input
           name="q"
           defaultValue={q}
           placeholder="Search by English name…"
-          className="h-9 flex-1 rounded-md border border-input bg-background px-3 text-sm"
+          className="block w-full min-w-0 min-h-10 flex-1 rounded-md border border-input bg-background px-3 text-base sm:w-auto sm:text-sm"
         />
         <select
           name="category"
           defaultValue={categoryFilter}
-          className="h-9 rounded-md border border-input bg-background px-2 text-sm"
+          className="block min-w-0 min-h-10 rounded-md border border-input bg-background px-2 text-base sm:text-sm"
         >
           <option value="">All categories</option>
           {categories.map((c) => (
@@ -95,13 +101,15 @@ export default async function AdminProductsPage({ searchParams }: Props) {
             </option>
           ))}
         </select>
-        <Button type="submit" variant="outline" size="sm">
+        <Button type="submit" variant="outline" size="sm" className="min-h-10">
           Filter
         </Button>
       </form>
 
-      {/* Table */}
-      <div className="mt-6 overflow-x-auto rounded-xl border border-border bg-background">
+      {/* Table — intentional horizontal scroll container. Row content
+          (long names, monospaced slugs) routinely exceeds phone width;
+          users scroll the table, the page itself stays anchored. */}
+      <div className="scroll-x-touch mt-6 rounded-xl border border-border bg-background">
         {error ? (
           <p className="p-6 text-sm text-destructive">{error.message}</p>
         ) : !rows || rows.length === 0 ? (
@@ -109,7 +117,7 @@ export default async function AdminProductsPage({ searchParams }: Props) {
             No products match the current filters.
           </p>
         ) : (
-          <table className="w-full text-sm">
+          <table className="w-full min-w-[44rem] text-sm">
             <thead className="border-b border-border bg-muted/40 text-left text-xs uppercase tracking-wide text-muted-foreground">
               <tr>
                 <th className="px-4 py-2 font-medium">Name</th>
@@ -143,7 +151,7 @@ export default async function AdminProductsPage({ searchParams }: Props) {
                   <td className="px-4 py-3 text-right">
                     <Link
                       href={`/admin/products/${p.id}/edit`}
-                      className="text-sm font-medium text-foreground/80 hover:text-foreground"
+                      className="-mx-2 inline-flex min-h-10 items-center rounded px-2 text-sm font-medium text-foreground/80 hover:text-foreground"
                     >
                       Edit
                     </Link>
@@ -155,16 +163,17 @@ export default async function AdminProductsPage({ searchParams }: Props) {
         )}
       </div>
 
-      {/* Pagination */}
+      {/* Pagination — min-h-10 keeps the rounded buttons tappable on
+          phones; the row stays right-aligned on desktop. */}
       {totalPages > 1 ? (
         <nav
           aria-label="Pagination"
-          className="mt-6 flex items-center justify-end gap-2 text-sm"
+          className="mt-6 flex flex-wrap items-center justify-end gap-2 text-sm"
         >
           {page > 1 ? (
             <Link
               href={buildPageUrl(page - 1, q, categoryFilter)}
-              className="rounded-md border border-border bg-background px-3 py-1.5 transition-colors hover:bg-muted"
+              className="inline-flex min-h-10 items-center rounded-md border border-border bg-background px-3 transition-colors hover:bg-muted"
             >
               Previous
             </Link>
@@ -172,7 +181,7 @@ export default async function AdminProductsPage({ searchParams }: Props) {
           {page < totalPages ? (
             <Link
               href={buildPageUrl(page + 1, q, categoryFilter)}
-              className="rounded-md border border-border bg-background px-3 py-1.5 transition-colors hover:bg-muted"
+              className="inline-flex min-h-10 items-center rounded-md border border-border bg-background px-3 transition-colors hover:bg-muted"
             >
               Next
             </Link>

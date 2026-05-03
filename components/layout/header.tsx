@@ -30,13 +30,18 @@ export async function Header() {
         {tSite("skipToContent")}
       </a>
 
-      <header className="sticky top-0 z-40 border-b border-border/50 bg-background/85 backdrop-blur supports-[backdrop-filter]:bg-background/70">
-        <div className="mx-auto flex h-16 max-w-7xl items-center justify-between gap-4 px-4 md:px-6">
+      {/* `pt-safe` lifts the sticky header below the iOS notch / status
+          bar when the page is opened with `viewport-fit=cover`. Inner
+          row keeps fixed 64px so the visual rhythm doesn't shift. */}
+      <header className="sticky top-0 z-40 border-b border-border/50 bg-background/85 pt-safe backdrop-blur supports-[backdrop-filter]:bg-background/70">
+        <div className="mx-auto flex h-16 max-w-7xl items-center justify-between gap-3 px-4 md:gap-4 md:px-6">
           {/* Logo is a separate clickable link to home, deliberately
-              kept alongside the explicit "Home" nav item per the spec. */}
+              kept alongside the explicit "Home" nav item per the spec.
+              `min-w-0` + truncate keeps a longer brand name from
+              pushing the locale switcher off-screen on narrow phones. */}
           <Link
             href="/"
-            className="font-display text-xl font-semibold tracking-tight text-foreground"
+            className="min-w-0 truncate font-display text-lg font-semibold tracking-tight text-foreground sm:text-xl"
             aria-label={`${siteConfig.name} — ${t("home")}`}
           >
             {siteConfig.name}
@@ -44,7 +49,7 @@ export async function Header() {
 
           <DesktopNav items={mainNav} />
 
-          <div className="flex items-center gap-1">
+          <div className="flex shrink-0 items-center gap-1">
             <LocaleSwitcher />
             <MobileNav items={mainNav} />
           </div>

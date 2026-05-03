@@ -10,7 +10,10 @@ type Props = {
 export function CategoryIntro({ title, intro }: Props) {
   return (
     <header className="mx-auto max-w-3xl px-4 pb-10 pt-8 text-center md:px-6 md:pt-12">
-      <h1 className="font-display text-4xl font-semibold tracking-tight text-foreground md:text-5xl">
+      {/* Headline scales from text-3xl on small phones to text-5xl on
+          desktop. `break-words` covers the Georgian compound-noun case
+          on a 360px viewport. */}
+      <h1 className="text-balance font-display text-3xl font-semibold tracking-tight break-words text-foreground sm:text-4xl md:text-5xl">
         {title}
       </h1>
       <p className="mt-5 text-base leading-relaxed text-muted-foreground md:text-lg">

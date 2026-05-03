@@ -157,10 +157,12 @@ export default async function ProductDetailPage({ params }: Props) {
         <Breadcrumbs items={crumbs} />
       </div>
 
-      <article className="mx-auto grid max-w-7xl gap-10 px-4 pb-16 pt-8 md:grid-cols-2 md:gap-12 md:px-6 md:pt-12 md:pb-24">
+      <article className="mx-auto grid max-w-7xl gap-8 px-4 pb-16 pt-8 sm:gap-10 md:grid-cols-2 md:gap-12 md:px-6 md:pt-12 md:pb-24">
         {/* Image gallery — currently a single primary image. Multi-image
-            layout drops in here when products gain more photos. */}
-        <div className="relative aspect-[4/5] overflow-hidden rounded-2xl bg-muted">
+            layout drops in here when products gain more photos.
+            min-w-0 stops the picture from forcing a horizontal scroll
+            when the description column wraps to a long single token. */}
+        <div className="relative aspect-[4/5] min-w-0 overflow-hidden rounded-2xl bg-muted">
           {primary ? (
             <Image
               src={primary.url}
@@ -175,15 +177,19 @@ export default async function ProductDetailPage({ params }: Props) {
           ) : null}
         </div>
 
-        <div>
-          <h1 className="font-display text-4xl font-semibold leading-tight tracking-tight text-foreground md:text-5xl">
+        <div className="min-w-0">
+          {/* Headline scale steps from text-3xl on smallest phones up
+              through sm/md breakpoints; `text-balance` evens out a
+              two-line wrap and `break-words` is the safety net for a
+              single 30+ character Georgian compound name. */}
+          <h1 className="text-balance font-display text-3xl font-semibold leading-tight tracking-tight break-words text-foreground sm:text-4xl md:text-5xl">
             {product.name[locale]}
           </h1>
-          <p className="mt-4 text-2xl font-medium text-foreground">
+          <p className="mt-4 text-2xl font-medium text-foreground tabular-nums">
             {formatPrice(product.price, product.currency, locale)}
           </p>
           <div className="mt-8 max-w-prose text-base leading-relaxed text-muted-foreground md:text-lg">
-            <p>{product.description[locale]}</p>
+            <p className="break-words">{product.description[locale]}</p>
           </div>
 
           {/* Last-updated freshness signal — a real <time> element so

@@ -29,14 +29,16 @@ export async function FeaturedCategories() {
     >
       <div className="mx-auto max-w-7xl">
         <div className="max-w-2xl">
-          <h2 className="font-display text-3xl font-semibold tracking-tight text-foreground md:text-4xl">
+          <h2 className="text-balance font-display text-2xl font-semibold tracking-tight break-words text-foreground sm:text-3xl md:text-4xl">
             {t("categoriesTitle")}
           </h2>
           <p className="mt-3 text-base text-muted-foreground md:text-lg">
             {t("categoriesSubtitle")}
           </p>
         </div>
-        <div className="mt-10 grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
+        {/* gap-4 on phones, gap-5 sm+, gap-6 lg — keeps cards roomy on
+            desktop without crowding portrait phone screens. */}
+        <div className="mt-8 grid gap-4 sm:mt-10 sm:grid-cols-2 sm:gap-5 lg:grid-cols-3 lg:gap-6">
           {categories.map((cat) => (
             <CategoryCard
               key={cat.slug}

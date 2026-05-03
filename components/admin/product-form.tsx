@@ -219,27 +219,31 @@ export function ProductForm({
         <input type="hidden" name="currency" value="GEL" />
       </div>
 
-      <div className="flex flex-wrap gap-6">
-        <label className="flex items-center gap-2 text-sm">
+      {/* Checkbox rows wrap on narrow phones; min-h-10 gives each row a
+          tappable hit zone even though the checkbox itself is small. */}
+      <div className="flex flex-wrap gap-x-6 gap-y-3">
+        <label className="flex min-h-10 items-center gap-2 text-sm">
           <input
             type="checkbox"
             name="is_published"
             defaultChecked={defaults.is_published}
+            className="size-4"
           />
           Published
         </label>
-        <label className="flex items-center gap-2 text-sm">
+        <label className="flex min-h-10 items-center gap-2 text-sm">
           <input
             type="checkbox"
             name="is_featured"
             defaultChecked={defaults.is_featured}
+            className="size-4"
           />
           Featured (shown on home page)
         </label>
       </div>
 
       <div className="flex items-center gap-3 pt-2">
-        <Button type="submit" disabled={pending}>
+        <Button type="submit" disabled={pending} className="min-h-11">
           {pending ? "Saving…" : submitLabel}
         </Button>
       </div>
@@ -247,8 +251,14 @@ export function ProductForm({
   );
 }
 
+// min-h-10 gives every input/select/textarea row a 40px minimum hit
+// height — comfortable on touch without bloating the desktop form.
+// `text-base` on phones (sm:text-sm at ≥640px) prevents iOS Safari
+// from auto-zooming when the input is focused (it triggers when the
+// computed font-size is below 16px). `min-w-0` lets selects shrink
+// inside a grid cell instead of forcing a horizontal scroll.
 const inputClass =
-  "w-full rounded-md border border-input bg-background px-3 py-2 text-sm shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring";
+  "block w-full min-w-0 min-h-10 rounded-md border border-input bg-background px-3 py-2 text-base shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring sm:text-sm";
 
 function Field({
   label,

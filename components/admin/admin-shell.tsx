@@ -10,6 +10,7 @@ import {
   Search,
 } from "lucide-react";
 import { SignOutButton } from "./sign-out-button";
+import { AdminMobileNav } from "./admin-mobile-nav";
 
 const navItems = [
   { href: "/admin", label: "Dashboard", Icon: LayoutDashboard },
@@ -18,6 +19,11 @@ const navItems = [
   { href: "/admin/redirects", label: "Redirects", Icon: ArrowRightLeft },
   { href: "/admin/seo", label: "SEO Audit", Icon: Search },
 ] as const;
+
+export type AdminNavItem = {
+  href: string;
+  label: string;
+};
 
 type Props = {
   children: React.ReactNode;
@@ -28,7 +34,7 @@ type Props = {
 
 export function AdminShell({ children, email }: Props) {
   return (
-    <div className="flex min-h-screen">
+    <div className="flex min-h-dvh">
       <aside className="hidden w-64 shrink-0 border-r border-border bg-background md:flex md:flex-col">
         <div className="flex h-16 items-center border-b border-border px-6">
           <Link href="/admin" className="text-lg font-semibold tracking-tight">
@@ -62,20 +68,38 @@ export function AdminShell({ children, email }: Props) {
         </div>
       </aside>
 
-      <div className="flex min-h-screen flex-1 flex-col">
-        <header className="flex h-16 items-center justify-between border-b border-border bg-background px-6 md:hidden">
-          <Link href="/admin" className="text-lg font-semibold">
-            Admin
-          </Link>
+      {/* `min-w-0` on the column wrapper is what allows wide admin
+          tables to live inside an `overflow-x-auto` container without
+          forcing the outer flex row to widen. Without it, a long
+          product name in a table can blow the layout sideways. */}
+      <div className="flex min-h-dvh min-w-0 flex-1 flex-col">
+        {/* Mobile-only top bar. Adds a hamburger trigger that opens the
+            admin nav as a sheet so tablet/phone admins can move between
+            sections — desktop keeps the persistent left sidebar. */}
+        <header className="flex h-16 items-center justify-between gap-3 border-b border-border bg-background px-4 sm:px-6 md:hidden">
+          <div className="flex min-w-0 items-center gap-2">
+            <AdminMobileNav
+              items={navItems.map(({ href, label }) => ({ href, label }))}
+              email={email ?? null}
+            />
+            <Link
+              href="/admin"
+              className="truncate text-lg font-semibold tracking-tight"
+            >
+              Admin
+            </Link>
+          </div>
           <Link
             href="/"
-            className="text-sm text-muted-foreground hover:text-foreground"
+            className="-mr-2 inline-flex min-h-10 shrink-0 items-center rounded-md px-2 text-sm text-muted-foreground hover:text-foreground"
           >
             View site
           </Link>
         </header>
 
-        <main className="flex-1 p-6 md:p-10">{children}</main>
+        {/* Padding shrinks on phones so dense admin tables/forms have
+            more horizontal room; bumps to p-10 on desktop. */}
+        <main className="flex-1 p-4 sm:p-6 md:p-10">{children}</main>
       </div>
     </div>
   );

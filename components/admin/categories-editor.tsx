@@ -38,7 +38,7 @@ export function CategoriesEditor({ categories }: Props) {
       <div className="rounded-xl border border-border bg-background">
         <button
           type="button"
-          className="flex w-full items-center gap-2 p-4 text-left text-sm font-medium"
+          className="flex min-h-12 w-full items-center gap-2 p-4 text-left text-sm font-medium"
           onClick={() => setOpenId(openId === "new" ? null : "new")}
           aria-expanded={openId === "new"}
         >
@@ -73,13 +73,15 @@ export function CategoriesEditor({ categories }: Props) {
         <div key={c.id} className="rounded-xl border border-border bg-background">
           <button
             type="button"
-            className="flex w-full items-center gap-3 p-4 text-left"
+            className="flex min-h-12 w-full flex-wrap items-center gap-x-3 gap-y-1 p-4 text-left"
             onClick={() => setOpenId(openId === c.id ? null : c.id)}
             aria-expanded={openId === c.id}
           >
-            <span className="text-sm font-medium">{c.name_en}</span>
-            <span className="text-xs text-muted-foreground">{c.name_ka}</span>
-            <code className="ml-auto rounded bg-muted px-1.5 py-0.5 font-mono text-xs">
+            <span className="text-sm font-medium break-words">{c.name_en}</span>
+            <span className="text-xs text-muted-foreground break-words">
+              {c.name_ka}
+            </span>
+            <code className="ml-auto rounded bg-muted px-1.5 py-0.5 font-mono text-xs break-all">
               /{c.slug}
             </code>
             {openId === c.id ? (
@@ -252,8 +254,11 @@ function CategoryForm({
   );
 }
 
+// See product-form.tsx for the rationale on this input baseline:
+// 40px hit area, base text size on phones to dodge iOS auto-zoom,
+// `min-w-0` to allow safe shrinking inside a grid cell.
 const inputClass =
-  "w-full rounded-md border border-input bg-background px-3 py-2 text-sm shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring";
+  "block w-full min-w-0 min-h-10 rounded-md border border-input bg-background px-3 py-2 text-base shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring sm:text-sm";
 
 function Field({
   label,

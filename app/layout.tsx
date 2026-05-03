@@ -7,7 +7,7 @@
 // Locale-specific concerns (fonts, lang attribute, providers) are
 // handled by app/[locale]/layout.tsx.
 
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import {
   Fraunces,
   Inter,
@@ -77,6 +77,23 @@ const notoSerifGeorgian = Noto_Serif_Georgian({
   weight: ["400", "500", "600", "700"],
 });
 
+// Mobile viewport. We deliberately omit `maximumScale` and
+// `userScalable` so users can zoom — locking either is a WCAG fail.
+// `viewportFit: "cover"` lets us paint into the iOS notch / home-indicator
+// area; pages opt into the safe-area insets via the `pt-safe` / `pb-safe`
+// utility classes defined in globals.css. Keep this on the root layout
+// so every route (including /_not-found, /sitemap.xml fallback HTML)
+// inherits it without each segment re-declaring.
+export const viewport: Viewport = {
+  width: "device-width",
+  initialScale: 1,
+  viewportFit: "cover",
+  themeColor: [
+    { media: "(prefers-color-scheme: light)", color: "#fafaf6" },
+    { media: "(prefers-color-scheme: dark)", color: "#1a1611" },
+  ],
+};
+
 export const metadata: Metadata = {
   // Set once here so every page in the tree inherits it. Without this,
   // Next.js falls back to localhost when resolving opengraph-image
@@ -130,7 +147,15 @@ export default function RootLayout({
           />
         ) : null}
       </head>
-      <body className="min-h-screen bg-background font-sans text-foreground">
+      {/*
+        min-h-dvh tracks the dynamic viewport so iOS browser chrome
+        (URL bar collapsing on scroll) doesn't cause layout jump.
+        overflow-x-hidden is a defensive cap against accidental
+        horizontal overflow from a single misbehaving section; real
+        layout work still fixes the offending element rather than
+        relying on this clip.
+      */}
+      <body className="min-h-dvh overflow-x-hidden bg-background font-sans text-foreground">
         {children}
       </body>
     </html>

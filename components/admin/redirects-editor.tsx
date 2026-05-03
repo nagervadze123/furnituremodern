@@ -49,25 +49,34 @@ function NewRedirectForm() {
           {state.message}
         </p>
       ) : null}
+      {/* Grid is single-column on narrow phones (so the path fields
+          have enough room for `/ka/category/very-long-slug`) and only
+          collapses to the From/To/Submit row at sm+. min-w-0 on the
+          field wrappers stops the long monospace text from forcing the
+          grid wider than the parent. */}
       <div className="grid gap-3 sm:grid-cols-[1fr_1fr_auto] sm:items-end">
-        <Field label="From" error={fieldErrors.from_path} hint="e.g. /ka/sofas/old-slug">
-          <input
-            name="from_path"
-            placeholder="/ka/sofas/old-slug"
-            required
-            className={inputClass}
-          />
-        </Field>
-        <Field label="To" error={fieldErrors.to_path} hint="e.g. /ka/sofas/new-slug">
-          <input
-            name="to_path"
-            placeholder="/ka/sofas/new-slug"
-            required
-            className={inputClass}
-          />
-        </Field>
+        <div className="min-w-0">
+          <Field label="From" error={fieldErrors.from_path} hint="e.g. /ka/sofas/old-slug">
+            <input
+              name="from_path"
+              placeholder="/ka/sofas/old-slug"
+              required
+              className={inputClass}
+            />
+          </Field>
+        </div>
+        <div className="min-w-0">
+          <Field label="To" error={fieldErrors.to_path} hint="e.g. /ka/sofas/new-slug">
+            <input
+              name="to_path"
+              placeholder="/ka/sofas/new-slug"
+              required
+              className={inputClass}
+            />
+          </Field>
+        </div>
         <input type="hidden" name="status_code" value="301" />
-        <Button type="submit" disabled={pending} className="gap-1.5">
+        <Button type="submit" disabled={pending} className="min-h-11 gap-1.5">
           <Plus aria-hidden className="h-4 w-4" />
           {pending ? "Adding…" : "Add"}
         </Button>
@@ -86,8 +95,13 @@ function ExistingRedirects({ redirects }: { redirects: RedirectRow[] }) {
   }
 
   return (
-    <div className="overflow-x-auto rounded-xl border border-border bg-background">
-      <table className="w-full text-sm">
+    // `scroll-x-touch` wraps the table in an intentional horizontal
+    // scroll container — long path columns can be wider than a phone
+    // viewport, and that's expected for admin inspection. min-w-[40rem]
+    // on the table ensures columns don't squish into uselessness on
+    // narrow screens; users scroll the table, not the page.
+    <div className="scroll-x-touch rounded-xl border border-border bg-background">
+      <table className="w-full min-w-[40rem] text-sm">
         <thead className="border-b border-border bg-muted/40 text-left text-xs uppercase tracking-wide text-muted-foreground">
           <tr>
             <th className="px-4 py-2 font-medium">From</th>
@@ -132,7 +146,9 @@ function RedirectRow({ row }: { row: RedirectRow }) {
           type="button"
           onClick={handleDelete}
           disabled={pending}
-          className="inline-flex items-center gap-1 text-sm text-destructive hover:underline disabled:opacity-50"
+          // min-h-10 makes the delete tap zone reachable for fingers
+          // without changing the visual density of the table row.
+          className="inline-flex min-h-10 items-center gap-1 rounded px-2 -mx-2 text-sm text-destructive hover:underline disabled:opacity-50"
         >
           <Trash2 aria-hidden className="h-4 w-4" />
           {pending ? "…" : "Delete"}
@@ -142,8 +158,10 @@ function RedirectRow({ row }: { row: RedirectRow }) {
   );
 }
 
+// See product-form.tsx for the rationale; this variant keeps font-mono
+// for the path inputs because admins read the slugs character-by-char.
 const inputClass =
-  "w-full rounded-md border border-input bg-background px-3 py-2 text-sm font-mono shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring";
+  "block w-full min-w-0 min-h-10 rounded-md border border-input bg-background px-3 py-2 text-base font-mono shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring sm:text-sm";
 
 function Field({
   label,

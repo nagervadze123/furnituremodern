@@ -29,26 +29,40 @@ export async function ProductCard({ product, listName }: Props) {
       // Anchor target for JSON-LD ItemList deep links.
       id={product.slug}
       // scroll-mt-20 keeps the sticky header from covering the anchor.
-      className="group scroll-mt-20"
+      // min-w-0 stops a long Georgian product name from blowing the
+      // grid column out and forcing a horizontal scroll on the page.
+      className="group min-w-0 scroll-mt-20"
     >
+      {/*
+        aspect-[4/5] is the contract: every product photo, regardless
+        of source-file dimensions, ends up the same shape on the grid.
+        This is the single biggest mobile-resilience guardrail on the
+        catalogue — when real photography lands, the layout doesn't
+        shift even if some photos arrive landscape.
+      */}
       <div className="relative aspect-[4/5] overflow-hidden rounded-xl bg-muted">
         {primary ? (
           <Image
             src={primary.url}
             alt={primary.alt[locale]}
             fill
-            sizes="(min-width: 1024px) 25vw, (min-width: 640px) 50vw, 100vw"
+            sizes="(min-width: 1024px) 25vw, (min-width: 640px) 50vw, 50vw"
             placeholder="blur"
             blurDataURL={BRAND_PORTRAIT_BLUR}
-            className="object-cover transition-transform duration-500 group-hover:scale-[1.03]"
+            // Hover scale is purely decorative. Limited to fine pointers
+            // by `motion-safe:` so reduced-motion / touch-only users
+            // don't see a sticky scaled state after a tap.
+            className="object-cover motion-safe:transition-transform motion-safe:duration-500 motion-safe:group-hover:scale-[1.03]"
           />
         ) : null}
       </div>
-      <div className="mt-4">
-        <h3 className="font-display text-base font-medium text-foreground">
+      <div className="mt-4 min-w-0">
+        {/* `text-balance` keeps wrapped names from leaving an orphan;
+            `break-words` is the safety net for compound nouns. */}
+        <h3 className="text-balance font-display text-base font-medium break-words text-foreground">
           {product.name[locale]}
         </h3>
-        <p className="mt-1 text-sm text-muted-foreground">
+        <p className="mt-1 text-sm text-muted-foreground tabular-nums">
           {formatPrice(product.price, product.currency, locale)}
         </p>
       </div>

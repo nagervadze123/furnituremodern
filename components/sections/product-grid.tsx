@@ -13,9 +13,17 @@ type Props = {
 export function ProductGrid({ products, listName }: Props) {
   return (
     <section className="mx-auto max-w-7xl px-4 pb-12 md:px-6">
-      <ul className="grid grid-cols-2 gap-6 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4">
+      {/*
+        Mobile-first columns:
+        - 1 column at < 360px (single product per row, photo is large)
+        - 2 columns at sm (≥640px) — phones in landscape, small tablets
+        - 3 at md, 4 at lg (desktop)
+        Smaller gap on phones keeps each card wider; larger gap at md+
+        gives the grid breathing room.
+      */}
+      <ul className="grid grid-cols-2 gap-4 sm:grid-cols-2 sm:gap-6 md:grid-cols-3 lg:grid-cols-4">
         {products.map((product) => (
-          <li key={product.id}>
+          <li key={product.id} className="min-w-0">
             <ProductCard product={product} listName={listName} />
           </li>
         ))}

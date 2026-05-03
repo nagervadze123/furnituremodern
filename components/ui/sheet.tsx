@@ -65,7 +65,10 @@ function SheetContent({
             render={
               <Button
                 variant="ghost"
-                className="absolute top-3 right-3"
+                // touch-target enforces ≥44px hit area on top of the
+                // base icon-sm visual size — matches the open-trigger
+                // and meets WCAG 2.5.5 on phones.
+                className="touch-target absolute top-2 right-2"
                 size="icon-sm"
               />
             }

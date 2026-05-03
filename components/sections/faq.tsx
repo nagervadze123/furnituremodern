@@ -21,9 +21,9 @@ type Props = {
 
 export function Faq({ title, items }: Props) {
   return (
-    <section id="faq" className="px-4 py-16 md:px-6 md:py-20">
+    <section id="faq" className="px-4 py-12 sm:py-16 md:px-6 md:py-20">
       <div className="mx-auto max-w-3xl">
-        <h2 className="font-display text-3xl font-semibold tracking-tight text-foreground md:text-4xl">
+        <h2 className="text-balance font-display text-2xl font-semibold tracking-tight break-words text-foreground sm:text-3xl md:text-4xl">
           {title}
         </h2>
         {/* base-ui Accordion is single-open by default and items collapse

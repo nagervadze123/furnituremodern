@@ -30,19 +30,22 @@ export async function CategoryCrossLinks({ currentSlug }: Props) {
           <Link
             key={c.slug}
             href={`/${c.slug}`}
-            className="group flex items-center justify-between gap-6 rounded-xl border border-border bg-card p-5 transition-colors hover:border-foreground/30 hover:bg-muted/50"
+            // Wider gap shrinks at narrow widths (gap-4 → gap-6) so the
+            // ArrowRight doesn't crowd the text. min-h-20 keeps the
+            // tap row finger-friendly even when only the name fits.
+            className="group flex min-h-20 min-w-0 items-center justify-between gap-4 rounded-xl border border-border bg-card p-4 transition-colors hover:border-foreground/30 hover:bg-muted/50 sm:gap-6 sm:p-5"
           >
-            <div>
-              <p className="font-display text-lg font-medium text-foreground">
+            <div className="min-w-0">
+              <p className="text-balance font-display text-lg font-medium break-words text-foreground">
                 {c.name[locale]}
               </p>
-              <p className="mt-1 text-sm text-muted-foreground">
+              <p className="mt-1 text-sm break-words text-muted-foreground">
                 {c.description[locale]}
               </p>
             </div>
             <ArrowRight
               aria-hidden="true"
-              className="h-5 w-5 shrink-0 text-muted-foreground transition-transform group-hover:translate-x-1 group-hover:text-foreground"
+              className="h-5 w-5 shrink-0 text-muted-foreground motion-safe:transition-transform motion-safe:group-hover:translate-x-1 motion-safe:group-hover:text-foreground"
             />
           </Link>
         ))}

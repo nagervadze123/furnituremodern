@@ -28,7 +28,10 @@ export function SignOutButton() {
       type="button"
       onClick={handleClick}
       disabled={pending}
-      className="flex w-full items-center gap-3 rounded-md px-3 py-2 text-sm font-medium text-foreground/80 transition-colors hover:bg-muted hover:text-foreground disabled:opacity-50"
+      // min-h-11 keeps the row finger-friendly when this button is used
+      // inside the admin mobile drawer; on the desktop sidebar the
+      // larger height is fine — admin chrome doesn't need dense rows.
+      className="flex min-h-11 w-full items-center gap-3 rounded-md px-3 py-2 text-sm font-medium text-foreground/80 transition-colors hover:bg-muted hover:text-foreground disabled:opacity-50"
     >
       <LogOut aria-hidden="true" className="h-4 w-4" />
       {pending ? "Signing out…" : "Sign out"}

@@ -145,12 +145,29 @@
 @layer base {
   * {
     @apply border-border outline-ring/50;
-  }
-  body {
-    @apply bg-background text-foreground antialiased;
+    /* Mobile tap polish: kill the default grey/blue overlay iOS / Android
+       paint on tap. We rely on :active / :focus-visible styling defined
+       per-component for visible feedback. Setting on `*` (not just
+       interactive elements) covers <Link>, <button>, label-wrapped
+       inputs, and any custom touch target. */
+    -webkit-tap-highlight-color: transparent;
   }
   html {
     @apply font-sans;
+    /* Stop iOS Safari from auto-enlarging text after orientation change. */
+    -webkit-text-size-adjust: 100%;
+    text-size-adjust: 100%;
+  }
+  body {
+    @apply bg-background text-foreground antialiased;
+    /* Default to break-word so a single very long token (Georgian
+       compound, raw URL, SKU) can't push the layout sideways. Pages
+       that need exact wrap behaviour can override locally. */
+    overflow-wrap: break-word;
+    /* Hint touch UAs that we won't call preventDefault on tap-zoom
+       gestures — speeds up the tap-to-click delay without disabling
+       pinch zoom. */
+    touch-action: manipulation;
   }
   /* All headings use the display serif. The font stack chains Latin →
      Georgian → system-serif so browsers can mix scripts in a single
@@ -161,9 +178,109 @@
   .font-display {
     font-family: var(--font-display), var(--font-georgian-serif), Georgia, "Times New Roman", serif;
   }
+  /* Long Georgian product names can be a single 30+ character word.
+     `text-wrap: balance` on headings + `overflow-wrap: anywhere` keeps
+     them inside their column at 360px without forcing ugly mid-token
+     hyphenation everywhere. */
+  h1, h2, h3, h4 {
+    overflow-wrap: anywhere;
+  }
   /* Make focus rings visible on every interactive element. */
   :focus-visible {
     @apply outline-none ring-2 ring-ring ring-offset-2 ring-offset-background;
+  }
+  /* On touch-only devices (phones, most tablets in tablet mode), kill
+     the sticky :hover styles that fire after a tap and stay until the
+     next tap elsewhere. We keep :hover for `pointer: fine` (mouse +
+     trackpad) where it is a real signal. The `:where()` keeps
+     specificity at 0 so individual components can opt out by writing
+     a normal hover rule. */
+  @media (hover: none) {
+    :where(a, button, [role="button"]):hover {
+      background-color: revert;
+      color: revert;
+    }
+  }
+}
+
+/* ---------------------------------------------------------------------
+   Mobile-resilience utilities
+   ---------------------------------------------------------------------
+   These classes are the project's mobile guardrails. Use them anywhere
+   we need notch-aware padding, a 44×44 hit target, or dvh-aware sizing.
+   They live here (not as Tailwind plugin tokens) so the CSS shows up in
+   one place — easy to audit, easy to tweak when launch tests reveal an
+   edge case. */
+@layer utilities {
+  /* Safe-area insets — additive to whatever padding the element already
+     has. Use the *-safe variants when you only want the inset without a
+     base padding; combine with normal `pt-4 pt-safe` style for both. */
+  .pt-safe {
+    padding-top: env(safe-area-inset-top);
+  }
+  .pb-safe {
+    padding-bottom: env(safe-area-inset-bottom);
+  }
+  .pl-safe {
+    padding-left: env(safe-area-inset-left);
+  }
+  .pr-safe {
+    padding-right: env(safe-area-inset-right);
+  }
+  .px-safe {
+    padding-left: env(safe-area-inset-left);
+    padding-right: env(safe-area-inset-right);
+  }
+  /* `+ rem` style helpers: combine the safe-area inset with a base
+     padding using max() so non-iOS browsers, where the inset is 0,
+     still get the base padding. */
+  .pb-safe-4 {
+    padding-bottom: max(env(safe-area-inset-bottom), 1rem);
+  }
+  .pt-safe-4 {
+    padding-top: max(env(safe-area-inset-top), 1rem);
+  }
+  .min-h-dvh-safe {
+    /* dvh handles iOS browser-chrome collapse; safe-area covers the
+       home-indicator gap. Use on full-bleed sheets / drawers. */
+    min-height: 100dvh;
+  }
+
+  /* Touch hit-area guarantee. Apply to icon buttons / dense links that
+     would otherwise be < 44 CSS px. We use `:where()`-style targeting
+     via a class so it stacks with whatever sizing the component uses;
+     desktop buttons that already exceed the minimum aren't bloated by
+     this — `min-` only takes effect when the natural size is smaller. */
+  .touch-target {
+    min-height: 2.75rem; /* 44px */
+    min-width: 2.75rem;
+  }
+  /* Same idea but only enlarges on coarse pointers (touch). Lets us
+     keep the visual density on mouse-driven layouts (admin tables) and
+     still hit 44px on phones/tablets. */
+  @media (pointer: coarse) {
+    .touch-target-coarse {
+      min-height: 2.75rem;
+      min-width: 2.75rem;
+    }
+  }
+
+  /* `min-w-0` reset for flex/grid children. Without it, a long Georgian
+     token can blow the parent flex item out and force horizontal
+     scroll on the page. Keep this near the touch utilities so the
+     overflow-protection patterns live together. */
+  .min-w-0-safe {
+    min-width: 0;
+  }
+
+  /* Container that intentionally allows horizontal scroll for dense
+     content (admin tables, code blocks, long URL lists). Pair with
+     `overflow-x-auto` on the wrapper. -webkit-overflow-scrolling is a
+     legacy iOS hint that some Safari builds still respect. */
+  .scroll-x-touch {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    overscroll-behavior-x: contain;
   }
 }
 
@@ -177,5 +294,14 @@
   ::view-transition-group(*) {
     animation-duration: 0s !important;
     animation-delay: 0s !important;
+  }
+  /* Strip duration from any element with a positive transition so
+     reduced-motion users don't sit waiting on hover/active feedback.
+     Selectively scoped to keep instant transitions instant. */
+  *, *::before, *::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+    scroll-behavior: auto !important;
   }
 }
