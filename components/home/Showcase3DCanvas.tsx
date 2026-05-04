@@ -11,14 +11,10 @@
 // This module is dynamic-imported with `ssr: false` from
 // Showcase3DLazy.tsx — never import it directly from a server module.
 
-import { Suspense, useEffect, useMemo, useRef } from "react";
+import { useEffect, useMemo, useRef } from "react";
 
 import { Canvas, useFrame, type ThreeElements } from "@react-three/fiber";
-import {
-  ContactShadows,
-  Environment,
-  OrbitControls,
-} from "@react-three/drei";
+import { ContactShadows, OrbitControls } from "@react-three/drei";
 import * as THREE from "three";
 
 const PALETTE = {
@@ -49,14 +45,22 @@ export function Showcase3DCanvas() {
     >
       <color attach="background" args={[PALETTE.floor]} />
 
-      {/* Soft ambient + key/fill lights. The Environment preset adds
-          IBL so material highlights pick up real-room reflections. */}
-      <ambientLight intensity={0.45} />
+      {/*
+        Three-point lighting tuned for an interior product shot. We
+        used to layer a drei <Environment preset="apartment"/> on top
+        for image-based reflections, but that helper fetches an HDR
+        from raw.githack.com — which the production CSP's connect-src
+        blocks, taking down the whole page. The hemi + key + fill
+        rig below gets us a believable warm/cool soft-light setup
+        without any external asset dependency.
+      */}
+      <hemisphereLight args={["#fff7e8", "#3a2e22", 0.55]} />
+      <ambientLight intensity={0.35} />
       <directionalLight
         castShadow
         position={[4, 6, 3]}
-        intensity={1.1}
-        color="#fff5e2"
+        intensity={1.4}
+        color="#fff2d6"
         shadow-mapSize-width={1024}
         shadow-mapSize-height={1024}
         shadow-camera-near={0.5}
@@ -66,11 +70,11 @@ export function Showcase3DCanvas() {
         shadow-camera-top={5}
         shadow-camera-bottom={-5}
       />
-      <directionalLight position={[-3, 4, -2]} intensity={0.35} color="#cce0ff" />
-
-      <Suspense fallback={null}>
-        <Environment preset="apartment" />
-      </Suspense>
+      {/* Cool side-fill — fakes window light bouncing in from the
+          left and keeps the back of the chair from going muddy. */}
+      <directionalLight position={[-4, 3, -2]} intensity={0.55} color="#cdd9ff" />
+      {/* Warm rim — adds a bit of edge highlight on the silhouette. */}
+      <directionalLight position={[0, 4, -5]} intensity={0.4} color="#ffd9a6" />
 
       <FloatingChair />
 
@@ -125,20 +129,24 @@ function FloatingChair() {
 
 function Chair() {
   // Cached materials so r3f can re-use them across primitives.
+  // Without an Environment map the materials lean entirely on direct
+  // lights, so we use slightly higher roughness across the board to
+  // avoid hot-spot glare from the key light. Metalness stays at 0 —
+  // any non-zero value reads as "wet plastic" without IBL.
   const linenMat = useMemo(
-    () => new THREE.MeshStandardMaterial({ color: PALETTE.linen, roughness: 0.85, metalness: 0.0 }),
+    () => new THREE.MeshStandardMaterial({ color: PALETTE.linen, roughness: 0.85, metalness: 0 }),
     []
   );
   const walnutMat = useMemo(
-    () => new THREE.MeshStandardMaterial({ color: PALETTE.walnut, roughness: 0.4, metalness: 0.05 }),
+    () => new THREE.MeshStandardMaterial({ color: PALETTE.walnut, roughness: 0.55, metalness: 0 }),
     []
   );
   const walnutLightMat = useMemo(
-    () => new THREE.MeshStandardMaterial({ color: PALETTE.walnutLight, roughness: 0.45, metalness: 0.05 }),
+    () => new THREE.MeshStandardMaterial({ color: PALETTE.walnutLight, roughness: 0.6, metalness: 0 }),
     []
   );
   const accentMat = useMemo(
-    () => new THREE.MeshStandardMaterial({ color: PALETTE.terracotta, roughness: 0.95, metalness: 0.0 }),
+    () => new THREE.MeshStandardMaterial({ color: PALETTE.terracotta, roughness: 0.95, metalness: 0 }),
     []
   );
 

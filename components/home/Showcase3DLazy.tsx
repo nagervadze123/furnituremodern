@@ -14,7 +14,7 @@
 //      (no canvas mount, no GPU work).
 
 import dynamic from "next/dynamic";
-import { useEffect, useRef, useState } from "react";
+import { Component, type ReactNode, useEffect, useRef, useState } from "react";
 
 import { useReducedMotion } from "@/lib/motion";
 
@@ -67,9 +67,45 @@ export function Showcase3DLazy() {
       ref={sentinelRef}
       className="relative aspect-[4/5] w-full overflow-hidden rounded-3xl bg-gradient-to-br from-[var(--color-surface-200)] via-[var(--color-surface-100)] to-[var(--color-accent-soft,oklch(0.92_0.04_38))] shadow-[0_30px_60px_-30px_rgba(40,32,26,0.35)] sm:aspect-[3/2] md:aspect-[5/4]"
     >
-      {shouldMount ? <Showcase3DCanvas /> : <Skeleton />}
+      {shouldMount ? (
+        <CanvasErrorBoundary>
+          <Showcase3DCanvas />
+        </CanvasErrorBoundary>
+      ) : (
+        <Skeleton />
+      )}
     </div>
   );
+}
+
+// Defense-in-depth: contains any runtime error from three.js / r3f
+// inside this component instead of bubbling up to the root error
+// boundary, which would otherwise replace the entire page with the
+// "Something went wrong" fallback. If the canvas blows up, the
+// section falls back to the same static SVG silhouette that
+// reduced-motion users see.
+class CanvasErrorBoundary extends Component<
+  { children: ReactNode },
+  { hasError: boolean }
+> {
+  constructor(props: { children: ReactNode }) {
+    super(props);
+    this.state = { hasError: false };
+  }
+  static getDerivedStateFromError() {
+    return { hasError: true };
+  }
+  componentDidCatch(error: unknown) {
+    if (typeof console !== "undefined") {
+      console.warn("[Showcase3D] canvas threw, falling back to SVG", error);
+    }
+  }
+  render() {
+    if (this.state.hasError) {
+      return <ChairSilhouette />;
+    }
+    return this.props.children;
+  }
 }
 
 function Skeleton() {
@@ -86,26 +122,32 @@ function Skeleton() {
 function ReducedMotionFallback() {
   return (
     <div className="relative aspect-[4/5] w-full overflow-hidden rounded-3xl bg-gradient-to-br from-[var(--color-surface-200)] via-[var(--color-surface-100)] to-[var(--color-accent-soft,oklch(0.92_0.04_38))] shadow-[0_30px_60px_-30px_rgba(40,32,26,0.35)] sm:aspect-[3/2] md:aspect-[5/4]">
-      <svg
-        viewBox="0 0 200 160"
-        aria-hidden="true"
-        className="absolute inset-0 m-auto h-2/3 w-2/3 text-[var(--color-ink-40)]"
-        fill="none"
-        stroke="currentColor"
-        strokeWidth="1.25"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-      >
-        {/* Stylised armchair silhouette — same visual cue as the live
-            canvas but pure SVG, so reduced-motion users still see the
-            "we make furniture" beat. */}
-        <path d="M50 110 v-50 a14 14 0 0 1 14 -14 h72 a14 14 0 0 1 14 14 v50" />
-        <path d="M40 110 h120 v22 a4 4 0 0 1 -4 4 h-112 a4 4 0 0 1 -4 -4 z" />
-        <line x1="54" y1="136" x2="54" y2="150" />
-        <line x1="146" y1="136" x2="146" y2="150" />
-        <path d="M50 110 a8 8 0 0 0 -10 0" />
-        <path d="M150 110 a8 8 0 0 1 10 0" />
-      </svg>
+      <ChairSilhouette />
     </div>
+  );
+}
+
+function ChairSilhouette() {
+  return (
+    <svg
+      viewBox="0 0 200 160"
+      aria-hidden="true"
+      className="absolute inset-0 m-auto h-2/3 w-2/3 text-[var(--color-ink-40)]"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.25"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    >
+      {/* Stylised armchair silhouette — same visual cue as the live
+          canvas but pure SVG, so reduced-motion users (and any future
+          runtime crash) still see the "we make furniture" beat. */}
+      <path d="M50 110 v-50 a14 14 0 0 1 14 -14 h72 a14 14 0 0 1 14 14 v50" />
+      <path d="M40 110 h120 v22 a4 4 0 0 1 -4 4 h-112 a4 4 0 0 1 -4 -4 z" />
+      <line x1="54" y1="136" x2="54" y2="150" />
+      <line x1="146" y1="136" x2="146" y2="150" />
+      <path d="M50 110 a8 8 0 0 0 -10 0" />
+      <path d="M150 110 a8 8 0 0 1 10 0" />
+    </svg>
   );
 }
