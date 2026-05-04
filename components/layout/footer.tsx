@@ -3,14 +3,17 @@
 import { getLocale, getTranslations } from "next-intl/server";
 import { Link } from "@/i18n/navigation";
 import { siteConfig } from "@/lib/site-config";
-import { footerExploreNav } from "@/lib/navigation";
+import { getFeaturedNavCategories } from "@/lib/data/categories";
 import { ManageLink } from "@/components/consent/manage-link";
 import type { Locale } from "@/i18n/routing";
 
 export async function Footer() {
   const t = await getTranslations("footer");
-  const tNav = await getTranslations("nav");
   const locale = (await getLocale()) as Locale;
+  // Phase 5 Task 3: the "Explore" column tracks the same set the
+  // header uses (operator-flagged categories) so the two stay in sync
+  // with no extra config.
+  const navCats = await getFeaturedNavCategories(locale);
 
   const year = new Date().getFullYear();
 
@@ -49,12 +52,12 @@ export async function Footer() {
               {t("explore")}
             </h2>
             <ul className="mt-3 flex flex-col text-sm">
-              {/* Driven by lib/navigation.ts so the footer stays in sync
-                  with the header automatically. */}
-              {footerExploreNav.map((item) => (
-                <li key={item.href}>
-                  <Link href={item.href} className={footerLinkClass}>
-                    {tNav(item.labelKey)}
+              {/* Driven by the dynamic category list so the footer stays
+                  in sync with the header automatically. */}
+              {navCats.map((c) => (
+                <li key={c.slug}>
+                  <Link href={`/${c.slug}`} className={footerLinkClass}>
+                    {c.name[locale]}
                   </Link>
                 </li>
               ))}

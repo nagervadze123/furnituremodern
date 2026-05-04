@@ -1,12 +1,12 @@
 // Mobile drawer nav. Client component because it controls open/close
-// state. Renders any `NavItem[]` from `lib/navigation.ts`, supporting
-// one-level nested groups (rendered as indented sub-lists).
+// state. Renders any `NavItem[]` (already-translated labels) supplied
+// by the parent header, supporting one-level nested groups (rendered
+// as indented sub-lists).
 
 "use client";
 
 import { useState } from "react";
 import { Menu } from "lucide-react";
-import { useTranslations } from "next-intl";
 import { Link } from "@/i18n/navigation";
 import { Button } from "@/components/ui/button";
 import {
@@ -18,10 +18,14 @@ import {
 } from "@/components/ui/sheet";
 import type { NavItem } from "@/lib/navigation";
 
-type Props = { items: NavItem[] };
+type Props = {
+  items: NavItem[];
+  // Pre-translated trigger/dialog label so this client component never
+  // has to look up the "nav" namespace itself.
+  openMenuLabel: string;
+};
 
-export function MobileNav({ items }: Props) {
-  const t = useTranslations("nav");
+export function MobileNav({ items, openMenuLabel }: Props) {
   const [open, setOpen] = useState(false);
 
   return (
@@ -38,7 +42,7 @@ export function MobileNav({ items }: Props) {
             variant="ghost"
             size="icon"
             className="touch-target md:hidden"
-            aria-label={t("openMenu")}
+            aria-label={openMenuLabel}
           >
             <Menu aria-hidden="true" className="h-5 w-5" />
           </Button>
@@ -57,10 +61,10 @@ export function MobileNav({ items }: Props) {
         className="flex w-[min(20rem,90vw)] flex-col gap-0 overflow-y-auto pb-safe"
       >
         <SheetHeader>
-          <SheetTitle>{t("openMenu")}</SheetTitle>
+          <SheetTitle>{openMenuLabel}</SheetTitle>
         </SheetHeader>
         <nav
-          aria-label={t("openMenu")}
+          aria-label={openMenuLabel}
           className="mt-4 flex min-w-0 flex-col gap-1 px-4 pb-6"
         >
           {items.map((item) => (
@@ -75,7 +79,7 @@ export function MobileNav({ items }: Props) {
                 // vertically centered when names wrap to two lines.
                 className="flex min-h-11 items-center rounded-md px-3 py-2 text-base font-medium text-foreground transition-colors hover:bg-muted"
               >
-                {t(item.labelKey)}
+                {item.label}
               </Link>
               {/* One-level deep nested items render as an indented list. */}
               {item.children?.length ? (
@@ -87,7 +91,7 @@ export function MobileNav({ items }: Props) {
                         onClick={() => setOpen(false)}
                         className="flex min-h-10 items-center rounded-md px-3 py-1.5 text-sm text-foreground/80 transition-colors hover:bg-muted"
                       >
-                        {t(child.labelKey)}
+                        {child.label}
                       </Link>
                     </li>
                   ))}

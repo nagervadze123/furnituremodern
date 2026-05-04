@@ -6,7 +6,6 @@
 // the same.
 
 import type { Locale } from "@/i18n/routing";
-import type { CategorySlug } from "@/lib/site-config";
 
 /** Localized text bundle: one string per supported locale. */
 export type LocalizedText = { ka: string; en: string };
@@ -63,7 +62,9 @@ export type WeightValue = {
 export type DataProduct = {
   id: string;
   slug: string;
-  category: CategorySlug;
+  /** Slug of the parent category. Free-form string — admins can create
+   *  new categories at runtime (Phase 5 Task 3). */
+  category: string;
   name: LocalizedText;
   description: LocalizedText;
   /** Whole units, no fractional cents. e.g. 2400 means 2,400 GEL. */
@@ -93,19 +94,27 @@ export type DataProduct = {
 };
 
 /**
- * A category as the marketing site sees it. Mirrors the columns the
- * Supabase `categories` table will eventually expose.
+ * A category as the marketing site sees it. Mirrors the live shape of
+ * the Supabase `categories` table — `slug` is now an arbitrary string,
+ * not a literal-union, because admins can create new categories at
+ * runtime (Phase 5 Task 3 removed the hardcoded list in site-config).
  */
 export type DataCategory = {
-  slug: CategorySlug;
+  /** Optional because the offline TS fallback does not assign ids. */
+  id?: string;
+  slug: string;
   name: LocalizedText;
   description: LocalizedText;
+  /** Long-form 80–120 word category-page hero copy. */
+  intro: LocalizedText;
   sortOrder: number;
+  /** True when this category should appear in the top nav (max 5 in admin). */
+  isFeaturedInNav: boolean;
 };
 
 /** Common pagination + filtering options for product queries. */
 export type GetProductsOptions = {
-  category?: CategorySlug;
+  category?: string;
   /**
    * Locale is currently advisory — products are always returned with
    * both languages so the same row can be reused for hreflang. Pass it

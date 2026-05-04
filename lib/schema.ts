@@ -23,7 +23,6 @@ import type { Locale } from "@/i18n/routing";
 import {
   siteConfig,
   absoluteUrl,
-  categories,
   type CategorySlug,
 } from "./site-config";
 import type { DataProduct } from "@/lib/data/types";
@@ -436,21 +435,32 @@ function miniProductJsonLd(product: DataProduct, locale: Locale): Json {
 // Used on category pages. Each list item links to the full Product
 // detail URL (not a fragment) — fragment links were a 2019-era pattern
 // before per-product pages existed.
+//
+// Takes the category name + tagline directly because the source of
+// truth moved to Supabase in Phase 5 Task 3; the caller has the row
+// loaded already, so we don't re-query inside the JSON-LD builder.
 // ---------------------------------------------------------------------------
-export const itemListJsonLd = (
-  categorySlug: CategorySlug,
-  locale: Locale,
-  products: DataProduct[]
-): Json => {
-  const category = categories.find((c) => c.slug === categorySlug);
-  if (!category) throw new Error(`Unknown category: ${categorySlug}`);
+export type ItemListJsonLdOpts = {
+  categorySlug: CategorySlug;
+  locale: Locale;
+  name: string;
+  description?: string;
+  products: DataProduct[];
+};
 
-  return cleanJsonLd({
+export const itemListJsonLd = ({
+  categorySlug,
+  locale,
+  name,
+  description,
+  products,
+}: ItemListJsonLdOpts): Json =>
+  cleanJsonLd({
     "@context": "https://schema.org",
     "@type": "ItemList",
     "@id": `${absoluteUrl(`/${locale}/${categorySlug}`)}#itemlist`,
-    name: category[locale].name,
-    description: category[locale].tagline,
+    name,
+    description,
     url: absoluteUrl(`/${locale}/${categorySlug}`),
     numberOfItems: products.length,
     itemListOrder: "https://schema.org/ItemListOrderAscending",
@@ -461,7 +471,6 @@ export const itemListJsonLd = (
       item: miniProductJsonLd(product, locale),
     })),
   });
-};
 
 // ---------------------------------------------------------------------------
 // FAQPage + SpeakableSpecification

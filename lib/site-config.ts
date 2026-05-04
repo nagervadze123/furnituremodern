@@ -4,7 +4,9 @@
 // JSON-LD generators, the sitemap, opengraph image — all of it.
 // Change a phone number or social link here and it propagates everywhere.
 
-import type { Locale } from "@/i18n/routing";
+// Locale type previously imported here to type the now-removed
+// getCategoryName helper. Kept for reference — Phase 5 Task 3 made
+// categories Supabase-backed, so the helper has no callers.
 
 // Read the public site URL from the environment when it is set
 // (e.g. in production), otherwise fall back to localhost for dev.
@@ -41,38 +43,76 @@ export const verificationTokens = {
   facebook: process.env.NEXT_PUBLIC_FACEBOOK_DOMAIN_VERIFICATION || undefined,
 } as const;
 
-// Each category has its own slug, route, and short tagline.
-// Adding a new category later is just adding an entry here plus
-// a matching folder under app/[locale]/.
+// Offline-only fallback for the catalog category list.
+//
+// Phase 5 Task 3 moved the source of truth into Supabase (`categories`
+// table — slug, name_ka/en, description_ka/en, intro_ka/en,
+// sort_order, is_featured_in_nav, is_deleted). The array below is read
+// ONLY when `isSupabaseConfigured()` is false — i.e. CI builds without
+// `.env.local`, the local TS-fallback dev mode, and tests that pre-date
+// a Supabase fixture.
+//
+// Production reads from Supabase; the data layer never substitutes this
+// array on a query failure (it returns an empty list and lets the page
+// render a controlled empty state).
+//
+// To add a real category in production: create the row in `/admin/categories`.
+// To add an offline-only category for dev work: append an entry here.
 export const categories = [
   {
     slug: "sofas",
-    routeKey: "sofas" as const,
-    en: { name: "Sofas", tagline: "Living-room seating, built to last" },
-    ka: { name: "დივნები", tagline: "მისაღები ოთახის ხანგრძლივი დივნები" },
+    en: {
+      name: "Sofas",
+      tagline: "Living-room seating, built to last",
+      intro:
+        "Our sofa collection is built for daily living. Frames are kiln-dried solid oak; suspension uses 8-way hand-tied springs; cushions have a separate down-and-feather core inside a moisture-wicking ticking. Covers are removable, dry-cleanable, and replaceable so the sofa you buy today can be reupholstered ten years from now.",
+    },
+    ka: {
+      name: "დივნები",
+      tagline: "მისაღები ოთახის ხანგრძლივი დივნები",
+      intro:
+        "ჩვენი დივნების კოლექცია შექმნილია ყოველდღიური ცხოვრებისთვის. ჩარჩოები არის ნახარშავი მუხის ხისგან, ფუძე იყენებს 8-მხრივი ხელით შეკრულ ზამბარებს, ხოლო ყოველ ბალიშს აქვს ცალკე ფუმფულას ფენა. შესამოსი მოსახსნელი და ცვლადია.",
+    },
   },
   {
     slug: "bedrooms",
-    routeKey: "bedrooms" as const,
-    en: { name: "Bedrooms", tagline: "Beds, dressers and bedside pieces" },
-    ka: { name: "საძინებლები", tagline: "საწოლები, კომოდები და სანათები" },
+    en: {
+      name: "Bedrooms",
+      tagline: "Beds, dressers and bedside pieces",
+      intro:
+        "The bedroom collection focuses on the pieces you actually need: a low platform bed, a roomy dresser, a generous wardrobe, and the small companions. Frames are solid white oak or European walnut, joined with traditional mortise-and-tenon construction.",
+    },
+    ka: {
+      name: "საძინებლები",
+      tagline: "საწოლები, კომოდები და სანათები",
+      intro:
+        "საძინებლის კოლექცია ფოკუსირებულია იმ ნივთებზე, რომლებიც ნამდვილად გჭირდებათ: დაბალი პლატფორმის საწოლი, ფართო კომოდი, ვიწრო გარდერობი და გვერდითი ნივთები. ჩარჩოები არის თეთრი მუხა ან ევროპული კაკალი, ტრადიციული შეერთებებით.",
+    },
   },
   {
     slug: "tables-chairs",
-    routeKey: "tablesChairs" as const,
-    en: { name: "Tables & Chairs", tagline: "Dining and workspace pieces" },
-    ka: { name: "მაგიდები და სკამები", tagline: "სასადილო და სამუშაო ნივთები" },
+    en: {
+      name: "Tables & Chairs",
+      tagline: "Dining and workspace pieces",
+      intro:
+        "Tables and chairs are the pieces a household uses most, so we make them most carefully. Dining tables come in solid oak or walnut; the round pedestal version sits four, the rectangular six. Wishbone-back dining chairs use steam-bent oak frames and hand-woven paper-cord seats.",
+    },
+    ka: {
+      name: "მაგიდები და სკამები",
+      tagline: "სასადილო და სამუშაო ნივთები",
+      intro:
+        "მაგიდები და სკამები არის ის ნივთები, რომლებსაც ოჯახი ყველაზე ხშირად იყენებს. სასადილო მაგიდები იწარმოება ბუნებრივი მუხისგან ან კაკლისგან; მრგვალი ფუძის ვერსია ეტევა ოთხს, ოთხკუთხა — ექვსს.",
+    },
   },
 ] as const;
 
-export type CategorySlug = (typeof categories)[number]["slug"];
-
-// Localized category lookup helper.
-export const getCategoryName = (slug: CategorySlug, locale: Locale): string => {
-  const c = categories.find((x) => x.slug === slug);
-  if (!c) throw new Error(`Unknown category: ${slug}`);
-  return c[locale].name;
-};
+/**
+ * Category slug type. Now an alias for `string` — the live source of
+ * truth is the Supabase `categories` table (Phase 5 Task 3). Legacy
+ * call sites keep the named import so we don't have to rewrite every
+ * function signature; new code can use `string` directly.
+ */
+export type CategorySlug = string;
 
 // Brand identity tokens used by lib/og/* template renderers when
 // composing share-card images. Keep the palette neutral — these values

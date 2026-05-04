@@ -179,7 +179,13 @@ describe("itemListJsonLd", () => {
       { ...SAMPLE_PRODUCT, id: "2", slug: "b" },
       { ...SAMPLE_PRODUCT, id: "3", slug: "c" },
     ];
-    const o = itemListJsonLd("sofas", "ka", products);
+    const o = itemListJsonLd({
+      categorySlug: "sofas",
+      locale: "ka",
+      name: "დივნები",
+      description: "tagline",
+      products,
+    });
     const items = o.itemListElement as Array<{
       position: number;
       url: string;
@@ -195,7 +201,12 @@ describe("itemListJsonLd", () => {
       { ...SAMPLE_PRODUCT, id: "1", slug: "a" },
       { ...SAMPLE_PRODUCT, id: "2", slug: "b" },
     ];
-    const o = itemListJsonLd("sofas", "ka", products);
+    const o = itemListJsonLd({
+      categorySlug: "sofas",
+      locale: "ka",
+      name: "Sofas",
+      products,
+    });
     expect(o.numberOfItems).toBe(2);
   });
 });
@@ -339,7 +350,12 @@ describe("JSON-LD output is JSON-serializable", () => {
         numberOfItems: 1,
       }),
       breadcrumbListJsonLd([{ name: "Home", url: "/" }]),
-      itemListJsonLd("sofas", "en", [SAMPLE_PRODUCT]),
+      itemListJsonLd({
+        categorySlug: "sofas",
+        locale: "en",
+        name: "Sofas",
+        products: [SAMPLE_PRODUCT],
+      }),
       productJsonLd(SAMPLE_PRODUCT_FULL, "en"),
       faqPageJsonLd([{ question: "q", answer: "a" }]),
     ];

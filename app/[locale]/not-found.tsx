@@ -15,7 +15,7 @@ import { getLocale, getTranslations } from "next-intl/server";
 import { Link } from "@/i18n/navigation";
 import { Breadcrumbs, type BreadcrumbCrumb } from "@/components/sections/breadcrumbs";
 import { Log404Beacon } from "@/components/log-404-beacon";
-import { categories } from "@/lib/site-config";
+import { getCategories } from "@/lib/data/categories";
 import { getProducts } from "@/lib/data/products";
 import { formatPrice } from "@/lib/format";
 import { type Locale } from "@/i18n/routing";
@@ -57,6 +57,16 @@ export default async function NotFound() {
     recent = await getProducts({ limit: 6 });
   } catch {
     recent = [];
+  }
+
+  // Active categories from the data layer (Phase 5 Task 3). Empty list
+  // on a fetch failure is acceptable — the home tile and the social
+  // links still render, so visitors aren't stranded.
+  let cats: Awaited<ReturnType<typeof getCategories>> = [];
+  try {
+    cats = await getCategories(locale);
+  } catch {
+    cats = [];
   }
 
   return (
@@ -127,7 +137,7 @@ export default async function NotFound() {
               />
             </Link>
           </li>
-          {categories.map((cat) => (
+          {cats.map((cat) => (
             <li key={cat.slug}>
               <Link
                 href={`/${cat.slug}`}
@@ -135,10 +145,10 @@ export default async function NotFound() {
               >
                 <div className="min-w-0">
                   <h3 className="font-display text-base font-medium text-foreground">
-                    {cat[locale].name}
+                    {cat.name[locale]}
                   </h3>
                   <p className="mt-1 text-sm text-muted-foreground">
-                    {cat[locale].tagline}
+                    {cat.description[locale]}
                   </p>
                 </div>
                 <ArrowUpRight

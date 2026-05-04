@@ -11,13 +11,17 @@ const CATS: DataCategory[] = [
     slug: "sofas",
     name: { ka: "დივნები", en: "Sofas" },
     description: { ka: "ქართული აღწერა", en: "English description" },
+    intro: { ka: "ქართული შესავალი", en: "English intro" },
     sortOrder: 0,
+    isFeaturedInNav: true,
   },
   {
     slug: "bedrooms",
     name: { ka: "საძინებლები", en: "Bedrooms" },
     description: { ka: "ქართული აღწერა", en: "English description" },
+    intro: { ka: "ქართული შესავალი", en: "English intro" },
     sortOrder: 1,
+    isFeaturedInNav: true,
   },
 ];
 

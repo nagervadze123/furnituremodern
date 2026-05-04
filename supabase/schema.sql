@@ -64,32 +64,49 @@ END $$;
 -- The DO-block guard above will RAISE EXCEPTION if products already
 -- contains rows, so these DROP statements only execute against an
 -- empty database.
-DROP TABLE IF EXISTS public.product_images       CASCADE;
-DROP TABLE IF EXISTS public.product_slug_history CASCADE;
-DROP TABLE IF EXISTS public.products             CASCADE;
-DROP TABLE IF EXISTS public.categories           CASCADE;
-DROP TABLE IF EXISTS public.redirects            CASCADE;
-DROP TABLE IF EXISTS public.not_found_log        CASCADE;
-DROP TABLE IF EXISTS public.web_vitals           CASCADE;
-DROP TABLE IF EXISTS public.analytics_event      CASCADE;
-DROP TABLE IF EXISTS public.csp_violations       CASCADE;
-DROP TABLE IF EXISTS public.admin_users          CASCADE;
+DROP TABLE IF EXISTS public.product_images        CASCADE;
+DROP TABLE IF EXISTS public.product_slug_history  CASCADE;
+DROP TABLE IF EXISTS public.products              CASCADE;
+DROP TABLE IF EXISTS public.category_slug_history CASCADE;
+DROP TABLE IF EXISTS public.categories            CASCADE;
+DROP TABLE IF EXISTS public.redirects             CASCADE;
+DROP TABLE IF EXISTS public.not_found_log         CASCADE;
+DROP TABLE IF EXISTS public.web_vitals            CASCADE;
+DROP TABLE IF EXISTS public.analytics_event       CASCADE;
+DROP TABLE IF EXISTS public.csp_violations        CASCADE;
+DROP TABLE IF EXISTS public.admin_users           CASCADE;
 
 -- ---------------------------------------------------------------------------
 -- categories
 -- ---------------------------------------------------------------------------
 CREATE TABLE public.categories (
-  id            uuid PRIMARY KEY DEFAULT gen_random_uuid(),
-  slug          text UNIQUE NOT NULL,
-  name_ka       text NOT NULL,
-  name_en       text NOT NULL,
-  description_ka text NOT NULL DEFAULT '',
-  description_en text NOT NULL DEFAULT '',
-  sort_order    integer NOT NULL DEFAULT 0,
-  created_at    timestamptz NOT NULL DEFAULT now()
+  id                  uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  slug                text UNIQUE NOT NULL,
+  name_ka             text NOT NULL,
+  name_en             text NOT NULL,
+  description_ka      text NOT NULL DEFAULT '',
+  description_en      text NOT NULL DEFAULT '',
+  -- Long-form 80–120 word category-page hero copy (Phase 5 Task 3).
+  intro_ka            text NOT NULL DEFAULT '',
+  intro_en            text NOT NULL DEFAULT '',
+  -- Top-nav inclusion flag. Admin form caps the count at 5.
+  is_featured_in_nav  boolean NOT NULL DEFAULT false,
+  -- Soft-delete: the public route returns 404 for soft-deleted rows;
+  -- products that still reference the row by id keep working until the
+  -- operator either restores or reassigns them.
+  is_deleted          boolean NOT NULL DEFAULT false,
+  deleted_at          timestamptz NULL,
+  sort_order          integer NOT NULL DEFAULT 0,
+  created_at          timestamptz NOT NULL DEFAULT now()
 );
 
 CREATE INDEX categories_sort_order_idx ON public.categories (sort_order);
+CREATE INDEX categories_active_sort_idx
+  ON public.categories (sort_order, created_at)
+  WHERE is_deleted = false;
+CREATE INDEX categories_featured_nav_idx
+  ON public.categories (sort_order)
+  WHERE is_featured_in_nav = true AND is_deleted = false;
 
 -- ---------------------------------------------------------------------------
 -- products
@@ -160,6 +177,23 @@ CREATE INDEX product_images_sort_order_idx ON public.product_images (sort_order)
 CREATE UNIQUE INDEX product_images_one_primary_per_product
   ON public.product_images (product_id)
   WHERE is_primary = true;
+
+-- ---------------------------------------------------------------------------
+-- category_slug_history
+-- ---------------------------------------------------------------------------
+-- Append-only audit trail of category slug changes. Inserted by the
+-- admin category update action whenever a slug is rewritten. Used by
+-- the SEO dashboard to flag orphan redirect chains.
+CREATE TABLE public.category_slug_history (
+  id          uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  category_id uuid NOT NULL REFERENCES public.categories(id) ON DELETE CASCADE,
+  old_slug    text NOT NULL,
+  changed_at  timestamptz NOT NULL DEFAULT now(),
+  changed_by  uuid NULL REFERENCES auth.users(id) ON DELETE SET NULL
+);
+
+CREATE INDEX category_slug_history_category_id_idx ON public.category_slug_history (category_id);
+CREATE INDEX category_slug_history_changed_at_idx ON public.category_slug_history (changed_at DESC);
 
 -- ---------------------------------------------------------------------------
 -- product_slug_history
@@ -377,6 +411,21 @@ WITH CHECK (private.is_admin());
 
 CREATE POLICY "redirects_admin_delete"
 ON public.redirects FOR DELETE
+USING (private.is_admin());
+
+-- category_slug_history: admin-only, mirrors product_slug_history.
+ALTER TABLE public.category_slug_history ENABLE ROW LEVEL SECURITY;
+
+CREATE POLICY "category_slug_history_admin_select"
+ON public.category_slug_history FOR SELECT
+USING (private.is_admin());
+
+CREATE POLICY "category_slug_history_admin_insert"
+ON public.category_slug_history FOR INSERT
+WITH CHECK (private.is_admin());
+
+CREATE POLICY "category_slug_history_admin_delete"
+ON public.category_slug_history FOR DELETE
 USING (private.is_admin());
 
 -- product_slug_history: admin-only. No public read; the SEO dashboard

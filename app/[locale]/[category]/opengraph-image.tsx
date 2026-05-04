@@ -12,9 +12,7 @@ import { notFound } from "next/navigation";
 import {
   getCategories,
   getCategoryBySlug,
-  isCategorySlug,
 } from "@/lib/data/categories";
-import { getCategoryIntro } from "@/content/category-intros";
 import { siteConfig, SITE_HOST } from "@/lib/site-config";
 import {
   buildCategoryTemplate,
@@ -44,12 +42,14 @@ export default async function Image({ params }: Props) {
   const { locale: raw, category } = await params;
   const locale = (raw === "en" ? "en" : "ka") as Locale;
 
-  if (!isCategorySlug(category)) notFound();
-
   const row = await getCategoryBySlug(category, locale);
-  // Fallback to brand-only image if data is missing — never throw.
-  const categoryName = row?.name[locale] ?? siteConfig.name;
-  const introExcerpt = shortenIntro(getCategoryIntro(category, locale), 90);
+  if (!row) notFound();
+
+  // Use the row's intro_ka/en (Phase 5 Task 3); fall back to the
+  // tagline if intro is empty so we always have something to render.
+  const categoryName = row.name[locale];
+  const introSource = row.intro[locale]?.trim() || row.description[locale];
+  const introExcerpt = shortenIntro(introSource, 90);
 
   return renderOgResponse(
     buildCategoryTemplate({

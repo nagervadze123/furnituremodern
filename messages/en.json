@@ -5,9 +5,6 @@
   },
   "nav": {
     "home": "Home",
-    "sofas": "Sofas",
-    "bedrooms": "Bedrooms",
-    "tablesChairs": "Tables & Chairs",
     "openMenu": "Open menu",
     "closeMenu": "Close menu",
     "switchLanguage": "Switch language"

@@ -11,7 +11,6 @@ import "server-only";
 
 import type { Locale } from "@/i18n/routing";
 import type { CategorySlug } from "@/lib/site-config";
-import { isCategorySlug } from "./categories";
 import type {
   DataProduct,
   DataProductImage,
@@ -106,9 +105,12 @@ function mapSupabase(
   publicUrlBase: string
 ): DataProduct | null {
   // Defensive: if the join lost the category, drop the row rather than
-  // returning a product with an unknown category slug.
+  // returning a product with an empty category slug. The category soft-
+  // delete filter is applied in the query (`categories.is_deleted = false`),
+  // so a missing join here means the parent row was soft-deleted between
+  // the query and this map step — an empty result is the correct answer.
   const slug = row.categories?.slug;
-  if (!slug || !isCategorySlug(slug)) return null;
+  if (!slug) return null;
 
   // Sort images: primary first, then by sort_order ascending.
   const images = [...row.product_images]
@@ -128,7 +130,7 @@ function mapSupabase(
   return {
     id: row.id,
     slug: row.slug,
-    category: slug as CategorySlug,
+    category: slug,
     name: { ka: row.name_ka, en: row.name_en },
     description: { ka: row.description_ka, en: row.description_en },
     // Postgres numeric comes through as string; coerce defensively.
@@ -180,6 +182,7 @@ export async function getProducts(
          product_images ( storage_path, alt_ka, alt_en, sort_order, is_primary )`
       )
       .eq("is_published", true)
+      .eq("categories.is_deleted", false)
       .is("deleted_at", null)
       .order("sort_order", { ascending: true });
 
@@ -248,6 +251,7 @@ export async function getProductBySlug(
          product_images ( storage_path, alt_ka, alt_en, sort_order, is_primary )`
       )
       .eq("is_published", true)
+      .eq("categories.is_deleted", false)
       .is("deleted_at", null)
       .eq("slug", slug)
       .limit(1);
@@ -320,6 +324,8 @@ export async function getFeaturedProducts(
  * we're running against the local fallback catalog (no DB timestamps).
  */
 export type ProductPath = {
+  // CategorySlug is now an alias for `string` — kept for symmetry with
+  // the rest of the data layer (Phase 5 Task 3 dropped the literal-union).
   category: CategorySlug;
   slug: string;
   updatedAt?: string;
@@ -330,22 +336,21 @@ export async function getAllProductPaths(): Promise<ProductPath[]> {
     const supabase = createSupabasePublicClient();
     const { data, error } = await supabase
       .from("products")
-      .select("slug, updated_at, categories!inner ( slug )")
+      .select("slug, updated_at, categories!inner ( slug, is_deleted )")
       .eq("is_published", true)
+      .eq("categories.is_deleted", false)
       .is("deleted_at", null);
 
     if (!error && data) {
       return (data as unknown as Array<{
         slug: string;
         updated_at: string | null;
-        categories: { slug: string };
-      }>)
-        .filter((row) => isCategorySlug(row.categories.slug))
-        .map((row) => ({
-          category: row.categories.slug as CategorySlug,
-          slug: row.slug,
-          updatedAt: row.updated_at ?? undefined,
-        }));
+        categories: { slug: string; is_deleted: boolean };
+      }>).map((row) => ({
+        category: row.categories.slug,
+        slug: row.slug,
+        updatedAt: row.updated_at ?? undefined,
+      }));
     }
     if (error) {
       logError(error, {

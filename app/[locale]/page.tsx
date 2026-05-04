@@ -16,6 +16,7 @@ import {
 } from "@/lib/schema";
 import { getFaqEntries } from "@/content/faq";
 import { homeAeoSummary } from "@/lib/aeo/summary";
+import { getCategories } from "@/lib/data/categories";
 import { siteConfig, absoluteUrl } from "@/lib/site-config";
 import { routing, type Locale } from "@/i18n/routing";
 
@@ -89,7 +90,10 @@ export default async function HomePage({ params }: Props) {
   const locale = raw as Locale;
   setRequestLocale(locale);
 
-  const t = await getTranslations("home");
+  const [t, cats] = await Promise.all([
+    getTranslations("home"),
+    getCategories(locale),
+  ]);
   const faqEntries = getFaqEntries(locale);
   // Per-request CSP nonce, threaded into every inline <script> tag.
   const nonce = (await headers()).get("x-nonce") ?? undefined;
@@ -115,7 +119,7 @@ export default async function HomePage({ params }: Props) {
       <Hero />
       <FeaturedCategories />
       <BrandStory />
-      <AeoSummaryPanel summary={homeAeoSummary(locale)} id="aeo-home" />
+      <AeoSummaryPanel summary={homeAeoSummary(locale, cats)} id="aeo-home" />
       <Faq title={t("faqTitle")} items={faqEntries} />
     </>
   );

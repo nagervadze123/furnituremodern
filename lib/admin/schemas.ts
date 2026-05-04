@@ -5,20 +5,13 @@
 
 import { z } from "zod";
 import { isValidSlug } from "@/lib/slug";
-import { categories as supportedCategories } from "@/lib/site-config";
 
-// Categories are CODE-DEFINED, not fully DB-defined: the public site
-// renders a category only if its slug is enumerated in
-// `lib/site-config.ts` AND has editorial copy in
-// `content/category-intros.ts`. Admin-created rows whose slug is not
-// already supported in code would never be displayed, so we block
-// creating them up front rather than silently dropping the row at
-// render time. To add a new category: add it to site-config + a copy
-// entry in content/category-intros.ts, ship the code, then create the
-// row in the admin.
-const SUPPORTED_CATEGORY_SLUGS = supportedCategories.map(
-  (c) => c.slug
-) as readonly string[];
+// Categories are FULLY DB-driven (Phase 5 Task 3). The public site
+// renders any active row from the `categories` table — there's no
+// hardcoded slug list anywhere. The admin form below only validates
+// shape (kebab-case ASCII, length, required bilingual copy); the
+// caller is responsible for catching slug collisions against existing
+// rows via `lib/admin/slug-conflicts.ts`.
 
 // ---------------------------------------------------------------------------
 // Auth
@@ -70,18 +63,21 @@ export const categorySchema = z.object({
     .string()
     .min(1, "Slug is required")
     .max(80)
-    .refine(isValidSlug, "Slug must be lowercase, dash-separated ASCII")
-    .refine(
-      (s) => SUPPORTED_CATEGORY_SLUGS.includes(s),
-      `Categories are code-defined: pick one of ${SUPPORTED_CATEGORY_SLUGS.join(
-        ", "
-      )}. To add a new category, update lib/site-config.ts and content/category-intros.ts first, then create it here.`
-    ),
+    .refine(isValidSlug, "Slug must be lowercase, dash-separated ASCII"),
   name_ka: z.string().min(1, "Georgian name is required").max(200),
   name_en: z.string().min(1, "English name is required").max(200),
   description_ka: z.string().max(2000).default(""),
   description_en: z.string().max(2000).default(""),
+  // 80–120 word hero paragraph per locale. Optional in the schema so
+  // admin can ship a row with name + tagline first and fill the long
+  // copy later, but the public page falls back to the tagline if intro
+  // is empty (see lib/data/categories.ts).
+  intro_ka: z.string().max(4000).default(""),
+  intro_en: z.string().max(4000).default(""),
   sort_order: z.coerce.number().int().default(0),
+  // Boolean checkbox; coerce. The action enforces the max-5 cap by
+  // counting other rows that already have this flag on.
+  is_featured_in_nav: z.coerce.boolean().default(false),
 });
 export type CategoryInput = z.infer<typeof categorySchema>;
 

@@ -5,8 +5,8 @@
 // echoed in /llms.txt and /llms-full.txt so AI crawlers see the
 // same claims as human readers.
 
-import { siteConfig, categories } from "@/lib/site-config";
-import type { CategorySlug } from "@/lib/site-config";
+import { siteConfig } from "@/lib/site-config";
+import type { DataCategory } from "@/lib/data/types";
 import type { Locale } from "@/i18n/routing";
 
 export type FactPair = { label: string; value: string };
@@ -31,9 +31,16 @@ const CATEGORY_HEADING = {
 // a single read tells a crawler / assistant who and where we are. We
 // don't make this paragraph long; depth lives in /llms-full.txt and
 // the visible category intros.
-export function homeAeoSummary(locale: Locale): AeoSummary {
+//
+// `cats` is the active category list (Phase 5 Task 3) — DB-driven, so
+// the caller (page.tsx) passes the same list it already fetched for
+// rendering rather than re-querying here.
+export function homeAeoSummary(
+  locale: Locale,
+  cats: DataCategory[]
+): AeoSummary {
   const cityCountry = `${siteConfig.contact.address.city}, ${siteConfig.contact.address.country}`;
-  const categoryNames = categories.map((c) => c[locale].name).join(", ");
+  const categoryNames = cats.map((c) => c.name[locale]).join(", ");
 
   if (locale === "ka") {
     return {
@@ -63,16 +70,18 @@ export function homeAeoSummary(locale: Locale): AeoSummary {
 }
 
 // Per-category summary. We don't fabricate materials or ranges — they
-// come straight from the category-intros copy and from siteConfig.
+// come straight from the supplied category record and from siteConfig.
+//
+// Takes a `categoryName` rather than a slug because the source of
+// truth for the localized name moved to Supabase in Phase 5 Task 3 —
+// the caller (category-page.tsx) already has the row loaded.
 export function categoryAeoSummary(
-  slug: CategorySlug,
+  categoryName: string,
   locale: Locale,
   numberOfItems: number
 ): AeoSummary {
-  const category = categories.find((c) => c.slug === slug);
-  if (!category) throw new Error(`Unknown category: ${slug}`);
   const cityCountry = `${siteConfig.contact.address.city}, ${siteConfig.contact.address.country}`;
-  const name = category[locale].name;
+  const name = categoryName;
 
   if (locale === "ka") {
     return {

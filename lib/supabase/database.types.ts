@@ -18,6 +18,11 @@ export type Database = {
           name_en: string;
           description_ka: string;
           description_en: string;
+          intro_ka: string;
+          intro_en: string;
+          is_featured_in_nav: boolean;
+          is_deleted: boolean;
+          deleted_at: string | null;
           sort_order: number;
           created_at: string;
         };
@@ -28,11 +33,44 @@ export type Database = {
           name_en: string;
           description_ka?: string;
           description_en?: string;
+          intro_ka?: string;
+          intro_en?: string;
+          is_featured_in_nav?: boolean;
+          is_deleted?: boolean;
+          deleted_at?: string | null;
           sort_order?: number;
           created_at?: string;
         };
         Update: Partial<Database["public"]["Tables"]["categories"]["Insert"]>;
         Relationships: [];
+      };
+      category_slug_history: {
+        Row: {
+          id: string;
+          category_id: string;
+          old_slug: string;
+          changed_at: string;
+          changed_by: string | null;
+        };
+        Insert: {
+          id?: string;
+          category_id: string;
+          old_slug: string;
+          changed_at?: string;
+          changed_by?: string | null;
+        };
+        Update: Partial<
+          Database["public"]["Tables"]["category_slug_history"]["Insert"]
+        >;
+        Relationships: [
+          {
+            foreignKeyName: "category_slug_history_category_id_fkey";
+            columns: ["category_id"];
+            isOneToOne: false;
+            referencedRelation: "categories";
+            referencedColumns: ["id"];
+          }
+        ];
       };
       products: {
         Row: {

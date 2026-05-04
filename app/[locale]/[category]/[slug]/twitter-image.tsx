@@ -6,10 +6,7 @@
 
 import { notFound } from "next/navigation";
 
-import {
-  getCategoryBySlug,
-  isCategorySlug,
-} from "@/lib/data/categories";
+import { getCategoryBySlug } from "@/lib/data/categories";
 import {
   getAllProductPaths,
   getProductBySlug,
@@ -45,13 +42,11 @@ export default async function Image({ params }: Props) {
   const { locale: raw, category, slug } = await params;
   const locale = (raw === "en" ? "en" : "ka") as Locale;
 
-  if (!isCategorySlug(category)) notFound();
-
   const [product, categoryRow] = await Promise.all([
     getProductBySlug(slug, locale, category),
     getCategoryBySlug(category, locale),
   ]);
-  if (!product) notFound();
+  if (!product || !categoryRow) notFound();
 
   const formattedPrice = formatPriceForOg(
     product.price,
@@ -65,7 +60,7 @@ export default async function Image({ params }: Props) {
       productName: product.name[locale],
       formattedPrice,
       categoryEyebrow: CATEGORY_EYEBROW[locale],
-      categoryName: categoryRow?.name[locale],
+      categoryName: categoryRow.name[locale],
       productImageUrl: primaryImage,
       locale,
       size,

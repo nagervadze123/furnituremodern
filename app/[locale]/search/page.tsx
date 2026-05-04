@@ -28,7 +28,8 @@ import { Breadcrumbs, type BreadcrumbCrumb } from "@/components/sections/breadcr
 import { Link } from "@/i18n/navigation";
 import { JsonLd } from "@/components/json-ld";
 import { breadcrumbListJsonLd } from "@/lib/schema";
-import { absoluteUrl, categories } from "@/lib/site-config";
+import { absoluteUrl } from "@/lib/site-config";
+import { getCategories } from "@/lib/data/categories";
 import { type Locale } from "@/i18n/routing";
 
 type Props = {
@@ -67,9 +68,10 @@ export default async function SearchPage({ params, searchParams }: Props) {
   const locale = rawLocale as Locale;
   setRequestLocale(locale);
 
-  const [t, tBreadcrumbs] = await Promise.all([
+  const [t, tBreadcrumbs, cats] = await Promise.all([
     getTranslations({ locale, namespace: "search" }),
     getTranslations({ locale, namespace: "breadcrumbs" }),
+    getCategories(locale),
   ]);
 
   const nonce = (await headers()).get("x-nonce") ?? undefined;
@@ -160,7 +162,7 @@ export default async function SearchPage({ params, searchParams }: Props) {
               />
             </Link>
           </li>
-          {categories.map((cat) => (
+          {cats.map((cat) => (
             <li key={cat.slug}>
               <Link
                 href={`/${cat.slug}`}
@@ -168,10 +170,10 @@ export default async function SearchPage({ params, searchParams }: Props) {
               >
                 <div className="min-w-0">
                   <h3 className="font-display text-base font-medium text-foreground">
-                    {cat[locale].name}
+                    {cat.name[locale]}
                   </h3>
                   <p className="mt-1 text-sm text-muted-foreground">
-                    {cat[locale].tagline}
+                    {cat.description[locale]}
                   </p>
                 </div>
                 <ArrowUpRight

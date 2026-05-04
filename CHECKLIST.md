@@ -393,7 +393,13 @@ Before flipping DNS / launch announcement, walk this list against the live `http
 - **Premium design overhaul** — typography, spacing, hero, product detail UX.
 - ~~**Multi-image product gallery** with drag-drop ordering and primary selection.~~ Done — public `Gallery` (`components/product/gallery.tsx` Server shell + `gallery-client.tsx` island) and admin `ImageManager` (`components/admin/image-manager.tsx`) with dnd-kit reorder, set-primary toggle, bilingual alt text, validation (10MB / MIME allowlist / 12-image cap). Server actions: `addProductImage`, `updateImageAlt`, `setPrimaryImage`, `reorderProductImages`, `deleteProductImage` — all in `app/(admin)/admin/(dashboard)/products/images-actions.ts` with `logError` on failure.
 - **Real product photos integrated** — LCP retargeted to ≤ 2.5s, Lighthouse Performance ≥ 95.
-- **Dynamic categories from Supabase** — remove the hard-coded list in `lib/navigation.ts` / `lib/site-config.ts`.
+- ~~**Dynamic categories from Supabase** — remove the hard-coded list in `lib/navigation.ts` / `lib/site-config.ts`.~~ Done — categories live in the `categories` table with `intro_ka`/`intro_en`, `is_featured_in_nav`, `is_deleted`, `deleted_at`, `sort_order`. The data layer (`lib/data/categories.ts`) returns active rows ordered by `sort_order` then `created_at`, wrapped with React `cache()` for request-scope dedupe; production never substitutes the offline TS fallback. Admin `/admin/categories` supports create/edit/soft-delete/restore plus the max-5 nav-flag cap; slug renames record `category_slug_history` and write per-locale + per-product 301 redirects via `lib/admin/category-slug-rename-effects.ts`. Public surfaces (header, footer, not-found, search, OG/Twitter cards, CategoryPage, llms.txt, llms-full.txt) all read from the data layer; `content/category-intros.ts` was deleted and `lib/admin/schemas.ts` no longer hard-gates the slug list.
+
+## Pre-launch confirmations — Phase 5 Task 3
+- [ ] **Operator has set `is_featured_in_nav`** on the desired top-nav rows (max 5). Defaults to all 3 seeded categories.
+- [ ] **Every active category has bilingual `intro_ka` / `intro_en` populated** (80–120 words each). Empty intro falls back to the tagline (`description_ka` / `description_en`); fine as a temporary state, but launch should ship real long-form copy.
+- [ ] **`sort_order` reflects the desired display order** (lowest first). Ties broken by `created_at`.
+- [ ] **Image alt text** present on every published product image in both locales (Phase 5 Task 2 reminder, still applies).
 
 ## Phase 6 priorities
 

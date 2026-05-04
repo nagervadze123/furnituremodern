@@ -1,19 +1,26 @@
 // Editor for the categories list. Renders one expandable row per
 // category with an inline form, plus a "new category" form at the top.
 //
-// Client component because we expand/collapse rows; the actual save
-// runs through server actions.
+// Client component because we expand/collapse rows and toggle the
+// nav-flag enforcement live; the actual save runs through server
+// actions. The max-5 nav cap is enforced both here (UI hint) and in
+// the server action (authoritative).
 
 "use client";
 
-import { useActionState, useState, useTransition } from "react";
-import { ChevronDown, ChevronRight, Plus, Trash2 } from "lucide-react";
+import { useActionState, useMemo, useState, useTransition } from "react";
+import { ChevronDown, ChevronRight, Plus, RotateCcw, Trash2 } from "lucide-react";
 import {
   upsertCategoryAction,
   deleteCategoryAction,
+  restoreCategoryAction,
   type ActionState,
 } from "@/app/(admin)/admin/(dashboard)/categories/actions";
 import { Button } from "@/components/ui/button";
+
+// Mirrors lib/admin/category-slug-rename-effects.ts; kept duplicated
+// here so the client bundle doesn't import the server-only file.
+const MAX_FEATURED_NAV = 5;
 
 type CategoryRow = {
   id: string;
@@ -22,7 +29,11 @@ type CategoryRow = {
   name_en: string;
   description_ka: string;
   description_en: string;
+  intro_ka: string;
+  intro_en: string;
   sort_order: number;
+  is_featured_in_nav: boolean;
+  is_deleted: boolean;
 };
 
 type Props = { categories: CategoryRow[] };
@@ -31,6 +42,14 @@ const INITIAL_STATE: ActionState = { ok: false };
 
 export function CategoriesEditor({ categories }: Props) {
   const [openId, setOpenId] = useState<string | "new" | null>(null);
+
+  // Active rows already at the top-nav cap. The form below greys out
+  // the toggle when the cap is full and the row is currently OFF.
+  const featuredCount = useMemo(
+    () =>
+      categories.filter((c) => !c.is_deleted && c.is_featured_in_nav).length,
+    [categories]
+  );
 
   return (
     <div className="space-y-3">
@@ -59,18 +78,30 @@ export function CategoriesEditor({ categories }: Props) {
                 name_en: "",
                 description_ka: "",
                 description_en: "",
-                sort_order: categories.length,
+                intro_ka: "",
+                intro_en: "",
+                sort_order: categories.filter((c) => !c.is_deleted).length,
+                is_featured_in_nav: false,
+                is_deleted: false,
               }}
               actionId={null}
+              featuredCount={featuredCount}
               onSaved={() => setOpenId(null)}
             />
           </div>
         ) : null}
       </div>
 
-      {/* Existing categories */}
+      {/* Existing categories — active first, then soft-deleted. */}
       {categories.map((c) => (
-        <div key={c.id} className="rounded-xl border border-border bg-background">
+        <div
+          key={c.id}
+          className={
+            c.is_deleted
+              ? "rounded-xl border border-dashed border-border bg-muted/30"
+              : "rounded-xl border border-border bg-background"
+          }
+        >
           <button
             type="button"
             className="flex min-h-12 w-full flex-wrap items-center gap-x-3 gap-y-1 p-4 text-left"
@@ -81,6 +112,15 @@ export function CategoriesEditor({ categories }: Props) {
             <span className="text-xs text-muted-foreground break-words">
               {c.name_ka}
             </span>
+            {c.is_deleted ? (
+              <span className="rounded bg-destructive/10 px-1.5 py-0.5 text-[10px] font-medium uppercase tracking-wide text-destructive">
+                Hidden
+              </span>
+            ) : c.is_featured_in_nav ? (
+              <span className="rounded bg-emerald-500/10 px-1.5 py-0.5 text-[10px] font-medium uppercase tracking-wide text-emerald-700">
+                In nav
+              </span>
+            ) : null}
             <code className="ml-auto rounded bg-muted px-1.5 py-0.5 font-mono text-xs break-all">
               /{c.slug}
             </code>
@@ -99,9 +139,14 @@ export function CategoriesEditor({ categories }: Props) {
                   name_en: c.name_en,
                   description_ka: c.description_ka,
                   description_en: c.description_en,
+                  intro_ka: c.intro_ka ?? "",
+                  intro_en: c.intro_en ?? "",
                   sort_order: c.sort_order,
+                  is_featured_in_nav: c.is_featured_in_nav,
+                  is_deleted: c.is_deleted,
                 }}
                 actionId={c.id}
+                featuredCount={featuredCount}
                 onSaved={() => setOpenId(null)}
               />
             </div>
@@ -115,6 +160,7 @@ export function CategoriesEditor({ categories }: Props) {
 function CategoryForm({
   defaults,
   actionId,
+  featuredCount,
   onSaved,
 }: {
   defaults: {
@@ -123,29 +169,53 @@ function CategoryForm({
     name_en: string;
     description_ka: string;
     description_en: string;
+    intro_ka: string;
+    intro_en: string;
     sort_order: number;
+    is_featured_in_nav: boolean;
+    is_deleted: boolean;
   };
   actionId: string | null;
+  featuredCount: number;
   onSaved: () => void;
 }) {
   const bound = upsertCategoryAction.bind(null, actionId);
   const [state, formAction, pending] = useActionState(bound, INITIAL_STATE);
-  const [deletePending, startDeleteTransition] = useTransition();
-  const [deleteError, setDeleteError] = useState<string | null>(null);
+  const [softDeletePending, startSoftDeleteTransition] = useTransition();
+  const [restorePending, startRestoreTransition] = useTransition();
+  const [actionError, setActionError] = useState<string | null>(null);
 
   // Auto-close when a save succeeds.
   if (state.ok && !pending) {
     queueMicrotask(onSaved);
   }
 
-  const handleDelete = () => {
+  const navCapReached =
+    !defaults.is_featured_in_nav && featuredCount >= MAX_FEATURED_NAV;
+
+  const handleSoftDelete = () => {
     if (!actionId) return;
-    if (!confirm("Delete this category? Products must be empty first."))
+    if (
+      !confirm(
+        "Hide this category? Existing products keep their link and will reappear automatically when you restore the category."
+      )
+    ) {
       return;
-    setDeleteError(null);
-    startDeleteTransition(async () => {
+    }
+    setActionError(null);
+    startSoftDeleteTransition(async () => {
       const result = await deleteCategoryAction(actionId);
-      if (!result.ok) setDeleteError(result.message ?? "Delete failed.");
+      if (!result.ok) setActionError(result.message ?? "Hide failed.");
+      else onSaved();
+    });
+  };
+
+  const handleRestore = () => {
+    if (!actionId) return;
+    setActionError(null);
+    startRestoreTransition(async () => {
+      const result = await restoreCategoryAction(actionId);
+      if (!result.ok) setActionError(result.message ?? "Restore failed.");
       else onSaved();
     });
   };
@@ -165,9 +235,9 @@ function CategoryForm({
           {state.message}
         </p>
       ) : null}
-      {deleteError ? (
+      {actionError ? (
         <p className="rounded-md border border-destructive/30 bg-destructive/10 px-3 py-2 text-sm text-destructive">
-          {deleteError}
+          {actionError}
         </p>
       ) : null}
 
@@ -229,6 +299,56 @@ function CategoryForm({
           />
         </Field>
       </div>
+      <div className="grid gap-4 sm:grid-cols-2">
+        <Field
+          label="English intro (80–120 words)"
+          error={fieldErrors.intro_en}
+        >
+          <textarea
+            name="intro_en"
+            defaultValue={defaults.intro_en}
+            rows={5}
+            className={inputClass + " font-sans leading-relaxed"}
+          />
+        </Field>
+        <Field
+          label="Georgian intro (80–120 words)"
+          error={fieldErrors.intro_ka}
+        >
+          <textarea
+            name="intro_ka"
+            defaultValue={defaults.intro_ka}
+            rows={5}
+            className={inputClass + " font-sans leading-relaxed"}
+          />
+        </Field>
+      </div>
+
+      <Field
+        label="Show in top navigation"
+        error={fieldErrors.is_featured_in_nav}
+      >
+        <label className="flex items-center gap-2 text-sm text-muted-foreground">
+          <input
+            type="checkbox"
+            name="is_featured_in_nav"
+            defaultChecked={defaults.is_featured_in_nav}
+            disabled={navCapReached}
+            className="h-4 w-4 rounded border-input"
+          />
+          {navCapReached ? (
+            <span>
+              Top-nav cap reached ({MAX_FEATURED_NAV}). Untoggle another
+              category first.
+            </span>
+          ) : (
+            <span>
+              Up to {MAX_FEATURED_NAV} categories can appear in the
+              header. Currently {featuredCount}/{MAX_FEATURED_NAV}.
+            </span>
+          )}
+        </label>
+      </Field>
 
       <div className="flex items-center justify-between gap-3 pt-2">
         <div className="flex gap-2">
@@ -237,17 +357,31 @@ function CategoryForm({
           </Button>
         </div>
         {actionId ? (
-          <Button
-            type="button"
-            variant="destructive"
-            size="sm"
-            onClick={handleDelete}
-            disabled={deletePending}
-            className="gap-1.5"
-          >
-            <Trash2 aria-hidden className="h-4 w-4" />
-            Delete
-          </Button>
+          defaults.is_deleted ? (
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              onClick={handleRestore}
+              disabled={restorePending}
+              className="gap-1.5"
+            >
+              <RotateCcw aria-hidden className="h-4 w-4" />
+              Restore
+            </Button>
+          ) : (
+            <Button
+              type="button"
+              variant="destructive"
+              size="sm"
+              onClick={handleSoftDelete}
+              disabled={softDeletePending}
+              className="gap-1.5"
+            >
+              <Trash2 aria-hidden className="h-4 w-4" />
+              Hide
+            </Button>
+          )
         ) : null}
       </div>
     </form>

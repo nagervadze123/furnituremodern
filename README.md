@@ -208,8 +208,7 @@ furnituremodern/
 │
 ├── content/                           Local TS fallback (used when Supabase is unset)
 │   ├── products.ts
-│   ├── faq.ts
-│   └── category-intros.ts
+│   └── faq.ts
 │
 ├── i18n/
 │   ├── routing.ts

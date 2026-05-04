@@ -8,11 +8,10 @@
 // File ordering is Georgian → English in both files because Georgian
 // is the primary market locale per i18n/routing.ts.
 
-import { siteConfig, absoluteUrl, categories } from "@/lib/site-config";
+import { siteConfig, absoluteUrl } from "@/lib/site-config";
 import type { DataProduct, DataCategory } from "@/lib/data/types";
 import type { Locale } from "@/i18n/routing";
 import { getFaqEntries } from "@/content/faq";
-import { getCategoryIntro } from "@/content/category-intros";
 
 // "Last regenerated" should track the underlying data state, not wall
 // clock time — wall-clock would force a stale-vs-fresh question every
@@ -61,6 +60,11 @@ function productSummary(product: DataProduct, locale: Locale): string {
 
 // Localized category block: title, intro paragraph, every published
 // product in that category as a bullet.
+//
+// Source of truth for the intro is the Supabase `categories` row
+// (Phase 5 Task 3) — the data layer already exposes `intro_ka`/
+// `intro_en` on `DataCategory.intro`. Falls back to the tagline
+// (`description`) so an empty intro still renders something.
 function categoryBlock(
   category: DataCategory,
   locale: Locale,
@@ -68,7 +72,8 @@ function categoryBlock(
   withProducts: boolean
 ): string {
   const url = absoluteUrl(`/${locale}/${category.slug}`);
-  const intro = getCategoryIntro(category.slug, locale);
+  const intro =
+    category.intro?.[locale]?.trim() || category.description[locale];
   const head = `## ${category.name[locale]}\n${url}\n\n${intro}`;
   if (!withProducts) return head;
   if (productsInCategory.length === 0) return head;
@@ -118,22 +123,29 @@ function purposeBlock(locale: Locale): string {
   ].join("\n");
 }
 
-function importantPagesBlock(locale: Locale): string {
+function importantPagesBlock(
+  locale: Locale,
+  cats: DataCategory[]
+): string {
   const lines: string[] = [];
   const root = absoluteUrl(`/${locale}`);
   if (locale === "ka") {
     lines.push("## მნიშვნელოვანი გვერდები");
     lines.push(`- მთავარი: ${root}`);
-    for (const c of categories) {
-      lines.push(`- ${c.ka.name}: ${absoluteUrl(`/${locale}/${c.slug}`)}`);
+    for (const c of cats) {
+      lines.push(
+        `- ${c.name.ka}: ${absoluteUrl(`/${locale}/${c.slug}`)}`
+      );
     }
     lines.push(`- რუკა: ${absoluteUrl("/sitemap.xml")}`);
     lines.push(`- კრაულერების წესი: ${absoluteUrl("/robots.txt")}`);
   } else {
     lines.push("## Important pages");
     lines.push(`- Home: ${root}`);
-    for (const c of categories) {
-      lines.push(`- ${c.en.name}: ${absoluteUrl(`/${locale}/${c.slug}`)}`);
+    for (const c of cats) {
+      lines.push(
+        `- ${c.name.en}: ${absoluteUrl(`/${locale}/${c.slug}`)}`
+      );
     }
     lines.push(`- Sitemap: ${absoluteUrl("/sitemap.xml")}`);
     lines.push(`- Crawler policy: ${absoluteUrl("/robots.txt")}`);
@@ -211,7 +223,7 @@ export function buildLlmsIndex({
     "",
     categoriesIndexBlock("ka", cats),
     "",
-    importantPagesBlock("ka"),
+    importantPagesBlock("ka", cats),
     "",
     "## საკონტაქტო ინფორმაცია",
     businessBlock("ka"),
@@ -232,7 +244,7 @@ export function buildLlmsIndex({
     "",
     categoriesIndexBlock("en", cats),
     "",
-    importantPagesBlock("en"),
+    importantPagesBlock("en", cats),
     "",
     "## Contact",
     businessBlock("en"),
@@ -313,7 +325,7 @@ export function buildLlmsFull({
     blocks.push("");
     blocks.push(faqBlock(locale));
     blocks.push("");
-    blocks.push(importantPagesBlock(locale));
+    blocks.push(importantPagesBlock(locale, cats));
     blocks.push("");
     blocks.push(businessHeading);
     blocks.push(businessBlock(locale));

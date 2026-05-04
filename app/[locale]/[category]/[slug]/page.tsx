@@ -10,7 +10,7 @@ import { JsonLd } from "@/components/json-ld";
 import { ViewItemTracker } from "@/components/analytics/view-item-tracker";
 import { Gallery } from "@/components/product/gallery";
 import { breadcrumbListJsonLd, productJsonLd } from "@/lib/schema";
-import { getCategoryBySlug, isCategorySlug } from "@/lib/data/categories";
+import { getCategoryBySlug } from "@/lib/data/categories";
 import {
   getProductBySlug,
   getAllProductPaths,
@@ -24,9 +24,9 @@ import {
 import { absoluteUrl, siteConfig } from "@/lib/site-config";
 import { routing, type Locale } from "@/i18n/routing";
 
-// Same revalidation cadence as the category pages so admin edits
-// propagate without a full rebuild. Server actions also revalidatePath().
-export const revalidate = 300;
+// Match the category page's hourly window. Admin server actions still
+// call revalidatePath() so explicit edits show up within seconds.
+export const revalidate = 3600;
 
 type Props = {
   params: Promise<{ locale: string; category: string; slug: string }>;
@@ -51,10 +51,9 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { locale: rawLocale, category, slug } = await params;
   const locale = rawLocale as Locale;
 
-  if (!isCategorySlug(category)) {
-    return { title: "Not found", robots: { index: false } };
-  }
-
+  // The data layer already filters by `categories.is_deleted = false`,
+  // so unknown or soft-deleted categories return null without an
+  // explicit precheck.
   const product = await getProductBySlug(slug, locale, category);
   if (!product) {
     return { title: "Not found", robots: { index: false } };
@@ -118,8 +117,6 @@ export default async function ProductDetailPage({ params }: Props) {
   const { locale: rawLocale, category, slug } = await params;
   const locale = rawLocale as Locale;
   setRequestLocale(locale);
-
-  if (!isCategorySlug(category)) notFound();
 
   const [product, categoryRow, tBreadcrumbs] = await Promise.all([
     getProductBySlug(slug, locale, category),

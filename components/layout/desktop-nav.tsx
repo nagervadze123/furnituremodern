@@ -1,20 +1,18 @@
-// Desktop primary nav. Renders any `NavItem[]` from `lib/navigation.ts`,
-// supporting one-level dropdowns when an item has `children`.
+// Desktop primary nav. Renders any `NavItem[]` (already-translated
+// labels) supplied by the parent header, supporting one-level
+// dropdowns when an item has `children`.
 //
 // Server component. Dropdown items still work without JS — they fall
 // back to displaying their label as plain text — but become an
 // accessible disclosure on hover/focus via CSS group-hover.
 
-import { getTranslations } from "next-intl/server";
 import { ChevronDown } from "lucide-react";
 import { Link } from "@/i18n/navigation";
-import type { NavItem, NavLabelKey } from "@/lib/navigation";
+import type { NavItem } from "@/lib/navigation";
 
 type Props = { items: NavItem[] };
 
-export async function DesktopNav({ items }: Props) {
-  const t = await getTranslations("nav");
-
+export function DesktopNav({ items }: Props) {
   return (
     <nav
       // aria-label uses a generic "main navigation" since the nav covers
@@ -23,20 +21,13 @@ export async function DesktopNav({ items }: Props) {
       className="hidden items-center gap-8 md:flex"
     >
       {items.map((item) => (
-        <NavTopItem key={item.href} item={item} translate={(k) => t(k)} />
+        <NavTopItem key={item.href} item={item} />
       ))}
     </nav>
   );
 }
 
-function NavTopItem({
-  item,
-  translate,
-}: {
-  item: NavItem;
-  translate: (key: NavLabelKey) => string;
-}) {
-  const label = translate(item.labelKey);
+function NavTopItem({ item }: { item: NavItem }) {
   const hasChildren = !!item.children?.length;
 
   if (!hasChildren) {
@@ -45,7 +36,7 @@ function NavTopItem({
         href={item.href}
         className="text-sm font-medium text-foreground/80 transition-colors hover:text-foreground"
       >
-        {label}
+        {item.label}
       </Link>
     );
   }
@@ -58,7 +49,7 @@ function NavTopItem({
         href={item.href}
         className="flex items-center gap-1 text-sm font-medium text-foreground/80 transition-colors hover:text-foreground"
       >
-        {label}
+        {item.label}
         <ChevronDown
           aria-hidden="true"
           className="h-3.5 w-3.5 transition-transform group-hover:rotate-180 group-focus-within:rotate-180"
@@ -75,7 +66,7 @@ function NavTopItem({
               href={child.href}
               className="block rounded-md px-3 py-2 text-sm text-popover-foreground transition-colors hover:bg-muted"
             >
-              {translate(child.labelKey)}
+              {child.label}
             </Link>
           </li>
         ))}

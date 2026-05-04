@@ -1,27 +1,26 @@
 // Category landing page — route: /[locale]/[category]
 //
 // One file replaces the three static category routes from Phase 1
-// (`/sofas`, `/bedrooms`, `/tables-chairs`). Adding a 4th category
-// is now: insert the slug into Supabase + add an entry in
-// `content/category-intros.ts`. No new route file required.
+// (`/sofas`, `/bedrooms`, `/tables-chairs`). Categories are now fully
+// Supabase-driven (Phase 5 Task 3): the operator creates a row in
+// /admin/categories — name, tagline, intro paragraph, sort order,
+// "show in nav" toggle — and the public site picks it up on the next
+// revalidate tick. No code change required to add a new category.
 
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { setRequestLocale } from "next-intl/server";
 import { CategoryPage } from "@/components/sections/category-page";
 import { buildCategoryMetadata } from "@/lib/seo";
-import { getCategories, isCategorySlug } from "@/lib/data/categories";
-import {
-  getCategoryIntro,
-  getCategoryTitle,
-  getCategoryDescription,
-} from "@/content/category-intros";
+import { getCategories, getCategoryBySlug } from "@/lib/data/categories";
 import { routing, type Locale } from "@/i18n/routing";
 
-// Revalidate the page every 5 minutes so admin edits show up without
-// a full rebuild. Server Actions in the admin panel will additionally
-// call revalidatePath() for instant updates after a mutation.
-export const revalidate = 300;
+// Revalidate every hour. Categories change rarely (operator adds maybe
+// one or two per quarter) and the page is one of the most-cached
+// surfaces, so a longer ISR window cuts edge-cache thrash. Admin server
+// actions still call revalidatePath() so an explicit edit shows up
+// within seconds rather than waiting for the natural tick.
+export const revalidate = 3600;
 
 type Props = {
   params: Promise<{ locale: string; category: string }>;
@@ -43,17 +42,18 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { locale: rawLocale, category: rawCategory } = await params;
   const locale = rawLocale as Locale;
 
-  // Unknown category at metadata-resolution time → minimal metadata
-  // and let the page itself trigger 404 below.
-  if (!isCategorySlug(rawCategory)) {
+  // Unknown / soft-deleted category at metadata-resolution time →
+  // minimal metadata and let the page itself trigger 404 below.
+  const row = await getCategoryBySlug(rawCategory, locale);
+  if (!row) {
     return { title: "Not found", robots: { index: false } };
   }
 
   return buildCategoryMetadata({
     locale,
     path: rawCategory,
-    title: getCategoryTitle(rawCategory, locale),
-    description: getCategoryDescription(rawCategory, locale),
+    title: row.name[locale],
+    description: row.description[locale],
   });
 }
 
@@ -62,13 +62,14 @@ export default async function DynamicCategoryPage({ params }: Props) {
   const locale = rawLocale as Locale;
   setRequestLocale(locale);
 
-  if (!isCategorySlug(rawCategory)) notFound();
+  const row = await getCategoryBySlug(rawCategory, locale);
+  if (!row) notFound();
 
   return (
     <CategoryPage
       slug={rawCategory}
       locale={locale}
-      intro={getCategoryIntro(rawCategory, locale)}
+      intro={row.intro[locale]}
     />
   );
 }

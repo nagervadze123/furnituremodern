@@ -5,9 +5,6 @@
   },
   "nav": {
     "home": "მთავარი",
-    "sofas": "დივნები",
-    "bedrooms": "საძინებლები",
-    "tablesChairs": "მაგიდები და სკამები",
     "openMenu": "მენიუს გახსნა",
     "closeMenu": "მენიუს დახურვა",
     "switchLanguage": "ენის შეცვლა"

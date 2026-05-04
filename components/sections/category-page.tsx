@@ -81,7 +81,13 @@ export async function CategoryPage({ slug, locale, intro }: Props) {
       />
       <JsonLd
         id={`ld-itemlist-${slug}`}
-        data={itemListJsonLd(slug, locale, products)}
+        data={itemListJsonLd({
+          categorySlug: slug,
+          locale,
+          name: category.name[locale],
+          description: category.description[locale],
+          products,
+        })}
         nonce={nonce}
       />
 
@@ -96,7 +102,7 @@ export async function CategoryPage({ slug, locale, intro }: Props) {
       {/* Compact AEO summary block — visible factual snapshot for
           AI crawlers, identical to what humans see. */}
       <AeoSummaryPanel
-        summary={categoryAeoSummary(slug, locale, products.length)}
+        summary={categoryAeoSummary(category.name[locale], locale, products.length)}
         id={`aeo-${slug}`}
       />
 

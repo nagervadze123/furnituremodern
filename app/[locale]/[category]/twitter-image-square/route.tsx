@@ -8,9 +8,8 @@ import { notFound } from "next/navigation";
 import {
   getCategories,
   getCategoryBySlug,
-  isCategorySlug,
 } from "@/lib/data/categories";
-import { siteConfig, SITE_HOST } from "@/lib/site-config";
+import { SITE_HOST } from "@/lib/site-config";
 import {
   buildCategoryTemplate,
   renderOgResponse,
@@ -35,10 +34,10 @@ export async function GET(_req: Request, { params }: Props) {
   const { locale: raw, category } = await params;
   const locale = (raw === "en" ? "en" : "ka") as Locale;
 
-  if (!isCategorySlug(category)) notFound();
-
   const row = await getCategoryBySlug(category, locale);
-  const categoryName = row?.name[locale] ?? siteConfig.name;
+  if (!row) notFound();
+
+  const categoryName = row.name[locale];
 
   return renderOgResponse(
     buildCategoryTemplate({
