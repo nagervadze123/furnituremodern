@@ -266,6 +266,41 @@ describe("productJsonLd", () => {
     const o = productJsonLd(SAMPLE_PRODUCT, "ka");
     expect(o["@id"]).toMatch(/\/ka\/sofas\/linen-three-seater#product$/);
   });
+
+  it("emits every image URL in the data layer's order (primary first)", () => {
+    const product: DataProduct = {
+      ...SAMPLE_PRODUCT,
+      images: [
+        // Order in this array IS the order JSON-LD must preserve, since
+        // the data layer is responsible for sorting primary-first.
+        {
+          url: "https://example.com/primary.jpg",
+          alt: { ka: "p ka", en: "p en" },
+          width: 1200,
+          height: 900,
+        },
+        {
+          url: "https://example.com/second.jpg",
+          alt: { ka: "s ka", en: "s en" },
+          width: 1200,
+          height: 900,
+        },
+        {
+          url: "https://example.com/third.jpg",
+          alt: { ka: "t ka", en: "t en" },
+          width: 1200,
+          height: 900,
+        },
+      ],
+    };
+    const o = productJsonLd(product, "en");
+    const images = o.image as string[];
+    expect(images).toEqual([
+      "https://example.com/primary.jpg",
+      "https://example.com/second.jpg",
+      "https://example.com/third.jpg",
+    ]);
+  });
 });
 
 describe("faqPageJsonLd", () => {

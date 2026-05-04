@@ -129,6 +129,16 @@
       }
     }
   },
+  "gallery": {
+    "region_label": "Product gallery",
+    "thumbnail_label": "Show image {n} of {total}",
+    "lightbox_title": "Product image full view",
+    "close_label": "Close",
+    "previous_label": "Previous image",
+    "next_label": "Next image",
+    "open_full_view": "Open full view",
+    "of": "of"
+  },
   "search": {
     "title": "Search",
     "comingSoonHeading": "Search is coming soon",

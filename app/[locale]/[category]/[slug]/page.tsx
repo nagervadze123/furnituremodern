@@ -2,13 +2,13 @@
 // Example URL: /ka/sofas/linen-three-seater
 
 import type { Metadata } from "next";
-import Image from "next/image";
 import { headers } from "next/headers";
 import { notFound } from "next/navigation";
 import { setRequestLocale, getTranslations } from "next-intl/server";
 import { Breadcrumbs, type BreadcrumbCrumb } from "@/components/sections/breadcrumbs";
 import { JsonLd } from "@/components/json-ld";
 import { ViewItemTracker } from "@/components/analytics/view-item-tracker";
+import { Gallery } from "@/components/product/gallery";
 import { breadcrumbListJsonLd, productJsonLd } from "@/lib/schema";
 import { getCategoryBySlug, isCategorySlug } from "@/lib/data/categories";
 import {
@@ -21,7 +21,6 @@ import {
   formatLastUpdated,
   LAST_UPDATED_LABEL,
 } from "@/lib/aeo/summary";
-import { BRAND_PORTRAIT_BLUR } from "@/lib/perf/blur";
 import { absoluteUrl, siteConfig } from "@/lib/site-config";
 import { routing, type Locale } from "@/i18n/routing";
 
@@ -133,8 +132,6 @@ export default async function ProductDetailPage({ params }: Props) {
   // Per-request CSP nonce, threaded into every inline <script> tag.
   const nonce = (await headers()).get("x-nonce") ?? undefined;
 
-  const primary = product.images[0];
-
   // Visible breadcrumbs.
   const crumbs: BreadcrumbCrumb[] = [
     { label: tBreadcrumbs("home"), href: "/" },
@@ -172,23 +169,12 @@ export default async function ProductDetailPage({ params }: Props) {
       </div>
 
       <article className="mx-auto grid max-w-7xl gap-8 px-4 pb-16 pt-8 sm:gap-10 md:grid-cols-2 md:gap-12 md:px-6 md:pt-12 md:pb-24">
-        {/* Image gallery — currently a single primary image. Multi-image
-            layout drops in here when products gain more photos.
-            min-w-0 stops the picture from forcing a horizontal scroll
-            when the description column wraps to a long single token. */}
-        <div className="relative aspect-[4/5] min-w-0 overflow-hidden rounded-2xl bg-muted">
-          {primary ? (
-            <Image
-              src={primary.url}
-              alt={primary.alt[locale]}
-              fill
-              sizes="(min-width: 768px) 50vw, 100vw"
-              priority
-              placeholder="blur"
-              blurDataURL={BRAND_PORTRAIT_BLUR}
-              className="object-cover"
-            />
-          ) : null}
+        <div className="min-w-0">
+          <Gallery
+            images={product.images}
+            locale={locale}
+            productName={product.name[locale]}
+          />
         </div>
 
         <div className="min-w-0">

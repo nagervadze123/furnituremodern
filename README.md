@@ -137,11 +137,25 @@ The admin panel lives at `/admin` (route group `app/(admin)/`, intentionally out
 | `/admin`             | Dashboard with quick links and counts. |
 | `/admin/products`    | List with search, filter by category, paginated (25/page). Edit, delete, publish toggle. |
 | `/admin/products/new`| Create form. Slug auto-suggested from `name_en`, manually overridable. |
-| `/admin/products/[id]/edit` | Edit form. Renaming the slug auto-inserts ka + en redirect rows so old URLs keep working. Image upload to Supabase Storage. |
+| `/admin/products/[id]/edit` | Edit form. Renaming the slug auto-inserts ka + en redirect rows so old URLs keep working. Multi-image gallery management (see below). |
 | `/admin/categories`  | Inline CRUD for the three categories. |
 | `/admin/redirects`   | Manage `from_path` → `to_path` redirects manually. |
 
 The admin layout shows a "Configure Supabase" notice if env vars are missing, instead of crashing.
+
+### Product image management
+
+The product edit page (`/admin/products/[id]/edit`) renders the [`ImageManager`](components/admin/image-manager.tsx) — a single grid that handles upload, ordering, the primary flag, alt-text editing, and deletion.
+
+- **Upload.** Drop or pick multiple files (JPEG / PNG / WebP / AVIF, ≤ 10 MB each, max 12 images per product). Each file uploads to the `product-images` Storage bucket using the editor's authenticated browser session, then a server action (`addProductImageAction`) inserts the matching `product_images` row. The first image of a product is auto-promoted to `is_primary = true`.
+- **Reorder.** Drag any tile to a new position (or use keyboard: focus the grip handle, press Space, arrow keys, Space again). On drop, `reorderProductImagesAction` rewrites `sort_order` for every affected row.
+- **Set primary.** Click *Set primary* on any non-primary tile. `setPrimaryImageAction` demotes the current primary then promotes the chosen tile (the schema's partial unique index `product_images_one_primary_per_product` enforces single-primary).
+- **Alt text.** Type Georgian + English alt text inline; saved on blur via `updateImageAltAction`. The grid surfaces a soft warning when any tile is missing alt text (accessibility + SEO), but does not block save.
+- **Delete.** Trash icon → confirm prompt → `deleteProductImageAction` removes the DB row, deletes the underlying Storage object, and auto-promotes the next image to primary if the deleted one held that flag.
+
+All five actions live in [`app/(admin)/admin/(dashboard)/products/images-actions.ts`](app/(admin)/admin/(dashboard)/products/images-actions.ts) (constants + `ImageActionResult` are exported from the sibling `images-config.ts` because Next 16 disallows non-function exports from `"use server"` modules). Each action calls `requireAdmin()`, validates with Zod, fires `logError` on failure with PII-free context, and triggers `notifyRevalidation` so the public detail page picks up the change.
+
+The public-side gallery is [`components/product/gallery.tsx`](components/product/gallery.tsx) — a Server Component that renders the layout shell with the primary image as the LCP candidate (`priority`), and hands interactivity (thumbnail click → swap, click → fullscreen lightbox, ←/→ to cycle, Esc to close, focus restore on close, fade transitions collapsed when `prefers-reduced-motion: reduce`) to a small client island in [`gallery-client.tsx`](components/product/gallery-client.tsx).
 
 Authentication and authorization happen in two layers:
 
@@ -181,8 +195,9 @@ furnituremodern/
 │       │       └── opengraph-image.tsx Per-product OG image
 │
 ├── components/
-│   ├── admin/                         Admin-only client components (forms, editors, ...)
+│   ├── admin/                         Admin-only client components (forms, editors, image-manager, ...)
 │   ├── layout/                        Header, Footer, DesktopNav, MobileNav, ...
+│   ├── product/                       Public product surfaces (Gallery server shell + GalleryClient island)
 │   ├── sections/                      Hero, FeaturedCategories, ProductCard, ...
 │   ├── ui/                            shadcn/ui behavioral primitives (base-nova style, base-ui)
 │   ├── design/                        Visual layout primitives (Container, Section, Display, ...)
@@ -277,7 +292,7 @@ Edit `lib/navigation.ts`. Both desktop and mobile nav read from `mainNav`. The f
 
 ### Replace placeholder images
 
-`content/products.ts` uses `picsum.photos` for fallback data. Replace with real URLs and add the host to `images.remotePatterns` in `next.config.ts`.
+`content/products.ts` uses `picsum.photos` for fallback data when Supabase isn't wired up. Once Supabase is configured, upload real photos via the admin: open `/admin/products/[id]/edit` and use the **Images** panel (multi-select upload, drag to reorder, click to set primary, alt text per locale). Files land in the `product-images` Storage bucket; their public URLs are served via the Supabase host (already whitelisted in `next.config.ts` via `images.remotePatterns`). If you serve images from a different CDN, add that host explicitly.
 
 ## 9. URL safety: redirects
 

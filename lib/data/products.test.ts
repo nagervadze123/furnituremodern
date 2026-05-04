@@ -116,6 +116,72 @@ describe("getProducts — Supabase failure fallback", () => {
   });
 });
 
+describe("getProducts — image sorting (primary first, then sort_order)", () => {
+  it("returns the primary image as images[0] regardless of insertion order", async () => {
+    setNodeEnv("production");
+    createSupabasePublicClientMock.mockReturnValue({
+      from: () =>
+        makeQuery({
+          data: [
+            {
+              id: "p-1",
+              slug: "linen-three-seater",
+              name_ka: "name ka",
+              name_en: "name en",
+              description_ka: "desc ka",
+              description_en: "desc en",
+              price: "1200.00",
+              currency: "GEL",
+              is_featured: false,
+              is_published: true,
+              sort_order: 0,
+              updated_at: null,
+              created_at: null,
+              categories: { slug: "sofas" },
+              // Out-of-order rows: secondary first, primary last.
+              product_images: [
+                {
+                  storage_path: "products/p1/two.jpg",
+                  alt_ka: "two ka",
+                  alt_en: "two en",
+                  sort_order: 1,
+                  is_primary: false,
+                },
+                {
+                  storage_path: "products/p1/three.jpg",
+                  alt_ka: "three ka",
+                  alt_en: "three en",
+                  sort_order: 2,
+                  is_primary: false,
+                },
+                {
+                  storage_path: "products/p1/one.jpg",
+                  alt_ka: "one ka",
+                  alt_en: "one en",
+                  sort_order: 0,
+                  is_primary: true,
+                },
+              ],
+            },
+          ],
+          error: null,
+        }),
+    });
+    const result = await getProducts();
+    expect(result).toHaveLength(1);
+    const images = result[0]!.images;
+    expect(images).toHaveLength(3);
+    // Primary must be at position 0.
+    expect(images[0]!.url).toMatch(/one\.jpg$/);
+    // Remaining two follow sort_order ascending.
+    expect(images[1]!.url).toMatch(/two\.jpg$/);
+    expect(images[2]!.url).toMatch(/three\.jpg$/);
+    // Per-locale alt comes through unchanged.
+    expect(images[0]!.alt.ka).toBe("one ka");
+    expect(images[0]!.alt.en).toBe("one en");
+  });
+});
+
 describe("getProductBySlug — Supabase failure fallback", () => {
   it("production: returns null and logs the error (no placeholder)", async () => {
     setNodeEnv("production");

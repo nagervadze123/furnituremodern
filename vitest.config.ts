@@ -9,6 +9,8 @@ export default defineConfig({
       "lib/**/*.test.tsx",
       "components/**/*.test.ts",
       "components/**/*.test.tsx",
+      "app/**/*.test.ts",
+      "app/**/*.test.tsx",
     ],
     globals: false,
   },

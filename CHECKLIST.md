@@ -23,7 +23,7 @@ A snapshot of what's already done versus what to do before you go live.
 ### Public pages
 - [x] **Home** — hero, featured categories, brand story, FAQ
 - [x] **Category landing** (`/[locale]/[category]`) — dynamic route, intro, product grid, cross-links
-- [x] **Product detail** (`/[locale]/[category]/[slug]`) — gallery, name, price, description, breadcrumbs, ISR (`revalidate = 300`)
+- [x] **Product detail** (`/[locale]/[category]/[slug]`) — multi-image `Gallery` (Server shell + `GalleryClient` island for thumbnails / lightbox / keyboard nav / focus restore / reduced-motion fallback), name, price, description, breadcrumbs, ISR (`revalidate = 300`)
 - [x] Per-product OG images (`opengraph-image.tsx` under each `[slug]`)
 - [x] Navigation includes Home + 3 categories from `lib/navigation.ts`
 
@@ -41,6 +41,7 @@ A snapshot of what's already done versus what to do before you go live.
 - [x] Dashboard with counts and quick links
 - [x] Products list — search, category filter, pagination (25/page), edit + delete
 - [x] Product create/edit form — slug auto-suggest, manual override, image upload to Storage
+- [x] Multi-image gallery management (`components/admin/image-manager.tsx`) — multi-file upload with optimistic tiles, dnd-kit drag-drop reorder (keyboard-accessible), set-primary toggle, per-image bilingual alt text, delete with confirm; size cap 10MB, MIME allowlist (jpeg/png/webp/avif), max 12 images per product. All mutations go through admin server actions in `images-actions.ts` with `logError` on failure.
 - [x] Slug rename automatically inserts ka + en redirect rows
 - [x] Categories CRUD
 - [x] Redirects manual editor (`/admin/redirects`)
@@ -356,6 +357,8 @@ Before flipping DNS / launch announcement, walk this list against the live `http
 - [ ] **Confirm `schema.sql` guard active** — locally, run `supabase/schema.sql` against a fresh dev DB (succeeds), seed it, then run it again. The second run must error with `Refusing to run bootstrap schema.sql against a database that already contains data.` Do **not** run this against production.
 - [ ] **Confirm slug rename in production admin** produces both the new URL (200) and the redirect entry (301 from old URL); if the redirect insert fails, the admin must see an explicit red error message ("Product saved, but creating the redirect from the old URL failed: …"), not a green "Saved.".
 - [ ] **Confirm production-mode Supabase failure renders empty state, not placeholder content** — temporarily revoke the anon role's SELECT on `products` in dev (with `NODE_ENV=production` set), reload `/ka/sofas`, confirm the grid is empty rather than showing the local TS catalogue. Restore the policy when done.
+- [ ] **Storage bucket `product-images` policies confirmed** — `public = true` so object reads work via the public URL pattern; **no** public SELECT policy on `storage.objects` (would allow LIST enumeration); admin-only INSERT/UPDATE/DELETE/SELECT on `storage.objects` for `bucket_id = 'product-images'`. Verify in Supabase Studio → Storage → `product-images` → Policies that the four `product_images_storage_admin_*` policies exist and are gated on `private.is_admin()`.
+- [ ] **Every published product has at least one image, a primary set, and bilingual alt text** — query in Studio: `SELECT p.slug FROM products p WHERE NOT EXISTS (SELECT 1 FROM product_images i WHERE i.product_id = p.id AND i.is_primary = true);` should return zero rows. Then `SELECT slug, alt_ka, alt_en FROM product_images JOIN products ON ... WHERE alt_ka = '' OR alt_en = '';` — investigate any rows surfaced (the admin shows a soft warning but allows the editor to ship anyway).
 
 ---
 
@@ -388,7 +391,7 @@ Before flipping DNS / launch announcement, walk this list against the live `http
 ## Phase 5 priorities
 
 - **Premium design overhaul** — typography, spacing, hero, product detail UX.
-- **Multi-image product gallery** with drag-drop ordering and primary selection.
+- ~~**Multi-image product gallery** with drag-drop ordering and primary selection.~~ Done — public `Gallery` (`components/product/gallery.tsx` Server shell + `gallery-client.tsx` island) and admin `ImageManager` (`components/admin/image-manager.tsx`) with dnd-kit reorder, set-primary toggle, bilingual alt text, validation (10MB / MIME allowlist / 12-image cap). Server actions: `addProductImage`, `updateImageAlt`, `setPrimaryImage`, `reorderProductImages`, `deleteProductImage` — all in `app/(admin)/admin/(dashboard)/products/images-actions.ts` with `logError` on failure.
 - **Real product photos integrated** — LCP retargeted to ≤ 2.5s, Lighthouse Performance ≥ 95.
 - **Dynamic categories from Supabase** — remove the hard-coded list in `lib/navigation.ts` / `lib/site-config.ts`.
 

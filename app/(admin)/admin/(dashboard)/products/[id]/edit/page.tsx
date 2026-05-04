@@ -8,7 +8,7 @@ import {
   ProductForm,
   type CategoryOption,
 } from "@/components/admin/product-form";
-import { ProductImageList } from "@/components/admin/product-image-list";
+import { ImageManager } from "@/components/admin/image-manager";
 import { DeleteProductButton } from "@/components/admin/delete-product-button";
 import {
   updateProductAction,
@@ -125,11 +125,11 @@ export default async function EditProductPage({ params, searchParams }: Props) {
       <div className="mt-8 rounded-xl border border-border bg-background p-6">
         <h2 className="text-lg font-semibold tracking-tight">Images</h2>
         <p className="mt-1 text-sm text-muted-foreground">
-          Upload product photos. The first one becomes the primary image
-          on category and detail pages.
+          Upload product photos, drag to reorder, choose a primary image,
+          and add bilingual alt text. Up to 12 images per product.
         </p>
         <div className="mt-4">
-          <ProductImageList productId={product.id} initialImages={images} />
+          <ImageManager productId={product.id} initialImages={images} />
         </div>
       </div>
     </div>

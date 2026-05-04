@@ -129,6 +129,16 @@
       }
     }
   },
+  "gallery": {
+    "region_label": "პროდუქტის გალერეა",
+    "thumbnail_label": "ნახეთ სურათი {n} {total}-დან",
+    "lightbox_title": "სურათის სრული ხედი",
+    "close_label": "დახურვა",
+    "previous_label": "წინა სურათი",
+    "next_label": "შემდეგი სურათი",
+    "open_full_view": "სრული ხედის გახსნა",
+    "of": "/"
+  },
   "search": {
     "title": "ძიება",
     "comingSoonHeading": "ძიება მალე ხელმისაწვდომი იქნება",
