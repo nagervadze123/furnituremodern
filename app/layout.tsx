@@ -84,13 +84,20 @@ const notoSerifGeorgian = Noto_Serif_Georgian({
 // utility classes defined in globals.css. Keep this on the root layout
 // so every route (including /_not-found, /sitemap.xml fallback HTML)
 // inherits it without each segment re-declaring.
+//
+// themeColor here drives the <meta name="theme-color"> tag — the
+// browser-chrome tint while the page is open in a tab. We use the light
+// and dark page-surface colours so the chrome blends into the rendered
+// page instead of jumping. The installed-PWA equivalent (Android task
+// switcher / status bar) is set to brand accent inside app/manifest.ts;
+// the two surfaces get two intentionally different treatments.
 export const viewport: Viewport = {
   width: "device-width",
   initialScale: 1,
   viewportFit: "cover",
   themeColor: [
-    { media: "(prefers-color-scheme: light)", color: "#fafaf6" },
-    { media: "(prefers-color-scheme: dark)", color: "#1a1611" },
+    { media: "(prefers-color-scheme: light)", color: siteConfig.brand.background },
+    { media: "(prefers-color-scheme: dark)", color: siteConfig.brand.foreground },
   ],
 };
 
@@ -124,6 +131,19 @@ export const metadata: Metadata = {
       { url: "/apple-touch-icon.png", sizes: "180x180", type: "image/png" },
     ],
     shortcut: ["/favicon.ico"],
+  },
+  // iOS-specific "Add to Home Screen" hints. Renders three meta tags:
+  //   • apple-mobile-web-app-capable: yes (full-screen launch)
+  //   • apple-mobile-web-app-title: brand name shown under the icon
+  //   • apple-mobile-web-app-status-bar-style: default (light status bar
+  //     text on the cream brand background — black would clash). iOS
+  //     does not read the web app manifest for these signals; without
+  //     these meta tags Safari falls back to the page <title>, which
+  //     can include the per-page title template.
+  appleWebApp: {
+    capable: true,
+    title: siteConfig.name,
+    statusBarStyle: "default",
   },
   verification: buildVerification(),
 };

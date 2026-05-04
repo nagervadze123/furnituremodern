@@ -223,7 +223,7 @@ Run each of the platform validators below against a deployed product URL and a c
 - [ ] Add your real image CDN host to `images.remotePatterns` in `next.config.ts` if you serve from outside Supabase Storage
 - [ ] Replace FAQ answers in `content/faq.ts`
 - [ ] Tighten the brand-story copy in `messages/ka.json` / `messages/en.json`
-- [ ] Replace the placeholder PWA icons in `public/` (the "F" monogram). Edit `LETTER_PATH` / colours in `scripts/generate-icons.mjs` (or drop a designer SVG into `public/icon.svg`) and re-run `node scripts/generate-icons.mjs`.
+- [ ] Replace the typeset "F" monogram with a designer-supplied SVG when the final logo lands. Drop the file into `public/icon.svg` (512×512 viewBox) and re-run `node scripts/generate-icons.mjs` — the script will rasterise it into every PNG variant. The current monogram already uses the confirmed brand palette (`siteConfig.brand.foreground` + `…background`), so dropping in a real mark is the only step left.
 - [ ] Add real PWA screenshots to `app/manifest.ts` `screenshots` array once the final design is shipped (mobile + desktop variants).
 - [ ] Add manifest `shortcuts` entries to `app/manifest.ts` once the category/product taxonomy is final (e.g. "Sofas", "New arrivals").
 
@@ -317,7 +317,9 @@ For each page: record date tested, tool URL used, pass/fail, and any warnings th
 ### PWA — manual verification
 
 - [ ] `/manifest.webmanifest` loads in production and is valid JSON. Open DevTools → Application → Manifest and confirm name, short_name, theme/background colour, and every icon URL resolve without errors.
-- [ ] All icon URLs return 200: `/icon.svg`, `/favicon.ico`, `/favicon-16x16.png`, `/favicon-32x32.png`, `/apple-touch-icon.png`, `/icon-192.png`, `/icon-512.png`, `/icon-maskable-512.png`.
+- [ ] All icon URLs return 200: `/icon.svg`, `/favicon.ico`, `/favicon-16x16.png`, `/favicon-32x32.png`, `/apple-touch-icon.png`, `/icon-192.png`, `/icon-512.png`, `/icon-maskable-192.png`, `/icon-maskable-512.png`.
+- [ ] Android Chrome → Add to Home Screen: installed icon, app name, and splash screen render with the brand monogram + cream background. Launching the installed app lands on `/ka`.
+- [ ] iOS Safari → Share → Add to Home Screen: the home-screen tile shows the apple-touch-icon (no transparent corners) and the title under the icon is "Furnituremodern", not the per-page `<title>`.
 - [ ] Mobile install prompt appears (Chrome: address-bar install icon, or Add to Home Screen). Installed app launches into `/ka`.
 - [ ] iOS Safari: "Add to Home Screen" shows the apple-touch-icon (no transparent background, no jagged edges).
 - [ ] Theme colour appears on the browser tab (Chrome desktop) and the system status bar (Android Chrome standalone, iOS Safari).

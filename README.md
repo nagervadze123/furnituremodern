@@ -516,10 +516,11 @@ The site ships a deliberately small PWA baseline so visitors can install it to a
 
 | Layer | File | Notes |
 | --- | --- | --- |
-| Web app manifest | `app/manifest.ts` | Served at `/manifest.webmanifest`. Reads brand name + short description from `lib/site-config.ts`. Georgian (`lang: ka-GE`), `start_url: /ka`, `display: standalone`. |
-| Theme color | `app/layout.tsx` (viewport) | Light + dark variants, matches `app/globals.css` palette. |
-| Icons | `public/icon.svg` (source), generator script at `scripts/generate-icons.mjs` | Placeholder "F" monogram on ink + cream. Designed to be replaced before launch. |
-| Service worker | `public/sw.js` | Versioned cache (`fm-pwa-v1`). Network-first navigation, offline fallback to `/offline.html`. Stale-while-revalidate for `/_next/static/*`. |
+| Web app manifest | `app/manifest.ts` | Served at `/manifest.webmanifest`. Reads brand name, description, and colours from `lib/site-config.ts`. Georgian (`lang: ka-GE`), `start_url: /ka`, `display: standalone`. `theme_color` is brand accent (terracotta) — applied to the installed-app status bar. `background_color` is brand cream — applied to the splash screen behind the maskable icon. |
+| Theme color | `app/layout.tsx` (viewport) | Drives the in-tab `<meta name="theme-color">`. Light = brand background, dark = brand foreground. Distinct from the manifest `theme_color` on purpose: tab chrome blends into the page, installed-app chrome carries the brand. |
+| Apple Web App tags | `app/layout.tsx` (metadata `appleWebApp`) | Renders `apple-mobile-web-app-capable`, `-title`, `-status-bar-style`. iOS Safari does not read the manifest, so these meta tags are how the iOS "Add to Home Screen" experience picks up the brand name and a clean status bar. |
+| Icons | `public/icon.svg` (source), generator script at `scripts/generate-icons.mjs` | Brand "F" monogram. Rounded "any" plate is ink with a cream letter; full-bleed maskable plate is cream with an ink letter (matches the splash background). Re-run the generator whenever brand colours or the monogram change. |
+| Service worker | `public/sw.js` | Versioned cache (`fm-pwa-v2`). Network-first navigation, offline fallback to `/offline.html`. Stale-while-revalidate for `/_next/static/*`. |
 | Offline fallback | `public/offline.html` | Standalone HTML, Georgian-first, no external dependencies. |
 | SW registration | `components/service-worker-register.tsx` | Production-only register; unregisters stale dev SWs. |
 
@@ -532,9 +533,10 @@ public/
   favicon-16x16.png         # Browser tab.
   favicon-32x32.png         # Browser tab (HiDPI).
   apple-touch-icon.png      # 180×180 — iOS home screen.
-  icon-192.png              # Android home screen.
-  icon-512.png              # Android splash + manifest "any".
-  icon-maskable-512.png     # Android adaptive icon — full-bleed.
+  icon-192.png              # Android home screen ("any" purpose).
+  icon-512.png              # Manifest "any" at high density.
+  icon-maskable-192.png     # Android adaptive icon — full-bleed cream plate.
+  icon-maskable-512.png     # Android adaptive icon at high density.
 ```
 
 ### Regenerating icons
@@ -552,7 +554,7 @@ For a final brand drop, replace `public/icon.svg` with a designer-supplied SVG (
 ### Service worker scope and caching policy
 
 - **Scope:** `/` (every same-origin URL).
-- **Precached on install:** offline page + the eight branding assets above.
+- **Precached on install:** offline page + the nine branding assets above.
 - **Network-first** for navigations, with an offline fallback only when the network errors.
 - **Stale-while-revalidate** for `/_next/static/*` (content-hashed, so caching is safe).
 - **Pass-through (never cached or intercepted):**
@@ -580,7 +582,7 @@ In dev (`NODE_ENV !== "production"`), the registrar actively unregisters any lef
 - No offline catalogue browsing. Visiting an uncached product offline shows the offline page.
 - No screenshots, shortcuts, or share_target entries in the manifest. Add these once final design and product taxonomy are stable.
 - No push notifications, no background sync.
-- The placeholder icon is a generic "F" monogram. Replace before launch.
+- The icon is a typeset "F" monogram in the brand palette. Drop a designer SVG into `public/icon.svg` and re-run `node scripts/generate-icons.mjs` to replace it without touching any other code.
 
 To extend offline behaviour later, the cleanest path is to add a category/product list cache keyed by ISR revalidation timestamps — but only after the catalogue's freshness model is finalised.
 

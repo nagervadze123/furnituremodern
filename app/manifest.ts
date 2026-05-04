@@ -2,19 +2,22 @@
 //
 // Next.js renders this at /manifest.webmanifest and auto-emits the
 // <link rel="manifest"> tag in <head>. Values mirror lib/site-config.ts
-// where practical so a brand rename ripples through automatically.
+// so a brand rename ripples through automatically.
 //
-// Placeholder colours and icons today — refresh with the final identity
-// before launch (see CHECKLIST §"Before you launch" → PWA).
+// Two colour fields with different roles:
+//   • theme_color — Android task switcher / installed-app status bar.
+//     Brand accent (terracotta) so the installed app is recognisably
+//     Furnituremodern at the OS level.
+//   • background_color — splash screen behind the icon while the app
+//     boots. Brand background so the splash → first paint reads as one
+//     continuous surface (and matches the cream maskable icon plate).
+//
+// The <meta name="theme-color"> tag in app/layout.tsx serves the
+// in-browser-tab chrome and uses the light/dark page background instead
+// — different surface, different colour, on purpose.
 
 import type { MetadataRoute } from "next";
 import { siteConfig } from "@/lib/site-config";
-
-// Theme + background pulled from the light palette in app/globals.css.
-// Matches the viewport.themeColor "light" branch declared in app/layout.tsx
-// so the browser chrome matches the rendered page on first paint.
-const THEME_COLOR_LIGHT = "#fafaf6";
-const BACKGROUND_COLOR = "#fafaf6";
 
 export default function manifest(): MetadataRoute.Manifest {
   return {
@@ -28,8 +31,8 @@ export default function manifest(): MetadataRoute.Manifest {
     start_url: "/ka",
     scope: "/",
     display: "standalone",
-    theme_color: THEME_COLOR_LIGHT,
-    background_color: BACKGROUND_COLOR,
+    theme_color: siteConfig.brand.accent,
+    background_color: siteConfig.brand.background,
     categories: ["shopping", "lifestyle"],
     icons: [
       {
@@ -49,6 +52,12 @@ export default function manifest(): MetadataRoute.Manifest {
         sizes: "512x512",
         type: "image/png",
         purpose: "any",
+      },
+      {
+        src: "/icon-maskable-192.png",
+        sizes: "192x192",
+        type: "image/png",
+        purpose: "maskable",
       },
       {
         src: "/icon-maskable-512.png",

@@ -2,6 +2,7 @@ import { describe, it, expect } from "vitest";
 import { existsSync, readFileSync } from "node:fs";
 import { resolve } from "node:path";
 import manifest from "@/app/manifest";
+import { siteConfig } from "@/lib/site-config";
 
 const PUBLIC = resolve(__dirname, "../../public");
 
@@ -17,6 +18,7 @@ const REQUIRED_PUBLIC_FILES = [
   "apple-touch-icon.png",
   "icon-192.png",
   "icon-512.png",
+  "icon-maskable-192.png",
   "icon-maskable-512.png",
   "offline.html",
   "sw.js",
@@ -46,12 +48,27 @@ describe("PWA manifest", () => {
     expect(m.background_color).toMatch(/^#[0-9a-f]{3,8}$/i);
   });
 
+  it("uses brand accent for theme_color and brand background for background_color", () => {
+    // Locks in the deliberate split: accent for installed-app chrome,
+    // background for the splash screen behind the maskable icon.
+    expect(m.theme_color).toBe(siteConfig.brand.accent);
+    expect(m.background_color).toBe(siteConfig.brand.background);
+  });
+
   it("includes both an `any` and a `maskable` icon", () => {
     const icons = m.icons ?? [];
     const any = icons.some((i) => !i.purpose || i.purpose.includes("any"));
     const maskable = icons.some((i) => i.purpose?.includes("maskable"));
     expect(any).toBe(true);
     expect(maskable).toBe(true);
+  });
+
+  it("ships maskable icons at both 192 and 512 so Android can pick the right size", () => {
+    const maskable = (m.icons ?? []).filter((i) =>
+      i.purpose?.includes("maskable")
+    );
+    const sizes = maskable.map((i) => i.sizes).sort();
+    expect(sizes).toEqual(["192x192", "512x512"]);
   });
 
   it("every manifest icon points to an existing file in public/", () => {

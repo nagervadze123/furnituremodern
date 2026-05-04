@@ -1,12 +1,12 @@
 #!/usr/bin/env node
-// Placeholder PWA icon generator.
+// PWA icon generator.
 //
-// Renders a simple "F" monogram in the brand ink/cream palette, then
-// rasterises it to every PNG size the manifest, favicon, and Apple touch
-// icon need — plus a multi-image favicon.ico. Sharp is already pulled in
-// as a transitive dep of Next.js, so no new package is required.
+// Renders the brand monogram from siteConfig.brand.logoMonogram into
+// every PNG size the manifest, favicon, and Apple touch icon need — plus
+// a multi-image favicon.ico. Sharp is already pulled in as a transitive
+// dep of Next.js, so no new package is required.
 //
-// Run after the brand identity changes:
+// Run after the brand identity or logo changes:
 //   node scripts/generate-icons.mjs
 //
 // All outputs land in public/. The committed PNGs are the source of
@@ -21,30 +21,70 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const ROOT = path.resolve(__dirname, "..");
 const PUBLIC = path.join(ROOT, "public");
 
-// Brand colours — keep in sync with app/globals.css :root tokens.
-// Translated from oklch() to sRGB hex so libvips/librsvg can rasterise
-// without OK-Lab support.
-const INK = "#1a1611";
-const CREAM = "#fafaf6";
+// Brand colours mirror lib/site-config.ts → brandTokens. Update both in
+// lockstep — the script doesn't import the TS module so the values are
+// duplicated here on purpose.
+const INK = "#28201a"; // brandTokens.foreground
+const CREAM = "#fbf8f3"; // brandTokens.background
+
+// Single-character monogram pulled verbatim from
+// siteConfig.brand.logoMonogram. Update the letter in the TS config and
+// re-derive LETTER_PATH below if the brand ever ships a different mark.
+const MONOGRAM = "F";
 
 // Hand-drawn "F" path inside a 512×512 viewBox. Sits inside the maskable
 // safe area (inner 80% — 51 to 461 on each axis) so the same path works
 // for both the rounded "any" icon and the full-bleed maskable variant.
+// The width/positioning was tuned by eye against the Fraunces display
+// font, the same family the rendered site uses for headings.
 const LETTER_PATH =
   "M 161 128 H 351 V 186 H 219 V 222 H 319 V 280 H 219 V 384 H 161 Z";
 
-function buildSvg({ rounded }) {
-  const bg = rounded
-    ? `<rect width="512" height="512" rx="96" ry="96" fill="${INK}"/>`
-    : `<rect width="512" height="512" fill="${INK}"/>`;
+// Rounded "any" icon — dark ink plate with a cream letter. Reads as a
+// brand mark on light or dark browser tabs and Android adaptive icons
+// that don't apply a mask. The 96/512 corner radius matches Material
+// Design's rounded-square family.
+function buildRoundedSvg() {
   return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512">
-  ${bg}
+  <rect width="512" height="512" rx="96" ry="96" fill="${INK}"/>
   <path d="${LETTER_PATH}" fill="${CREAM}"/>
 </svg>`;
 }
 
-const ROUNDED_SVG = buildSvg({ rounded: true });
-const FULL_BLEED_SVG = buildSvg({ rounded: false });
+// Full-bleed ink plate — same colour treatment as the rounded "any"
+// icon but with squared corners. iOS rounds apple-touch-icon to its
+// own mask; pre-rounding the source bakes in a hairline gap between
+// our radius and the iOS one. Squared corners dodge that.
+function buildAppleSvg() {
+  return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512">
+  <rect width="512" height="512" fill="${INK}"/>
+  <path d="${LETTER_PATH}" fill="${CREAM}"/>
+</svg>`;
+}
+
+// Full-bleed "maskable" icon — cream plate with an ink letter. Background
+// matches manifest.background_color so the splash screen → app-icon
+// transition reads as one continuous surface on Android. The letter
+// remains inside the inner 80% safe zone so any device mask shape
+// (circle, squircle, droplet) still renders the full mark.
+function buildMaskableSvg() {
+  return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512">
+  <rect width="512" height="512" fill="${CREAM}"/>
+  <path d="${LETTER_PATH}" fill="${INK}"/>
+</svg>`;
+}
+
+const ROUNDED_SVG = buildRoundedSvg();
+const APPLE_SVG = buildAppleSvg();
+const MASKABLE_SVG = buildMaskableSvg();
+// Validate the monogram constant is consistent with the rasterised path.
+// Path was hand-drawn for "F" — if the operator changes logoMonogram,
+// LETTER_PATH must be redrawn before regenerating icons.
+if (MONOGRAM !== "F") {
+  throw new Error(
+    `LETTER_PATH was hand-drawn for "F"; redraw it for "${MONOGRAM}" before re-running.`
+  );
+}
 
 async function rasterise(svg, size) {
   return sharp(Buffer.from(svg))
@@ -98,9 +138,18 @@ async function main() {
   await fs.writeFile(path.join(PUBLIC, "favicon-32x32.png"), fav32);
 
   // 3. Full-bleed PNGs — iOS home screen + Android adaptive (maskable).
-  const apple180 = await rasterise(FULL_BLEED_SVG, 180);
-  const maskable512 = await rasterise(FULL_BLEED_SVG, 512);
+  // Apple touch icon uses the squared ink plate so iOS rounds it once
+  // (with its own corner radius) instead of layering on top of our
+  // pre-baked rounding. Android maskable variants ship at 192 + 512 so
+  // manifests can hand the OS a size-appropriate raster without
+  // resampling. Both maskables come from MASKABLE_SVG (cream plate,
+  // ink letter, full-bleed) so the letter still lands inside the
+  // inner 80% safe zone after the device applies its mask.
+  const apple180 = await rasterise(APPLE_SVG, 180);
+  const maskable192 = await rasterise(MASKABLE_SVG, 192);
+  const maskable512 = await rasterise(MASKABLE_SVG, 512);
   await fs.writeFile(path.join(PUBLIC, "apple-touch-icon.png"), apple180);
+  await fs.writeFile(path.join(PUBLIC, "icon-maskable-192.png"), maskable192);
   await fs.writeFile(path.join(PUBLIC, "icon-maskable-512.png"), maskable512);
 
   // 4. Multi-image favicon.ico (16/32/48).

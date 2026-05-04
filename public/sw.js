@@ -15,13 +15,14 @@
 // Bump CACHE_VERSION whenever the precache list or behaviour changes;
 // the activate handler purges any cache whose name doesn't match.
 
-const CACHE_VERSION = "fm-pwa-v1";
+const CACHE_VERSION = "fm-pwa-v2";
 
 const PRECACHE_URLS = [
   "/offline.html",
   "/icon.svg",
   "/icon-192.png",
   "/icon-512.png",
+  "/icon-maskable-192.png",
   "/icon-maskable-512.png",
   "/apple-touch-icon.png",
   "/favicon.ico",
