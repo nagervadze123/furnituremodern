@@ -169,6 +169,22 @@ The Phase 5 redesign drafted Georgian-first copy under `messages/ka.json` → `h
   - LCP target ≤ 2.5s on 4G throttled. The hero `<Image priority>` is the LCP candidate.
 - [ ] Run Google Rich Results Test against the deployed `/ka` and `/en`. Confirm Organization + WebSite + LocalBusiness + WebPage + FAQPage + ItemList all valid.
 
+### Category + product page content (Phase 5 Task 5.x)
+
+The category and product pages were redesigned to match the home page's editorial aesthetic. The visual quality of those pages depends on each row carrying enough content for the new layout — a one-line tagline or a missing material field shows up immediately. Confirm before launch:
+
+- [ ] **Category intro paragraphs** (`/admin/categories` → `intro_ka` / `intro_en`) — long enough to fill the editorial hero. Target 80–120 words per locale; one-line taglines look anaemic in the new layout. The seeded categories already pass, but operator-added rows can ship with a short value.
+- [ ] **Category hero image** (`image_url` per row) — when set, the hero renders the asymmetric 60/40 prose+image layout; when NULL, it falls back to the centred minimalist layout. Both are launch-ready; pick per-category.
+- [ ] **Product spec coverage** (`/admin/products`) — every product should have `material`, `dimensions` (W×D×H), `weight`, and `color` filled. The product page renders a `<dl>` spec table; missing fields silently disappear, but a half-empty spec card looks unfinished. SKU/MPN are optional but improve Product JSON-LD.
+- [ ] **Product description length** — the layout splits on the first paragraph break: first paragraph → info-column lede, remainder → "About this piece" long-form section below the gallery. Aim for at least one paragraph break in every product so the long-form section renders.
+- [ ] **Product availability** (`availability` enum) — defaults to `InStock` in the JSON-LD when omitted, but the visible "Availability" line on the page reads from the column directly. Set explicitly on every row before launch so the visible line stays in sync with the schema.
+- [ ] Run Lighthouse mobile against `/ka/sofas` and `/ka/sofas/<slug>` post-deploy. Record scores here:
+  - `/ka/sofas` Lighthouse: Performance __, SEO __, Accessibility __, Best Practices __ (target P ≥ 90, S = 100, A ≥ 95, BP = 100)
+  - `/ka/sofas/<slug>` Lighthouse: Performance __, SEO __, Accessibility __, Best Practices __
+  - LCP target ≤ 2.5s. Category page LCP is the hero photo (or the first product card when no hero image is set); product page LCP is the gallery's primary image (`priority` set in `components/product/gallery-client.tsx`).
+- [ ] Validate Product JSON-LD on `/ka/sofas/<slug>` via Google Rich Results — image array, brand, offers (price, currency, availability, return policy, shipping) all green.
+- [ ] Validate ItemList JSON-LD on `/ka/sofas` — every product surfaces with name, image, price, and offer URL.
+
 ### Brand identity confirmation (drives OG / Twitter card visuals)
 
 `lib/site-config.ts` exports a `brand` block that the OG image templates in `lib/og/` read at render time. Confirm the values below match the launch identity before pushing to production — every share preview on Facebook / X / LinkedIn / WhatsApp / Telegram / Slack / Discord uses them.

@@ -67,7 +67,38 @@
     "viewMore": "მეტის ნახვა",
     "browseOther": "სხვა კატეგორიების დათვალიერება",
     "from": "ფასი",
-    "productCount": "{count} პროდუქტი"
+    "productCount": "{count} პროდუქტი",
+    "eyebrow": "კოლექცია",
+    "no_products": "ამ კატეგორიაში ჯერ არ არის პროდუქტი — ახალი ნიმუშები მოწყობის ეტაპზეა.",
+    "browse_other_categories": "სხვა კატეგორიების დათვალიერება",
+    "sort": {
+      "label": "დახარისხება",
+      "newest": "უახლესი",
+      "price_asc": "ფასი: დაბლიდან ზევით",
+      "price_desc": "ფასი: ზევიდან ქვევით",
+      "apply": "გამოყენება"
+    }
+  },
+  "product": {
+    "back_to_category": "ნახეთ {category}",
+    "specs_heading": "მახასიათებლები",
+    "spec_dimensions": "ზომები",
+    "spec_width": "სიგანე",
+    "spec_height": "სიმაღლე",
+    "spec_depth": "სიღრმე",
+    "spec_weight": "წონა",
+    "spec_material": "მასალა",
+    "spec_color": "ფერი",
+    "spec_sku": "SKU",
+    "availability_label": "ხელმისაწვდომობა",
+    "availability_in_stock": "მარაგშია",
+    "availability_out_of_stock": "ამოწურულია",
+    "availability_pre_order": "წინასწარი შეკვეთით",
+    "availability_back_order": "მოთხოვნით",
+    "contact_cta": "კონტაქტი შესაძენად",
+    "contact_subject": "კითხვა: {name} ({slug})",
+    "long_description_heading": "ნივთის შესახებ",
+    "related_heading": "კოლექციიდან: {category}"
   },
   "footer": {
     "rights": "ყველა უფლება დაცულია",

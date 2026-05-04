@@ -5,22 +5,17 @@ import type { Metadata } from "next";
 import { headers } from "next/headers";
 import { notFound } from "next/navigation";
 import { setRequestLocale, getTranslations } from "next-intl/server";
-import { Breadcrumbs, type BreadcrumbCrumb } from "@/components/sections/breadcrumbs";
+import { type BreadcrumbCrumb } from "@/components/sections/breadcrumbs";
 import { JsonLd } from "@/components/json-ld";
 import { ViewItemTracker } from "@/components/analytics/view-item-tracker";
-import { Gallery } from "@/components/product/gallery";
+import { ProductLayout } from "@/components/product/ProductLayout";
 import { breadcrumbListJsonLd, productJsonLd } from "@/lib/schema";
 import { getCategoryBySlug } from "@/lib/data/categories";
 import {
   getProductBySlug,
   getAllProductPaths,
 } from "@/lib/data/products";
-import { formatPrice } from "@/lib/format";
 import { productToItem } from "@/lib/analytics";
-import {
-  formatLastUpdated,
-  LAST_UPDATED_LABEL,
-} from "@/lib/aeo/summary";
 import { absoluteUrl, siteConfig } from "@/lib/site-config";
 import { routing, type Locale } from "@/i18n/routing";
 
@@ -161,52 +156,12 @@ export default async function ProductDetailPage({ params }: Props) {
 
       <ViewItemTracker item={productToItem(product, locale)} />
 
-      <div className="mx-auto max-w-7xl px-4 pt-6 md:px-6 md:pt-8">
-        <Breadcrumbs items={crumbs} />
-      </div>
-
-      <article className="mx-auto grid max-w-7xl gap-8 px-4 pb-16 pt-8 sm:gap-10 md:grid-cols-2 md:gap-12 md:px-6 md:pt-12 md:pb-24">
-        <div className="min-w-0">
-          <Gallery
-            images={product.images}
-            locale={locale}
-            productName={product.name[locale]}
-          />
-        </div>
-
-        <div className="min-w-0">
-          {/* Headline scale steps from text-3xl on smallest phones up
-              through sm/md breakpoints; `text-balance` evens out a
-              two-line wrap and `break-words` is the safety net for a
-              single 30+ character Georgian compound name. */}
-          <h1 className="text-balance font-display text-3xl font-semibold leading-tight tracking-tight break-words text-foreground sm:text-4xl md:text-5xl">
-            {product.name[locale]}
-          </h1>
-          <p className="mt-4 text-2xl font-medium text-foreground tabular-nums">
-            {formatPrice(product.price, product.currency, locale)}
-          </p>
-          <div className="mt-8 max-w-prose text-base leading-relaxed text-muted-foreground md:text-lg">
-            <p className="break-words">{product.description[locale]}</p>
-          </div>
-
-          {/* Last-updated freshness signal — a real <time> element so
-              crawlers pick it up as a structured timestamp. Sourced
-              from updated_at, fallback to created_at; emitted only
-              when at least one is available. */}
-          {(() => {
-            const ts = product.updatedAt ?? product.createdAt;
-            if (!ts) return null;
-            const formatted = formatLastUpdated(ts, locale);
-            if (!formatted) return null;
-            return (
-              <p className="mt-6 text-sm text-muted-foreground">
-                {LAST_UPDATED_LABEL[locale]}:{" "}
-                <time dateTime={ts}>{formatted}</time>
-              </p>
-            );
-          })()}
-        </div>
-      </article>
+      <ProductLayout
+        product={product}
+        locale={locale}
+        crumbs={crumbs}
+        category={{ name: categoryRow.name[locale], slug: category }}
+      />
     </>
   );
 }

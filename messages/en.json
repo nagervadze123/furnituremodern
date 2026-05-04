@@ -67,7 +67,38 @@
     "viewMore": "View details",
     "browseOther": "Browse other categories",
     "from": "From",
-    "productCount": "{count} products"
+    "productCount": "{count} products",
+    "eyebrow": "Collection",
+    "no_products": "No products in this category yet — new pieces are being finished in the workshop.",
+    "browse_other_categories": "Browse other categories",
+    "sort": {
+      "label": "Sort",
+      "newest": "Newest first",
+      "price_asc": "Price: low to high",
+      "price_desc": "Price: high to low",
+      "apply": "Apply"
+    }
+  },
+  "product": {
+    "back_to_category": "Browse {category}",
+    "specs_heading": "Specifications",
+    "spec_dimensions": "Dimensions",
+    "spec_width": "Width",
+    "spec_height": "Height",
+    "spec_depth": "Depth",
+    "spec_weight": "Weight",
+    "spec_material": "Material",
+    "spec_color": "Colour",
+    "spec_sku": "SKU",
+    "availability_label": "Availability",
+    "availability_in_stock": "In stock",
+    "availability_out_of_stock": "Out of stock",
+    "availability_pre_order": "Pre-order",
+    "availability_back_order": "Back-order",
+    "contact_cta": "Contact for purchase",
+    "contact_subject": "Inquiry: {name} ({slug})",
+    "long_description_heading": "About this piece",
+    "related_heading": "More from {category}"
   },
   "footer": {
     "rights": "All rights reserved",

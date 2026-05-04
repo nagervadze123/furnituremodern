@@ -1,14 +1,27 @@
-// Shared body for every category page. The route files only need to
-// supply the category slug and the localized intro paragraph — this
-// component handles breadcrumbs, JSON-LD, the product grid, and the
-// cross-links to other categories.
+// Shared body for every category page. Phase 5 Task 5.x — redesigned to
+// match the home page's editorial aesthetic.
+//
+//   • Editorial CategoryHero (display-2 headline, body-lg intro, optional
+//     image at 60/40 split) replaces the old centred CategoryIntro.
+//   • Premium ProductGrid (4/3/2 cols, reveal stagger on scroll, hover
+//     lift) replaces the legacy 2-up grid.
+//   • Optional sort bar — newest / price asc / price desc, driven by
+//     the `?sort=` searchParam (resolved server-side, threaded through
+//     the route handler).
+//   • Empty state — when a category has no products, the new grid
+//     renders a localised "no products yet" message + a link back home.
+//
+// JSON-LD blocks (BreadcrumbList, CollectionPage, ItemList) are
+// preserved verbatim — same @ids so search engines see continuity.
 
 import { notFound } from "next/navigation";
 import { headers } from "next/headers";
 import { getTranslations } from "next-intl/server";
 import { Breadcrumbs, type BreadcrumbCrumb } from "./breadcrumbs";
-import { CategoryIntro } from "./category-intro";
-import { ProductGrid } from "./product-grid";
+import { CategoryHero } from "@/components/category/CategoryHero";
+import { ProductGrid } from "@/components/category/ProductGrid";
+import { SortBar } from "@/components/category/SortBar";
+import { sortProducts, type SortKey } from "@/components/category/sort-keys";
 import { CategoryCrossLinks } from "./category-cross-links";
 import { JsonLd } from "@/components/json-ld";
 import { ViewItemListTracker } from "@/components/analytics/view-item-list-tracker";
@@ -18,6 +31,7 @@ import {
   itemListJsonLd,
   collectionPageJsonLd,
 } from "@/lib/schema";
+import { Container } from "@/components/design";
 import type { CategorySlug } from "@/lib/site-config";
 import { getCategoryBySlug } from "@/lib/data/categories";
 import { getProducts } from "@/lib/data/products";
@@ -33,18 +47,42 @@ type Props = {
   slug: CategorySlug;
   locale: Locale;
   intro: string;
+  /** Sort key from `?sort=` searchParam — undefined = default ordering. */
+  sort?: SortKey;
 };
 
-export async function CategoryPage({ slug, locale, intro }: Props) {
-  const tBreadcrumbs = await getTranslations("breadcrumbs");
+/**
+ * Resolve a category's hero image URL (operator-set image_url) into a
+ * public URL. Mirrors the pattern in components/home/FeaturedCategories.tsx —
+ * relative storage keys go through the Supabase product-images bucket;
+ * absolute URLs pass through; nothing else is rendered as an image.
+ */
+function categoryHeroImageUrl(imageUrl: string | null | undefined): string | undefined {
+  if (!imageUrl) return undefined;
+  if (/^https?:\/\//i.test(imageUrl)) return imageUrl;
+  const base = process.env.NEXT_PUBLIC_SUPABASE_URL;
+  if (!base) return undefined;
+  return `${base.replace(/\/$/, "")}/storage/v1/object/public/product-images/${imageUrl}`;
+}
+
+export async function CategoryPage({ slug, locale, intro, sort }: Props) {
+  const [tBreadcrumbs, tCategory] = await Promise.all([
+    getTranslations("breadcrumbs"),
+    getTranslations("category"),
+  ]);
 
   // Both lookups go through the data layer so the source can swap
   // (Supabase ↔ local TS) without touching this component.
-  const [category, products] = await Promise.all([
+  const [category, productsRaw] = await Promise.all([
     getCategoryBySlug(slug, locale),
     getProducts({ category: slug, locale }),
   ]);
   if (!category) notFound();
+
+  // Apply user-selected sort. The data layer ships rows in the
+  // operator's curated sort_order asc; sortProducts only re-orders when
+  // the param requests something different.
+  const products = sortProducts(productsRaw, sort);
 
   // Per-request CSP nonce, threaded into every inline <script> tag.
   const nonce = (await headers()).get("x-nonce") ?? undefined;
@@ -60,6 +98,8 @@ export async function CategoryPage({ slug, locale, intro }: Props) {
     { name: tBreadcrumbs("home"), url: `/${locale}` },
     { name: category.name[locale], url: `/${locale}/${slug}` },
   ];
+
+  const heroImage = categoryHeroImageUrl(category.imageUrl);
 
   return (
     <>
@@ -91,12 +131,29 @@ export async function CategoryPage({ slug, locale, intro }: Props) {
         nonce={nonce}
       />
 
-      {/* Breadcrumb strip — visible navigation, separate from the JSON-LD. */}
-      <div className="mx-auto max-w-7xl px-4 pt-6 md:px-6 md:pt-8">
+      {/* Breadcrumb strip — matches the wide editorial container so the
+          trail aligns with the rest of the page below. */}
+      <Container variant="wide" className="pt-6 md:pt-8">
         <Breadcrumbs items={crumbs} />
-      </div>
+      </Container>
 
-      <CategoryIntro title={category.name[locale]} intro={intro} />
+      <CategoryHero
+        name={category.name[locale]}
+        intro={intro}
+        imageUrl={heroImage}
+        imageAlt={category.name[locale]}
+        eyebrow={tCategory("eyebrow")}
+      />
+
+      {/* Sort bar — only shown when the grid has at least 2 products
+          (sorting one product is meaningless). The bar sits in the
+          wide container so it visually anchors above the grid. */}
+      {products.length > 1 ? (
+        <Container variant="wide" className="pb-4">
+          <SortBar current={sort ?? "newest"} />
+        </Container>
+      ) : null}
+
       <ProductGrid products={products} listName={category.name[locale]} />
 
       {/* Compact AEO summary block — visible factual snapshot for

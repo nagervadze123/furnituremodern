@@ -11,6 +11,7 @@ import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { setRequestLocale } from "next-intl/server";
 import { CategoryPage } from "@/components/sections/category-page";
+import { parseSortKey } from "@/components/category/sort-keys";
 import { buildCategoryMetadata } from "@/lib/seo";
 import { getCategories, getCategoryBySlug } from "@/lib/data/categories";
 import { routing, type Locale } from "@/i18n/routing";
@@ -24,6 +25,7 @@ export const revalidate = 3600;
 
 type Props = {
   params: Promise<{ locale: string; category: string }>;
+  searchParams: Promise<{ [key: string]: string | string[] | undefined }>;
 };
 
 /**
@@ -57,7 +59,10 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   });
 }
 
-export default async function DynamicCategoryPage({ params }: Props) {
+export default async function DynamicCategoryPage({
+  params,
+  searchParams,
+}: Props) {
   const { locale: rawLocale, category: rawCategory } = await params;
   const locale = rawLocale as Locale;
   setRequestLocale(locale);
@@ -65,11 +70,19 @@ export default async function DynamicCategoryPage({ params }: Props) {
   const row = await getCategoryBySlug(rawCategory, locale);
   if (!row) notFound();
 
+  // Read & validate the sort param. Anything we don't recognise is
+  // silently ignored — keeps the canonical URL clean and avoids any
+  // exposure to crafted params from unfriendly inbound links.
+  const sp = await searchParams;
+  const rawSort = Array.isArray(sp.sort) ? sp.sort[0] : sp.sort;
+  const sort = parseSortKey(rawSort);
+
   return (
     <CategoryPage
       slug={rawCategory}
       locale={locale}
       intro={row.intro[locale]}
+      sort={sort}
     />
   );
 }
