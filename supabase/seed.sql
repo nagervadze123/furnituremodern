@@ -9,13 +9,19 @@
 -- Mirrors the placeholder catalog in `content/products.ts` so the
 -- Supabase-backed site renders identically to the offline build.
 --
--- Image strategy:
---   The `product_images.storage_path` column normally holds a path
---   inside the `product-images` storage bucket (e.g. "products/<id>/01.jpg").
---   In this seed file we store fully-qualified picsum.photos URLs so
---   the site has visible imagery without an upload step. The data
---   layer detects "http(s)://" prefixes and uses them as-is; replace
---   each row with a real storage path once you have real photography.
+-- Image strategy (Phase 5 Task 4):
+--   The `product_images.storage_path` column holds a path inside the
+--   `product-images` storage bucket. This seed file references curated
+--   stock-photo paths under `stock/<filename>.jpg`. The actual files
+--   are uploaded separately via `node scripts/upload-stock-photos.mjs`
+--   from the manifest at `scripts/stock-photos.json`. Bootstrap order:
+--     1. apply schema.sql
+--     2. apply this seed.sql        (creates rows with stock/ paths)
+--     3. run prepare-stock-photos.mjs + upload-stock-photos.mjs
+--   The data layer prepends the bucket's public URL to each row at
+--   read time. For a richer per-product gallery (3–5 images per row),
+--   run `node scripts/seed-stock-product-images.mjs` after step 3 —
+--   it wipes these single-image rows and inserts the multi-image set.
 -- ---------------------------------------------------------------------------
 
 -- Wipe existing rows so re-running the seed is idempotent.
@@ -142,36 +148,44 @@ INSERT INTO public.products (
 -- ---------------------------------------------------------------------------
 -- Product images
 -- ---------------------------------------------------------------------------
--- Stable picsum.photos URLs keyed by the same seeds used in
--- `content/products.ts`, so the offline and online builds render the
--- same imagery. Each row is marked `is_primary = true` because
--- products currently have a single image.
-INSERT INTO public.product_images (product_id, storage_path, alt_ka, alt_en, sort_order, is_primary)
+-- One stock photo per product, keyed by the same numbering used in
+-- `content/products.ts`. The actual JPEGs are uploaded by
+-- `scripts/upload-stock-photos.mjs` from `scripts/stock-photos.json`;
+-- this seed only writes the storage paths so the row exists. Each row
+-- is marked `is_primary = true` because products start with a single
+-- image. For a richer 3–5 image gallery, run
+-- `scripts/seed-stock-product-images.mjs` after the upload completes.
+INSERT INTO public.product_images (product_id, storage_path, alt_ka, alt_en, sort_order, is_primary, source)
 SELECT
   p.id,
   CASE p.slug
-    WHEN 'linen-three-seater'        THEN 'https://picsum.photos/seed/fm-sofa-001/1200/900'
-    WHEN 'walnut-frame-loveseat'     THEN 'https://picsum.photos/seed/fm-sofa-002/1200/900'
-    WHEN 'modular-corner'            THEN 'https://picsum.photos/seed/fm-sofa-003/1200/900'
-    WHEN 'compact-armchair'          THEN 'https://picsum.photos/seed/fm-sofa-004/1200/900'
-    WHEN 'boucle-club-chair'         THEN 'https://picsum.photos/seed/fm-sofa-005/1200/900'
-    WHEN 'leather-daybed'            THEN 'https://picsum.photos/seed/fm-sofa-006/1200/900'
-    WHEN 'oak-platform-bed'          THEN 'https://picsum.photos/seed/fm-bed-001/1200/900'
-    WHEN 'upholstered-headboard-bed' THEN 'https://picsum.photos/seed/fm-bed-002/1200/900'
-    WHEN 'slatted-walnut-dresser'    THEN 'https://picsum.photos/seed/fm-bed-003/1200/900'
-    WHEN 'round-bedside-table'       THEN 'https://picsum.photos/seed/fm-bed-004/1200/900'
-    WHEN 'wardrobe-two-door'         THEN 'https://picsum.photos/seed/fm-bed-005/1200/900'
-    WHEN 'bench-end-of-bed'          THEN 'https://picsum.photos/seed/fm-bed-006/1200/900'
-    WHEN 'oak-dining-table-six'      THEN 'https://picsum.photos/seed/fm-table-001/1200/900'
-    WHEN 'round-pedestal-table'      THEN 'https://picsum.photos/seed/fm-table-002/1200/900'
-    WHEN 'wishbone-dining-chair'     THEN 'https://picsum.photos/seed/fm-table-003/1200/900'
-    WHEN 'writing-desk'              THEN 'https://picsum.photos/seed/fm-table-004/1200/900'
-    WHEN 'low-coffee-table'          THEN 'https://picsum.photos/seed/fm-table-005/1200/900'
-    WHEN 'counter-stool'             THEN 'https://picsum.photos/seed/fm-table-006/1200/900'
+    WHEN 'linen-three-seater'        THEN 'stock/sofa-linen-cream-001.jpg'
+    WHEN 'walnut-frame-loveseat'     THEN 'stock/sofa-leather-vintage-008.jpg'
+    WHEN 'modular-corner'            THEN 'stock/sofa-sectional-modular-011.jpg'
+    WHEN 'compact-armchair'          THEN 'stock/armchair-vintage-warm-012.jpg'
+    WHEN 'boucle-club-chair'         THEN 'stock/club-chair-leather-tufted-014.jpg'
+    WHEN 'leather-daybed'            THEN 'stock/daybed-wooden-sunlit-015.jpg'
+    WHEN 'oak-platform-bed'          THEN 'stock/bed-platform-oak-003.jpg'
+    WHEN 'upholstered-headboard-bed' THEN 'stock/headboard-quilted-beige-008.jpg'
+    WHEN 'slatted-walnut-dresser'    THEN 'stock/dresser-oak-warm-010.jpg'
+    WHEN 'round-bedside-table'       THEN 'stock/bedside-wood-round-014.jpg'
+    WHEN 'wardrobe-two-door'         THEN 'stock/wardrobe-oak-glass-012.jpg'
+    WHEN 'bench-end-of-bed'          THEN 'stock/endbed-bench-wood-015.jpg'
+    WHEN 'oak-dining-table-six'      THEN 'stock/dining-oak-table-001.jpg'
+    WHEN 'round-pedestal-table'      THEN 'stock/pedestal-table-rattan-015.jpg'
+    WHEN 'wishbone-dining-chair'     THEN 'stock/chair-wishbone-wood-005.jpg'
+    WHEN 'writing-desk'              THEN 'stock/desk-writing-wood-009.jpg'
+    WHEN 'low-coffee-table'          THEN 'stock/coffee-table-marble-011.jpg'
+    WHEN 'counter-stool'             THEN 'stock/stool-counter-wood-013.jpg'
   END,
   -- Bilingual alt text — kept brief so admins can refine later.
   p.name_ka,
   p.name_en,
   0,
-  true
+  true,
+  -- Mark these as stock placeholders so the admin "needs real photo"
+  -- filter shows them. The upstream attribution data (source_url,
+  -- photographer) is filled by the dedicated seed-stock-product-images
+  -- script that reads the JSON manifest.
+  'unsplash'
 FROM public.products p;

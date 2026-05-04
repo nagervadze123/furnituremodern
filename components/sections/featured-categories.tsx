@@ -6,14 +6,24 @@ import { getCategories } from "@/lib/data/categories";
 import { CategoryCard } from "./category-card";
 import type { Locale } from "@/i18n/routing";
 
-// Stable picsum seeds keep each category's hero image identifiable.
-// When real photography lands, replace this map with a column on the
-// `categories` table.
-const categoryImages: Record<string, string> = {
-  sofas: "https://picsum.photos/seed/fm-cat-sofas/900/1100",
-  bedrooms: "https://picsum.photos/seed/fm-cat-bedrooms/900/1100",
-  "tables-chairs": "https://picsum.photos/seed/fm-cat-tables/900/1100",
+// Phase 5 Task 4 — category-card hero images now reference curated
+// stock photos in the Supabase Storage `product-images` bucket. When
+// real photography lands, the right move is to add a `hero_storage_path`
+// column to the `categories` table and read from there; until then
+// this mapping keeps the home grid coherent with the product galleries.
+const CATEGORY_STOCK_KEYS: Record<string, string> = {
+  sofas: "stock/sofa-linen-cream-001.jpg",
+  bedrooms: "stock/bed-platform-minimal-001.jpg",
+  "tables-chairs": "stock/dining-oak-table-001.jpg",
 };
+
+function categoryImageUrl(slug: string): string {
+  const key = CATEGORY_STOCK_KEYS[slug];
+  if (!key) return "";
+  const base = process.env.NEXT_PUBLIC_SUPABASE_URL;
+  if (!base) return "/icon.svg";
+  return `${base.replace(/\/$/, "")}/storage/v1/object/public/product-images/${key}`;
+}
 
 export async function FeaturedCategories() {
   const t = await getTranslations("home");
@@ -45,7 +55,7 @@ export async function FeaturedCategories() {
               href={`/${cat.slug}`}
               name={cat.name[locale]}
               tagline={cat.description[locale]}
-              imageUrl={categoryImages[cat.slug] ?? ""}
+              imageUrl={categoryImageUrl(cat.slug)}
               imageAlt={cat.name[locale]}
             />
           ))}

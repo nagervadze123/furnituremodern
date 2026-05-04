@@ -181,7 +181,9 @@ Run each of the platform validators below against a deployed product URL and a c
 - [ ] **WhatsApp / Telegram preview** — share a product link in a private chat; preview should show the branded card with Georgian text rendered (no tofu/squares).
 - [ ] **Slack / Discord** — paste a product URL into a sandbox channel; verify branded card appears.
 - [ ] **Supabase Storage public read** — confirm uploaded product images are anonymously readable. The OG product template fetches the primary image URL during render; a 401/403 falls back to monogram-only layout but means social cards lose the photo.
-- [ ] Replace product photos (currently `picsum.photos`) — upload to the `product-images` Storage bucket via the admin panel, or update `content/products.ts` if running offline
+- [ ] **All stock photography is placeholder.** Phase 5 Task 4 swapped the random `picsum.photos` placeholders for curated furniture stock photography from Unsplash + Pexels. **Replace with real product photography of items the operator actually sells before launch.** Each replacement is one row update in `product_images` + one new file in Supabase Storage. The admin image manager surfaces the `source` / `photographer` columns so it's clear which rows are still stock placeholders.
+- [ ] **Stock photo licensing.** Unsplash and Pexels are commercially-permissive without required attribution, but courtesy attribution is documented in the `product_images.source` / `source_url` / `photographer` columns and visible in admin. Real product photos should leave those columns NULL.
+- [ ] **Hero photo on home page.** `lib/site-config.ts → siteConfig.brand.heroImage` points at `stock/hero-home-default.jpg`. Replace with an operator-shot 21:9 lifestyle frame before launch.
 - [ ] Add your real image CDN host to `images.remotePatterns` in `next.config.ts` if you serve from outside Supabase Storage
 - [ ] Replace FAQ answers in `content/faq.ts`
 - [ ] Tighten the brand-story copy in `messages/ka.json` / `messages/en.json`
@@ -317,7 +319,7 @@ For each page: record date tested, tool URL used, pass/fail, and any warnings th
 Before flipping DNS / launch announcement, walk this list against the live `https://<domain>/` build. Every item should be smoke-tested in a browser, not assumed.
 
 - [ ] **Custom domain attached to Vercel and HSTS preload submitted** at https://hstspreload.org/ once the apex is on HTTPS. The header in `next.config.ts` already advertises `preload`; submission is the explicit step. Do **not** submit while still on `*.vercel.app`.
-- [ ] **Real product photos uploaded** to the Supabase Storage `product-images` bucket; placeholder `picsum.photos` is no longer referenced in any seeded row. (Grep `content/products.ts` and the live DB.)
+- [ ] **Real product photos uploaded** to the Supabase Storage `product-images` bucket; placeholder `picsum.photos` is no longer referenced in any seeded row, AND `product_images.source` is NULL on every published row (it's `'unsplash'` / `'pexels'` only on the Phase 5 Task 4 stock placeholders that still need swapping). Grep `content/products.ts` and the live DB to confirm.
 - [ ] **Real Georgian descriptions, SKUs, materials, dimensions, weights** populated for every product in the live admin. Empty fields silently drop the matching JSON-LD property — Rich Results Test will flag them.
 - [ ] **Business config reviewed in `lib/site-config.ts`** — phone, address, social links, `openingHours`, `geo`, `priceRange`, `paymentAccepted`, `returnPolicy`, `shipping`, brand accent + tagline (ka/en).
 - [ ] **Vercel env vars set with real values** — GA4, GTM (or both), Meta Pixel, Plausible, Google/Bing/Yandex/Facebook verification, IndexNow, `NEXT_PUBLIC_SITE_URL`. Confirm no `NEXT_PUBLIC_` prefix on `SUPABASE_SERVICE_ROLE_KEY`.

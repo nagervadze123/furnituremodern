@@ -166,11 +166,23 @@ CREATE TABLE public.product_images (
   alt_en       text NOT NULL DEFAULT '',
   sort_order   integer NOT NULL DEFAULT 0,
   is_primary   boolean NOT NULL DEFAULT false,
-  created_at   timestamptz NOT NULL DEFAULT now()
+  -- Phase 5 Task 4: stock-photo attribution (NULL on real product photos).
+  -- `source` values: 'unsplash' | 'pexels'. CHECK constraint added below.
+  source       text NULL,
+  source_url   text NULL,
+  photographer text NULL,
+  created_at   timestamptz NOT NULL DEFAULT now(),
+  CONSTRAINT product_images_source_check
+    CHECK (source IS NULL OR source IN ('unsplash', 'pexels'))
 );
 
 CREATE INDEX product_images_product_id_idx ON public.product_images (product_id);
 CREATE INDEX product_images_sort_order_idx ON public.product_images (sort_order);
+-- Cheap "show only stock placeholders" filter for the admin UI when
+-- the operator wants to find what still needs real photography.
+CREATE INDEX product_images_source_idx
+  ON public.product_images (source)
+  WHERE source IS NOT NULL;
 
 -- Only one primary image per product. Use a partial unique index so
 -- non-primary rows do not collide.

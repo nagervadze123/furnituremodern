@@ -6,18 +6,30 @@ import { getLocale, getTranslations } from "next-intl/server";
 import { Link } from "@/i18n/navigation";
 import { buttonVariants } from "@/components/ui/button";
 import { BRAND_PORTRAIT_BLUR } from "@/lib/perf/blur";
+import { siteConfig } from "@/lib/site-config";
 import type { Locale } from "@/i18n/routing";
+
+// Resolve siteConfig.brand.heroImage.storageKey into a public URL.
+// Phase 5 Task 4 retired picsum and stores the placeholder hero in
+// the same Supabase Storage bucket as product photos. When the env
+// var is unset (offline/CI), fall back to the brand monogram so the
+// component still renders without a remote dependency.
+function heroImageUrl(storageKey: string): string {
+  const base = process.env.NEXT_PUBLIC_SUPABASE_URL;
+  if (!base) return "/icon.svg";
+  return `${base.replace(/\/$/, "")}/storage/v1/object/public/product-images/${storageKey}`;
+}
 
 export async function Hero() {
   const t = await getTranslations("home");
   const locale = (await getLocale()) as Locale;
 
   // Bilingual alt text for the hero image so screen readers in either
-  // locale describe the picture meaningfully.
-  const heroAlt =
-    locale === "ka"
-      ? "თანამედროვე მისაღები ოთახი დივნით და მუხის მაგიდით"
-      : "Modern living room with a linen sofa and oak coffee table";
+  // locale describe the picture meaningfully. Pulled from site-config so
+  // the same alt strings apply when the operator swaps the hero photo.
+  const hero = siteConfig.brand.heroImage;
+  const heroAlt = hero.alt[locale];
+  const heroSrc = heroImageUrl(hero.storageKey);
 
   return (
     <section
@@ -76,7 +88,7 @@ export async function Hero() {
               landscape source files. */}
           <div className="relative aspect-[4/5] overflow-hidden rounded-2xl bg-muted">
             <Image
-              src="https://picsum.photos/seed/fm-hero/1200/1500"
+              src={heroSrc}
               alt={heroAlt}
               fill
               // Sized to the largest plausible width on a 1536px viewport,
@@ -87,6 +99,9 @@ export async function Hero() {
               placeholder="blur"
               blurDataURL={BRAND_PORTRAIT_BLUR}
               className="object-cover"
+              // unoptimized when src points at the brand monogram SVG
+              // so next/image doesn't try to AVIF/WebP-transform it.
+              unoptimized={heroSrc.endsWith(".svg")}
             />
           </div>
         </div>

@@ -3,8 +3,8 @@
 // Responsibilities:
 //   1. Wire next-intl so it knows where our request config lives.
 //   2. Send strict security headers on every response, plus configure
-//      next/image to allow our placeholder host (picsum.photos) and
-//      our Supabase Storage origin.
+//      next/image to allow our Supabase Storage origin (the only
+//      product image source after Phase 5 Task 4 retired picsum).
 //   3. Enable image AVIF/WebP delivery + a long edge cache.
 //   4. Wire @next/bundle-analyzer behind ANALYZE=true.
 //   5. Opt into Next 16's experimental viewTransition flag so route
@@ -208,7 +208,7 @@ const nextConfig: NextConfig = {
   // Centralized in lib/perf/image-config.ts so the same shape is
   // tested in vitest. AVIF/WebP delivery, 1y minimumCacheTTL,
   // calibrated deviceSizes/imageSizes, and a locked remotePatterns
-  // list (picsum + Supabase only when configured).
+  // list (Supabase Storage only — Phase 5 Task 4 retired picsum).
   images: buildImagesConfig(process.env.NEXT_PUBLIC_SUPABASE_URL),
 
   experimental: {

@@ -8,7 +8,11 @@
 import type { CategorySlug } from "@/lib/site-config";
 
 export type ProductImage = {
-  // Absolute or relative URL. Today we use picsum.photos placeholders.
+  // Absolute URL. Phase 5 Task 4 retired picsum.photos — the offline
+  // fallback now references the same Supabase Storage stock keys as
+  // the live DB. When NEXT_PUBLIC_SUPABASE_URL is unset (truly bare
+  // dev / CI without a project), every URL collapses to the brand
+  // monogram so cards still render something instead of broken images.
   url: string;
   // Required alt text; bilingual so both locales stay accessible.
   alt: { ka: string; en: string };
@@ -38,13 +42,26 @@ export type Product = {
   material?: string;
 };
 
-// picsum.photos returns a different image for every seed/dimension
-// combination, so we use stable seeds to keep IDs reproducible.
-const placeholderImage = (
-  seed: string,
+// Stock-photo helper. Returns a Supabase Storage public URL when a
+// project is configured, otherwise the brand monogram. The bucket is
+// public so anonymous reads work without a key — the offline fallback
+// can still hit the dev project's Storage as long as it's reachable.
+//
+// `filename` is the same key the live DB references via
+// product_images.storage_path = "stock/<filename>". Keeping the offline
+// catalogue in lockstep with the seeded stock manifest means swapping
+// the manifest replaces both code paths simultaneously.
+const STOCK_BASE = (() => {
+  const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
+  if (!url) return null;
+  return `${url.replace(/\/$/, "")}/storage/v1/object/public/product-images/stock`;
+})();
+
+const stockImage = (
+  filename: string,
   alt: { ka: string; en: string }
 ): ProductImage => ({
-  url: `https://picsum.photos/seed/${seed}/1200/900`,
+  url: STOCK_BASE ? `${STOCK_BASE}/${filename}` : "/icon.svg",
   alt,
   width: 1200,
   height: 900,
@@ -69,7 +86,7 @@ const products: Product[] = [
     price: 4200,
     currency: "GEL",
     images: [
-      placeholderImage("fm-sofa-001", {
+      stockImage("sofa-linen-cream-001.jpg", {
         en: "Linen three-seater sofa in a sunlit room",
         ka: "სელის დივანი მზიან ოთახში",
       }),
@@ -87,7 +104,7 @@ const products: Product[] = [
     price: 3600,
     currency: "GEL",
     images: [
-      placeholderImage("fm-sofa-002", {
+      stockImage("sofa-leather-vintage-008.jpg", {
         en: "Walnut frame loveseat with wool cushions",
         ka: "კაკლის ლავსიტი მატყლის ბალიშებით",
       }),
@@ -105,7 +122,7 @@ const products: Product[] = [
     price: 6800,
     currency: "GEL",
     images: [
-      placeholderImage("fm-sofa-003", {
+      stockImage("sofa-sectional-modular-011.jpg", {
         en: "Modular corner sofa in a wide living room",
         ka: "მოდულური კუთხის დივანი ფართო ოთახში",
       }),
@@ -123,7 +140,7 @@ const products: Product[] = [
     price: 2100,
     currency: "GEL",
     images: [
-      placeholderImage("fm-sofa-004", {
+      stockImage("armchair-vintage-warm-012.jpg", {
         en: "Compact armchair beside a reading lamp",
         ka: "კომპაქტური სავარძელი წიგნის ლამპის გვერდით",
       }),
@@ -141,7 +158,7 @@ const products: Product[] = [
     price: 2800,
     currency: "GEL",
     images: [
-      placeholderImage("fm-sofa-005", {
+      stockImage("club-chair-leather-tufted-014.jpg", {
         en: "Cream bouclé club chair with hardwood base",
         ka: "კრემისფერი ბუკლე სკამი ხის ფუძით",
       }),
@@ -159,7 +176,7 @@ const products: Product[] = [
     price: 5400,
     currency: "GEL",
     images: [
-      placeholderImage("fm-sofa-006", {
+      stockImage("daybed-wooden-sunlit-015.jpg", {
         en: "Leather daybed with low oak base",
         ka: "ტყავის დღიური დივანი მუხის ფუძით",
       }),
@@ -179,7 +196,7 @@ const products: Product[] = [
     price: 3900,
     currency: "GEL",
     images: [
-      placeholderImage("fm-bed-001", {
+      stockImage("bed-platform-oak-003.jpg", {
         en: "Oak platform bed with linen bedding",
         ka: "მუხის საწოლი სელის თეთრეულით",
       }),
@@ -200,7 +217,7 @@ const products: Product[] = [
     price: 4500,
     currency: "GEL",
     images: [
-      placeholderImage("fm-bed-002", {
+      stockImage("headboard-quilted-beige-008.jpg", {
         en: "Upholstered linen headboard with walnut legs",
         ka: "სელის შემოსილი ზურგი კაკლის ფეხებით",
       }),
@@ -218,7 +235,7 @@ const products: Product[] = [
     price: 2950,
     currency: "GEL",
     images: [
-      placeholderImage("fm-bed-003", {
+      stockImage("dresser-oak-warm-010.jpg", {
         en: "Walnut dresser with six drawers",
         ka: "კაკლის კომოდი ექვსი უჯრით",
       }),
@@ -236,7 +253,7 @@ const products: Product[] = [
     price: 950,
     currency: "GEL",
     images: [
-      placeholderImage("fm-bed-004", {
+      stockImage("bedside-wood-round-014.jpg", {
         en: "Round oak bedside table with brass pull",
         ka: "მრგვალი მუხის მაგიდა სპილენძის სახელურით",
       }),
@@ -254,7 +271,7 @@ const products: Product[] = [
     price: 5200,
     currency: "GEL",
     images: [
-      placeholderImage("fm-bed-005", {
+      stockImage("wardrobe-oak-glass-012.jpg", {
         en: "Tall two-door white oak wardrobe",
         ka: "მაღალი ორკარიანი მუხის გარდერობი",
       }),
@@ -272,7 +289,7 @@ const products: Product[] = [
     price: 1450,
     currency: "GEL",
     images: [
-      placeholderImage("fm-bed-006", {
+      stockImage("endbed-bench-wood-015.jpg", {
         en: "Upholstered bench at the foot of a bed",
         ka: "შემოსილი სკამი საწოლის ბოლოში",
       }),
@@ -295,7 +312,7 @@ const products: Product[] = [
     price: 4800,
     currency: "GEL",
     images: [
-      placeholderImage("fm-table-001", {
+      stockImage("dining-oak-table-001.jpg", {
         en: "Solid oak dining table for six",
         ka: "მუხის სასადილო მაგიდა ექვს ადგილზე",
       }),
@@ -313,7 +330,7 @@ const products: Product[] = [
     price: 2900,
     currency: "GEL",
     images: [
-      placeholderImage("fm-table-002", {
+      stockImage("pedestal-table-rattan-015.jpg", {
         en: "Round walnut pedestal table",
         ka: "მრგვალი კაკლის ფუძემაგიდა",
       }),
@@ -331,7 +348,7 @@ const products: Product[] = [
     price: 720,
     currency: "GEL",
     images: [
-      placeholderImage("fm-table-003", {
+      stockImage("chair-wishbone-wood-005.jpg", {
         en: "Wishbone dining chair with paper cord seat",
         ka: "ვიშბოუნ სკამი ქაღალდის თოკის დასაჯდომით",
       }),
@@ -349,7 +366,7 @@ const products: Product[] = [
     price: 1850,
     currency: "GEL",
     images: [
-      placeholderImage("fm-table-004", {
+      stockImage("desk-writing-wood-009.jpg", {
         en: "Compact wooden writing desk",
         ka: "კომპაქტური ხის სამუშაო მაგიდა",
       }),
@@ -367,7 +384,7 @@ const products: Product[] = [
     price: 1600,
     currency: "GEL",
     images: [
-      placeholderImage("fm-table-005", {
+      stockImage("coffee-table-marble-011.jpg", {
         en: "Low oak coffee table with splayed legs",
         ka: "დაბალი მუხის ყავის მაგიდა დახრილი ფეხებით",
       }),
@@ -385,7 +402,7 @@ const products: Product[] = [
     price: 540,
     currency: "GEL",
     images: [
-      placeholderImage("fm-table-006", {
+      stockImage("stool-counter-wood-013.jpg", {
         en: "Walnut counter stool with contoured seat",
         ka: "კაკლის ბარული სკამი მოღუნული დასაჯდომით",
       }),

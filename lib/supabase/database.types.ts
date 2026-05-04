@@ -127,6 +127,12 @@ export type Database = {
           alt_en: string;
           sort_order: number;
           is_primary: boolean;
+          // Phase 5 Task 4: stock-photo attribution columns. NULL on
+          // operator-uploaded real product photos; populated on
+          // stock placeholders sourced from Unsplash / Pexels.
+          source: "unsplash" | "pexels" | null;
+          source_url: string | null;
+          photographer: string | null;
           created_at: string;
         };
         Insert: {
@@ -137,6 +143,9 @@ export type Database = {
           alt_en?: string;
           sort_order?: number;
           is_primary?: boolean;
+          source?: "unsplash" | "pexels" | null;
+          source_url?: string | null;
+          photographer?: string | null;
           created_at?: string;
         };
         Update: Partial<

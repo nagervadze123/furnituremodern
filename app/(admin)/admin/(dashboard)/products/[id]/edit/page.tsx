@@ -40,7 +40,9 @@ export default async function EditProductPage({ params, searchParams }: Props) {
       .order("sort_order", { ascending: true }),
     supabase
       .from("product_images")
-      .select("id, storage_path, alt_ka, alt_en, sort_order, is_primary")
+      .select(
+        "id, storage_path, alt_ka, alt_en, sort_order, is_primary, source, source_url, photographer"
+      )
       .eq("product_id", id)
       .order("sort_order", { ascending: true }),
   ]);

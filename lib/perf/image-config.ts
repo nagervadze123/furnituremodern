@@ -7,7 +7,10 @@
 //   • the Tailwind breakpoints used by components/sections/*
 //   • the real phone widths users hit (375, 414 on iOS; 360 on Android)
 //   • the Supabase Storage origin we serve uploaded photos from
-//   • the picsum placeholder hosts we ship until real photos land
+//
+// Phase 5 Task 4 retired picsum.photos as the placeholder host —
+// curated stock photography now lives in the Supabase Storage bucket
+// alongside real product photos, so Storage is the only allowed source.
 
 import type { NextConfig } from "next";
 
@@ -21,12 +24,8 @@ export function buildImagesConfig(supabaseUrl: string | undefined): ImagesConfig
     minimumCacheTTL: 31_536_000,
     deviceSizes: [360, 375, 414, 768, 1024, 1280, 1536, 1920],
     imageSizes: [16, 32, 48, 64, 96, 128, 256, 384],
-    remotePatterns: [
-      { protocol: "https", hostname: "picsum.photos" },
-      { protocol: "https", hostname: "fastly.picsum.photos" },
-      ...(supabaseHost
-        ? [{ protocol: "https" as const, hostname: supabaseHost }]
-        : []),
-    ],
+    remotePatterns: supabaseHost
+      ? [{ protocol: "https" as const, hostname: supabaseHost }]
+      : [],
   };
 }

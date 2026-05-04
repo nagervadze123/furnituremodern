@@ -83,6 +83,12 @@ export type AdminImageRow = {
   alt_en: string;
   sort_order: number;
   is_primary: boolean;
+  // Phase 5 Task 4: stock-photo attribution. NULL for operator-uploaded
+  // real product photos; populated for Unsplash/Pexels stock placeholders
+  // so the operator can see at a glance which rows still need replacing.
+  source: "unsplash" | "pexels" | null;
+  source_url: string | null;
+  photographer: string | null;
 };
 
 type LocalImage = AdminImageRow & {
@@ -208,7 +214,9 @@ export function ImageManager({ productId, initialImages }: Props) {
       }
 
       // Build optimistic tiles before the network round-trip so the UI
-      // shows progress immediately.
+      // shows progress immediately. Operator uploads always have NULL
+      // attribution columns (source/source_url/photographer) — those
+      // are only populated on Phase 5 Task 4 stock placeholders.
       const tiles: LocalImage[] = accepted.map((file, idx) => ({
         id: tempId(),
         storage_path: "",
@@ -216,6 +224,9 @@ export function ImageManager({ productId, initialImages }: Props) {
         alt_en: "",
         sort_order: images.length + idx,
         is_primary: false,
+        source: null,
+        source_url: null,
+        photographer: null,
         status: "uploading" as const,
         uploadError: undefined,
       }));
@@ -626,6 +637,19 @@ function ImageTile({
           <span className="absolute left-2 top-2 inline-flex items-center gap-1 rounded-full bg-background/95 px-2 py-0.5 text-[11px] font-medium text-foreground shadow-sm">
             <Star aria-hidden className="h-3 w-3 fill-current" />
             Primary
+          </span>
+        ) : null}
+
+        {image.source ? (
+          <span
+            className="absolute bottom-2 left-2 inline-flex items-center gap-1 rounded-full bg-amber-500/90 px-2 py-0.5 text-[11px] font-medium text-amber-950 shadow-sm"
+            title={
+              image.photographer
+                ? `Stock placeholder from ${image.source} — Photo: ${image.photographer}. Replace with real product photography before launch.`
+                : `Stock placeholder from ${image.source}. Replace with real product photography before launch.`
+            }
+          >
+            Stock · {image.source}
           </span>
         ) : null}
 

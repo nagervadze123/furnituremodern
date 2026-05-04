@@ -176,13 +176,33 @@ export const brandTokens = {
   //
   // PLACEHOLDER — credit string used by Phase 5.4's hero (e.g.
   // "Photo: Studio Tbilisi"). Empty string when no credit needs to
-  // appear on the rendered hero.
+  // appear on the rendered hero. Phase 5 Task 4 also populates
+  // `heroImage.credit` below with a stock photographer credit; this
+  // field stays for the hand-curated launch hero.
   heroLandingPhotoCredit: "" as string,
   // PLACEHOLDER — operator's flagship product slug, used by Phase 5.5
   // home-page hero CTA to deep-link into the showcase product. Set to
   // a real slug from the catalogue before launch; null falls back to
   // the first featured product.
   signatureProductSlug: null as string | null,
+
+  // Phase 5 Task 4 — cinematic 21:9 lifestyle hero shot for the home
+  // page, sourced from Unsplash/Pexels. Replace `url` with a real
+  // operator-shot frame before launch. Consumed by the Phase 5.5 home
+  // hero redesign. `url` is a relative storage key inside the
+  // `product-images` bucket so the same path works across environments;
+  // the consuming component prepends ${NEXT_PUBLIC_SUPABASE_URL}.
+  heroImage: {
+    storageKey: "stock/hero-home-default.jpg",
+    alt: {
+      ka: "მოდუნებული საცხოვრებელი ოთახი დივანითა და ხის ავეჯით",
+      en: "Relaxed living room with sofa and timber furniture",
+    },
+    // Operator-facing credit, e.g. "Photo: Jane Doe / Unsplash". Empty
+    // string until the manifest entry is finalised; the data layer
+    // surfaces the credit only when this field is non-empty.
+    credit: "" as string,
+  },
 } as const;
 
 export type BrandTokens = typeof brandTokens;

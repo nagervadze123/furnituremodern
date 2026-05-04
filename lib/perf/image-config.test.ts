@@ -28,16 +28,22 @@ describe("buildImagesConfig", () => {
     expect(cfg.imageSizes).toEqual([16, 32, 48, 64, 96, 128, 256, 384]);
   });
 
-  it("locks remotePatterns to picsum hosts when Supabase is unconfigured", () => {
+  it("emits no remotePatterns when Supabase is unconfigured (offline build)", () => {
     const cfg = buildImagesConfig(undefined);
-    const hosts = cfg.remotePatterns?.map((p) => p.hostname);
-    expect(hosts).toEqual(["picsum.photos", "fastly.picsum.photos"]);
+    expect(cfg.remotePatterns).toEqual([]);
   });
 
-  it("appends the Supabase host (host only, no port/path) when configured", () => {
+  it("locks remotePatterns to the Supabase host when configured", () => {
     const cfg = buildImagesConfig("https://abcd1234.supabase.co");
     const hosts = cfg.remotePatterns?.map((p) => p.hostname);
-    expect(hosts).toContain("abcd1234.supabase.co");
+    expect(hosts).toEqual(["abcd1234.supabase.co"]);
+  });
+
+  it("never allows picsum hosts (Phase 5 Task 4 retired the placeholder host)", () => {
+    const cfg = buildImagesConfig("https://abcd1234.supabase.co");
+    const hosts = cfg.remotePatterns?.map((p) => p.hostname) ?? [];
+    expect(hosts).not.toContain("picsum.photos");
+    expect(hosts).not.toContain("fastly.picsum.photos");
   });
 
   it("does not allow wildcard hosts", () => {

@@ -464,7 +464,7 @@ describe("deleteProductImageAction", () => {
           single: {
             data: {
               id: VALID_UUID,
-              storage_path: "https://picsum.photos/600/800",
+              storage_path: "https://images.example.com/legacy-seed.jpg",
               product_id: VALID_UUID_2,
               is_primary: false,
             },

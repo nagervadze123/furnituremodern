@@ -39,3 +39,10 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# Stock photo curation working dirs (Phase 5 Task 4).
+# Originals are downloaded from Unsplash/Pexels; processed variants are
+# uploaded to Supabase Storage. Neither is committed — they regenerate
+# from scripts/stock-photos.json on demand.
+/scripts/stock-photos-source/
+/scripts/stock-photos-prepared/

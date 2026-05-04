@@ -289,9 +289,24 @@ Edit `lib/navigation.ts`. Both desktop and mobile nav read from `mainNav`. The f
 4. Update the `Locale` mapping in `lib/seo.ts`.
 5. If using Supabase, add `name_ru` / `description_ru` columns and update `lib/data/products.ts` / `lib/data/categories.ts` mappers.
 
+### Stock photography placeholders (Phase 5 Task 4)
+
+Until real product photography lands, `product_images` rows reference curated stock photography from Unsplash + Pexels. Both services permit commercial use without required attribution, but each row carries `source` / `source_url` / `photographer` columns so the admin UI can flag stock placeholders and the operator knows what still needs replacing.
+
+The pipeline lives entirely under `scripts/` and is operator-driven:
+
+1. **Curate** — `scripts/stock-photos.json` is the manifest. Each entry maps a source-site photo to a target Supabase Storage filename. Either edit the JSON manually or have the curation step generate it.
+2. **Prepare** — `node scripts/prepare-stock-photos.mjs` reads the manifest, downloads each `image_url` to `scripts/stock-photos-source/` (gitignored) if missing, then uses `sharp` to emit two variants in `scripts/stock-photos-prepared/`: a 2400px-long-edge `full` and an 800px `thumb`, both quality-85 mozJPEG.
+3. **Upload** — `node --env-file=.env.local scripts/upload-stock-photos.mjs` pushes both variants to the `product-images` bucket under `stock/<filename>` and `stock/thumbs/<filename>`.
+4. **Seed** — `node --env-file=.env.local scripts/seed-stock-product-images.mjs` wipes legacy picsum + previous stock rows and inserts 3–5 deterministic stock images per product, populating the attribution columns.
+
+To replace a stock placeholder with a real product photo: open `/admin/products/[id]/edit`, upload the real photo, set it as primary, then delete the stock row. The admin filter "stock placeholders only" (driven by `product_images.source IS NOT NULL`) lists everything that still needs operator attention.
+
 ### Replace placeholder images
 
-`content/products.ts` uses `picsum.photos` for fallback data when Supabase isn't wired up. Once Supabase is configured, upload real photos via the admin: open `/admin/products/[id]/edit` and use the **Images** panel (multi-select upload, drag to reorder, click to set primary, alt text per locale). Files land in the `product-images` Storage bucket; their public URLs are served via the Supabase host (already whitelisted in `next.config.ts` via `images.remotePatterns`). If you serve images from a different CDN, add that host explicitly.
+`content/products.ts` is the offline TS catalogue used when Supabase isn't wired up. Phase 5 Task 4 retired the `picsum.photos` placeholder host — the catalogue now references the same Supabase Storage stock keys as the live DB, falling back to the brand monogram (`/icon.svg`) when `NEXT_PUBLIC_SUPABASE_URL` is unset.
+
+Once Supabase is configured, upload real photos via the admin: open `/admin/products/[id]/edit` and use the **Images** panel (multi-select upload, drag to reorder, click to set primary, alt text per locale). Files land in the `product-images` Storage bucket; their public URLs are served via the Supabase host (already whitelisted in `next.config.ts` via `images.remotePatterns`). If you serve images from a different CDN, add that host explicitly.
 
 ## 9. URL safety: redirects
 
@@ -331,7 +346,7 @@ The bilingual privacy policy lives at `/[locale]/privacy`. Visitors can revisit 
 - For a Turbopack-native size view, run `npx next experimental-analyze` (interactive UI on `localhost:4000`) after a regular build. Output-only mode: `npx next experimental-analyze -o`.
 - **Per-route JS budget (target):** 180 KB First Load JS on public routes, ratcheted at *current baseline + 5%* once the analyzer pipeline reports per-route numbers natively. Until Next 16's build summary prints those again, treat 180 KB as a rough Lighthouse-derived ceiling rather than a CI gate.
 - **Lighthouse mobile targets** (run against a production build):
-  - Now (placeholder photos via `picsum.photos`): Performance ≥ 90, SEO 100, Accessibility ≥ 95, Best Practices 100.
+  - Now (curated Unsplash/Pexels stock placeholders served via Supabase Storage): Performance ≥ 90, SEO 100, Accessibility ≥ 95, Best Practices 100.
   - After real product photos land: Performance ≥ 95.
 - **INP target:** p75 < 200 ms (Core Web Vitals "Good" threshold). Verify after the RUM dashboard from Plan 3 ships and a week of real traffic accumulates.
 - **View Transitions** are enabled via `experimental.viewTransition: true` in `next.config.ts` and a `<ViewTransition>` wrapper around `<main>` in `app/[locale]/layout.tsx`. Browsers without the View Transitions API fall back silently. `prefers-reduced-motion` collapses transition durations to zero in `app/globals.css` — content swaps instantly, matching the default non-VT behavior.
