@@ -15,6 +15,7 @@ import { useEffect, useMemo, useRef } from "react";
 
 import { Canvas, useFrame, type ThreeElements } from "@react-three/fiber";
 import { ContactShadows, OrbitControls } from "@react-three/drei";
+import { useTranslations } from "next-intl";
 import * as THREE from "three";
 
 const PALETTE = {
@@ -31,6 +32,7 @@ const PALETTE = {
 } as const;
 
 export function Showcase3DCanvas() {
+  const t = useTranslations("home.showcase_3d");
   return (
     <Canvas
       shadows
@@ -41,7 +43,7 @@ export function Showcase3DCanvas() {
       // on dual-GPU laptops where it matters.
       gl={{ antialias: true, powerPreference: "high-performance" }}
       style={{ width: "100%", height: "100%" }}
-      aria-label="Interactive 3D armchair preview"
+      aria-label={t("canvas_label")}
     >
       <color attach="background" args={[PALETTE.floor]} />
 

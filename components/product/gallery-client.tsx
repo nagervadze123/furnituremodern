@@ -74,7 +74,7 @@ export function GalleryClient({ images, locale, productName }: Props) {
     setLightboxOpen(false);
   }, []);
 
-  // Lightbox keyboard nav + focus restoration.
+  // Lightbox keyboard nav + focus restoration + focus trap.
   useEffect(() => {
     if (!lightboxOpen) return;
 
@@ -86,17 +86,44 @@ export function GalleryClient({ images, locale, productName }: Props) {
       if (e.key === "Escape") {
         e.preventDefault();
         closeLightbox();
-      } else if (e.key === "ArrowRight") {
+        return;
+      }
+      if (e.key === "ArrowRight") {
         e.preventDefault();
         goTo(activeIndex + 1);
-      } else if (e.key === "ArrowLeft") {
+        return;
+      }
+      if (e.key === "ArrowLeft") {
         e.preventDefault();
         goTo(activeIndex - 1);
+        return;
+      }
+      if (e.key !== "Tab") return;
+      // Focus trap inside the dialog. Querying the document each Tab
+      // press keeps the trap correct as buttons mount/unmount when the
+      // user moves between the first and last image.
+      const dialog = document.getElementById(lightboxId);
+      if (!dialog) return;
+      const focusables = Array.from(
+        dialog.querySelectorAll<HTMLElement>(
+          'a[href]:not([disabled]),button:not([disabled]),[tabindex]:not([tabindex="-1"])'
+        )
+      ).filter((el) => !el.hasAttribute("aria-hidden"));
+      if (focusables.length === 0) return;
+      const first = focusables[0]!;
+      const last = focusables[focusables.length - 1]!;
+      const active = document.activeElement as HTMLElement | null;
+      if (e.shiftKey && active === first) {
+        e.preventDefault();
+        last.focus();
+      } else if (!e.shiftKey && active === last) {
+        e.preventDefault();
+        first.focus();
       }
     };
     document.addEventListener("keydown", onKey);
     return () => document.removeEventListener("keydown", onKey);
-  }, [lightboxOpen, activeIndex, goTo, closeLightbox]);
+  }, [lightboxOpen, activeIndex, goTo, closeLightbox, lightboxId]);
 
   // Restore focus when the lightbox closes.
   useEffect(() => {

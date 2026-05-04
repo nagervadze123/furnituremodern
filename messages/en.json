@@ -27,7 +27,8 @@
       "eyebrow": "See it in 3D",
       "heading": "Spin a piece. Inspect every joint.",
       "body": "We design and build in three dimensions — and so should you. Drag the chair to spin it, take in the lines from any angle, and get a feel for the proportions before you set foot in the showroom.",
-      "hint": "Click and drag to rotate. Auto-rotates when idle."
+      "hint": "Click and drag to rotate. Auto-rotates when idle.",
+      "canvas_label": "Interactive 3D armchair preview"
     },
     "featured_categories": {
       "eyebrow": "Categories",

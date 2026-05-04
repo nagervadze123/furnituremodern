@@ -106,7 +106,10 @@ describe("Footer", () => {
 
   it("renders the four labelled column headings (Explore, Customer, Connect)", async () => {
     const tree = (await Footer()) as AnyElement;
-    const headings = findAll(tree, (el) => el.type === "h2");
+    // Footer columns render as <h3> so they sit below the page-level
+    // h1 (hero) / h2 (sections) hierarchy without breaking heading
+    // order for axe/Lighthouse audits.
+    const headings = findAll(tree, (el) => el.type === "h3");
     const ids = headings
       .map((h) => (h.props as Record<string, unknown>).id)
       .filter(Boolean);

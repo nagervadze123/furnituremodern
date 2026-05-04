@@ -81,7 +81,7 @@ export function LanguageSwitcher({
         const ariaLabel = !isActive ? t(ariaLabelKeyForTarget[loc]) : undefined;
 
         const baseClass = cn(
-          "inline-flex min-h-9 items-center justify-center rounded-sm px-2 py-1 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background",
+          "inline-flex min-h-11 min-w-11 items-center justify-center rounded-sm px-2 py-1 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background",
           isActive
             ? "border-b-2 border-accent text-foreground"
             : "border-b-2 border-transparent text-muted-foreground hover:text-foreground hover:border-foreground/30",
@@ -93,6 +93,7 @@ export function LanguageSwitcher({
             <span
               key={loc}
               aria-current="true"
+              lang={loc}
               className={cn(baseClass, "font-semibold")}
             >
               {labelText}
@@ -114,6 +115,7 @@ export function LanguageSwitcher({
               locale={loc}
               aria-label={ariaLabel}
               aria-current={isActive ? "true" : undefined}
+              lang={loc}
               className={cn(baseClass, isActive && "font-semibold")}
               prefetch={false}
             >

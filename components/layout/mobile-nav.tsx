@@ -219,11 +219,11 @@ export function MobileNav({ items }: Props) {
             <li className="flex items-start gap-2">
               <Phone
                 aria-hidden="true"
-                className="mt-0.5 h-4 w-4 shrink-0 text-foreground/60"
+                className="mt-3 h-4 w-4 shrink-0 text-foreground/60"
               />
               <a
                 href={`tel:${siteConfig.contact.phone.replace(/\s/g, "")}`}
-                className="break-words text-foreground/80 hover:text-foreground"
+                className="-mx-1 inline-flex min-h-11 items-center break-words rounded px-1 text-foreground/80 transition-colors hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
               >
                 {siteConfig.contact.phone}
               </a>
@@ -231,11 +231,11 @@ export function MobileNav({ items }: Props) {
             <li className="flex items-start gap-2">
               <Mail
                 aria-hidden="true"
-                className="mt-0.5 h-4 w-4 shrink-0 text-foreground/60"
+                className="mt-3 h-4 w-4 shrink-0 text-foreground/60"
               />
               <a
                 href={`mailto:${siteConfig.contact.email}`}
-                className="break-all text-foreground/80 hover:text-foreground"
+                className="-mx-1 inline-flex min-h-11 items-center break-all rounded px-1 text-foreground/80 transition-colors hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
               >
                 {siteConfig.contact.email}
               </a>

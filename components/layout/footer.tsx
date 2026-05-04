@@ -71,12 +71,12 @@ export async function Footer() {
         {/* Col 2 — Explore. */}
         <div className="min-w-0">
           <nav aria-labelledby="footer-explore-heading" className="min-w-0">
-            <h2
+            <h3
               id="footer-explore-heading"
               className="text-xs font-semibold uppercase tracking-[0.14em] text-foreground"
             >
               {t("explore_label")}
-            </h2>
+            </h3>
             <ul className="mt-4 flex flex-col text-sm">
               <li>
                 <Link href="/" className={linkClass}>
@@ -102,12 +102,12 @@ export async function Footer() {
         {/* Col 3 — Customer. */}
         <div className="min-w-0">
           <nav aria-labelledby="footer-customer-heading" className="min-w-0">
-            <h2
+            <h3
               id="footer-customer-heading"
               className="text-xs font-semibold uppercase tracking-[0.14em] text-foreground"
             >
               {t("customer_label")}
-            </h2>
+            </h3>
             <ul className="mt-4 flex flex-col text-sm">
               <li>
                 <Link href="/privacy" className={linkClass}>
@@ -131,9 +131,9 @@ export async function Footer() {
 
         {/* Col 4 — Visit (address, hours, phone, email). */}
         <div className="min-w-0">
-          <h2 className="text-xs font-semibold uppercase tracking-[0.14em] text-foreground">
+          <h3 className="text-xs font-semibold uppercase tracking-[0.14em] text-foreground">
             {t("visit_label")}
-          </h2>
+          </h3>
           <address className="mt-4 flex flex-col gap-3 text-sm not-italic text-muted-foreground">
             <div className="flex items-start gap-2">
               <MapPin
@@ -200,7 +200,7 @@ export async function Footer() {
               />
               <a
                 href={`tel:${siteConfig.contact.phone.replace(/\s/g, "")}`}
-                className="-mx-1 inline-flex min-h-9 items-center rounded px-1 transition-colors hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+                className="-mx-1 -my-1 inline-flex min-h-11 items-center rounded px-1 py-1 transition-colors hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
               >
                 {siteConfig.contact.phone}
               </a>
@@ -213,7 +213,7 @@ export async function Footer() {
               />
               <a
                 href={`mailto:${siteConfig.contact.email}`}
-                className="-mx-1 inline-flex min-h-9 items-center break-all rounded px-1 transition-colors hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+                className="-mx-1 -my-1 inline-flex min-h-11 items-center break-all rounded px-1 py-1 transition-colors hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
               >
                 {siteConfig.contact.email}
               </a>
@@ -224,12 +224,12 @@ export async function Footer() {
         {/* Col 5 — Connect (social). */}
         <div className="min-w-0">
           <nav aria-labelledby="footer-connect-heading" className="min-w-0">
-            <h2
+            <h3
               id="footer-connect-heading"
               className="text-xs font-semibold uppercase tracking-[0.14em] text-foreground"
             >
               {t("connect_label")}
-            </h2>
+            </h3>
             <ul className="mt-4 flex flex-col text-sm">
               <li>
                 <a

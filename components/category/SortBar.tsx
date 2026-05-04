@@ -75,7 +75,7 @@ export function SortBar({ current = "newest" }: Props) {
         name="sort"
         defaultValue={current}
         onChange={(e) => setSort(e.currentTarget.value as SortKey)}
-        className="min-h-9 rounded-md border border-border bg-background px-3 py-1.5 text-sm text-foreground shadow-sm transition-colors hover:border-foreground/30 focus-visible:border-ring focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/40"
+        className="min-h-11 rounded-md border border-border bg-background px-3 py-1.5 text-sm text-foreground shadow-sm transition-colors hover:border-foreground/30 focus-visible:border-ring focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/40"
       >
         <option value="newest">{t("newest")}</option>
         <option value="price-asc">{t("price_asc")}</option>
