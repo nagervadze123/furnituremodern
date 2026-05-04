@@ -74,12 +74,12 @@ describe("Container", () => {
     expect(tree.props.className).toMatch(/max-w-3xl/);
   });
 
-  it("wide variant uses max-w-7xl", () => {
+  it("wide variant uses the 1760px editorial cap", () => {
     const tree = Container({
       children: "x",
       variant: "wide",
     }) as AnyElement;
-    expect(tree.props.className).toMatch(/max-w-7xl/);
+    expect(tree.props.className).toMatch(/max-w-\[1760px\]/);
   });
 
   it("full variant uses max-w-none", () => {

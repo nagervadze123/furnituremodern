@@ -35,7 +35,13 @@ export function Heading<T extends ElementType = "h2">({
   children,
   ...rest
 }: HeadingProps<T>) {
-  const Tag = (as ?? DEFAULT_TAG[variant]) as ElementType;
+  // Cast through a children-aware ElementType at the JSX call so React
+  // 19's stricter children checking on the union ElementType doesn't
+  // collapse to `never`. Public API types still come from `T`.
+  const Tag = (as ?? DEFAULT_TAG[variant]) as ElementType<{
+    className?: string;
+    children?: ReactNode;
+  }>;
   return (
     <Tag
       className={cn(

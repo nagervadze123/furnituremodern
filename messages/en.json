@@ -17,6 +17,12 @@
       "cta_primary": "Browse the collection",
       "cta_secondary": "Explore categories"
     },
+    "showcase_3d": {
+      "eyebrow": "See it in 3D",
+      "heading": "Spin a piece. Inspect every joint.",
+      "body": "We design and build in three dimensions — and so should you. Drag the chair to spin it, take in the lines from any angle, and get a feel for the proportions before you set foot in the showroom.",
+      "hint": "Click and drag to rotate. Auto-rotates when idle."
+    },
     "featured_categories": {
       "eyebrow": "Categories",
       "heading": "A piece for every room, considered down to the joint",

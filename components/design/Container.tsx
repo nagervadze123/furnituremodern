@@ -5,8 +5,14 @@
 // Variants tune the max-width for the kind of content inside:
 //   • narrow  — long-form prose where readability beats density
 //   • default — most page sections (hero, grids, cards)
-//   • wide    — full-bleed gallery or marketing layouts
+//   • wide    — editorial home / marketing layouts on large monitors
 //   • full    — true edge-to-edge (no max-width); padding still applied
+//
+// `wide` was 1280px (max-w-7xl) through Phase 5; on a 1920px+ display
+// that left ~320px of empty gutter on each side and made the page read
+// as a column floating in the middle of the viewport. We bumped it to
+// 1760px so editorial sections fill the screen on a typical desktop
+// while still capping content at a humane reading width.
 
 import type { ComponentPropsWithoutRef } from "react";
 
@@ -15,7 +21,7 @@ import { cn } from "@/lib/utils";
 const VARIANT_CLASS = {
   narrow: "max-w-3xl",
   default: "max-w-6xl",
-  wide: "max-w-7xl",
+  wide: "max-w-[1760px]",
   full: "max-w-none",
 } as const;
 

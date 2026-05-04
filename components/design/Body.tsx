@@ -28,7 +28,13 @@ export function Body<T extends ElementType = "p">({
   children,
   ...rest
 }: BodyProps<T>) {
-  const Tag = (as ?? "p") as ElementType;
+  // Cast through a children-aware ElementType at the JSX call so React
+  // 19's stricter children checking on the union ElementType doesn't
+  // collapse to `never`. Public API types still come from `T`.
+  const Tag = (as ?? "p") as ElementType<{
+    className?: string;
+    children?: ReactNode;
+  }>;
   return (
     <Tag
       className={cn(

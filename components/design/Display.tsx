@@ -32,7 +32,13 @@ export function Display<T extends ElementType = "h1">({
   children,
   ...rest
 }: DisplayProps<T>) {
-  const Tag = (as ?? (variant === 1 ? "h1" : "h2")) as ElementType;
+  // Cast through a children-aware ElementType at the JSX call so React
+  // 19's stricter children checking on the union ElementType doesn't
+  // collapse to `never`. Public API types still come from `T`.
+  const Tag = (as ?? (variant === 1 ? "h1" : "h2")) as ElementType<{
+    className?: string;
+    children?: ReactNode;
+  }>;
   return (
     <Tag
       className={cn(
