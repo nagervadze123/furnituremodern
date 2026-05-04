@@ -21,6 +21,9 @@ export type Database = {
           intro_ka: string;
           intro_en: string;
           is_featured_in_nav: boolean;
+          // Phase 5 Task 5: optional per-category hero photo for the
+          // home featured-categories strip.
+          image_url: string | null;
           is_deleted: boolean;
           deleted_at: string | null;
           sort_order: number;
@@ -36,6 +39,7 @@ export type Database = {
           intro_ka?: string;
           intro_en?: string;
           is_featured_in_nav?: boolean;
+          image_url?: string | null;
           is_deleted?: boolean;
           deleted_at?: string | null;
           sort_order?: number;

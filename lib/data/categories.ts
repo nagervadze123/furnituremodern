@@ -63,6 +63,7 @@ type SupabaseCategoryRow = {
   intro_en: string;
   sort_order: number;
   is_featured_in_nav: boolean;
+  image_url: string | null;
 };
 
 function mapSupabase(row: SupabaseCategoryRow): DataCategory {
@@ -74,11 +75,12 @@ function mapSupabase(row: SupabaseCategoryRow): DataCategory {
     intro: { ka: row.intro_ka, en: row.intro_en },
     sortOrder: row.sort_order,
     isFeaturedInNav: row.is_featured_in_nav,
+    imageUrl: row.image_url,
   };
 }
 
 const SELECT_COLS =
-  "id, slug, name_ka, name_en, description_ka, description_en, intro_ka, intro_en, sort_order, is_featured_in_nav";
+  "id, slug, name_ka, name_en, description_ka, description_en, intro_ka, intro_en, sort_order, is_featured_in_nav, image_url";
 
 // ---------------------------------------------------------------------------
 // Public query functions

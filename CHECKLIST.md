@@ -149,6 +149,26 @@ A snapshot of what's already done versus what to do before you go live.
 - [ ] Replace placeholder address, phone, email in `lib/site-config.ts`
 - [ ] Replace social URLs in `lib/site-config.ts`
 
+### Home page copy review (Phase 5 Task 5)
+
+The Phase 5 redesign drafted Georgian-first copy under `messages/ka.json` → `home.*` (English mirrored in `messages/en.json`). All entries below are operator-drafted PLACEHOLDERS — review and refine before launch. The copy ships as-is so the build is presentable now, but every line is editable in the messages files without code changes.
+
+- [ ] `home.hero.eyebrow / heading / body / cta_primary / cta_secondary` — short editorial hero. Confirm the Georgian tagline "თბილისში დამზადებული" + headline match the operator's voice.
+- [ ] `home.featured_categories.eyebrow / heading / cta_label` — section intro for the asymmetric category strip.
+- [ ] `home.signature_products.eyebrow / heading / intro` — section intro for the most-recent-products carousel. Title currently reads "უახლესი ნამუშევრები" / "What's coming out of the workshop" — operator may prefer "Featured" / "ფირმის ნიშნული".
+- [ ] `home.brand_story.eyebrow / heading / body / image_alt` — 60/40 image+prose strip. Body is two sentences of brand story — extend or shorten as the operator prefers. Image_alt describes the lifestyle photo for screen-readers.
+- [ ] `home.quality.eyebrow / heading + 3 items` — the three trust signals. Default order: Handcrafted, Natural materials, 10-year warranty. Operator may swap any of the three (e.g. "Free Tbilisi delivery") and update the matching Lucide icon in `components/home/QualityStrip.tsx`.
+- [ ] `home.visit.eyebrow / heading / body / cta` — pre-footer "visit our studio" band. The CTA opens a `mailto:` to `siteConfig.contact.email` — switch to a real booking flow when one exists.
+
+### Home page hero photo + featured-category photos (Phase 5 Task 5)
+- [ ] Confirm the home hero photo (`siteConfig.brand.heroImage.storageKey`) is operator-approved — currently `stock/hero-home-default.jpg`.
+- [ ] (Optional) Set per-category hero images via `/admin/categories` → `image_url` field. When NULL, `components/home/FeaturedCategories.tsx` falls back to a hardcoded category-keyed stock photo.
+- [ ] Run Lighthouse mobile against the production deploy of `/ka` and `/en` after this lands. Record scores here:
+  - `/ka` Lighthouse: Performance __, SEO __, Accessibility __, Best Practices __  (target P ≥ 90, S = 100, A ≥ 95, BP = 100)
+  - `/en` Lighthouse: Performance __, SEO __, Accessibility __, Best Practices __
+  - LCP target ≤ 2.5s on 4G throttled. The hero `<Image priority>` is the LCP candidate.
+- [ ] Run Google Rich Results Test against the deployed `/ka` and `/en`. Confirm Organization + WebSite + LocalBusiness + WebPage + FAQPage + ItemList all valid.
+
 ### Brand identity confirmation (drives OG / Twitter card visuals)
 
 `lib/site-config.ts` exports a `brand` block that the OG image templates in `lib/og/` read at render time. Confirm the values below match the launch identity before pushing to production — every share preview on Facebook / X / LinkedIn / WhatsApp / Telegram / Slack / Discord uses them.

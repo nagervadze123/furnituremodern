@@ -110,6 +110,14 @@ export type DataCategory = {
   sortOrder: number;
   /** True when this category should appear in the top nav (max 5 in admin). */
   isFeaturedInNav: boolean;
+  /**
+   * Phase 5 Task 5: optional per-category hero photo, surfaced on the
+   * home-page featured-categories strip. Either a relative storage key
+   * inside the `product-images` bucket (e.g. "stock/sofa-001.jpg") or a
+   * fully-qualified URL. NULL when the operator hasn't picked one — the
+   * home strip falls back to a hardcoded category-keyed default.
+   */
+  imageUrl?: string | null;
 };
 
 /** Common pagination + filtering options for product queries. */

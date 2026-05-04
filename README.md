@@ -261,6 +261,23 @@ The locale-aware font CSS variables (`--font-display-locale`, `--font-body-local
 
 ## 8. Common tasks
 
+### Home page sections (Phase 5 Task 5)
+
+The home page is composed in `app/[locale]/page.tsx` from server components under `components/home/`:
+
+| Section | File | Purpose |
+| --- | --- | --- |
+| Hero | `Hero.tsx` | Cinematic 5/12 + 7/12 editorial hero. Sole `<h1>`. LCP candidate (`<Image priority>`). Reveal-staggers headline + CTAs; image gets a one-shot scale-in. |
+| Featured categories | `FeaturedCategories.tsx` | Asymmetric grid: 1 large left + N stacked right at lg+; 2-col at sm; stack at mobile. Image source priority: `categories.image_url` → hardcoded stock fallback → `/icon.svg`. |
+| Signature products | `SignatureProducts.tsx` | 8 most-recent products. Mobile snap-scroll, sm 2-col, lg 4-col. Emits `ItemList` JSON-LD anchored to `/${locale}#signature-products`. |
+| Brand story | `BrandStory.tsx` | 60/40 image+prose with subtle `Parallax` on the image. |
+| Quality strip | `QualityStrip.tsx` | 3 trust signals (Lucide icons + headings). Operator-editable in messages. |
+| Visit strip | `VisitStrip.tsx` | Pre-footer band on a paper-tone surface; CTA `mailto:` to `siteConfig.contact.email`. |
+| AEO summary | `components/sections/aeo-summary.tsx` | Preserved — feeds AI search engines a summarised page synopsis. |
+| FAQ | `components/sections/faq.tsx` | Preserved — drives the `FAQPage` rich-result JSON-LD. |
+
+Animation is CSS-only via `lib/motion` (`Reveal`, `RevealStagger`, `Parallax`). Reduced-motion users see every section in its final state with no transitions. Every image is wrapped in `AspectImage` so CLS stays at 0 while bytes load. Copy lives under `home.*` in `messages/{ka,en}.json` — every line is editable without touching code.
+
 ### Edit business info (name, address, phone, social links)
 
 → `lib/site-config.ts`

@@ -1,11 +1,29 @@
 // Home page — route: /ka or /en
+//
+// Phase 5 Task 5 redesigned the layout into a 2026-trend-aware
+// editorial flow. Sections render in this order:
+//   1. Hero            — cinematic headline + image
+//   2. FeaturedCategories — asymmetric grid of category cards
+//   3. SignatureProducts  — 8 most-recent products (emits ItemList JSON-LD)
+//   4. BrandStory      — 60/40 image+prose with parallax
+//   5. QualityStrip    — 3-column trust signals
+//   6. VisitStrip      — pre-footer "visit our studio" band
+//   7. AeoSummaryPanel — preserved from the previous home for AI search
+//   8. Faq             — preserved + emits FAQPage rich result JSON-LD
+//
+// All home/* sections are server components; lib/motion ships its own
+// "use client" wrappers (Reveal / RevealStagger / Parallax) where the
+// scroll-driven animations need to run on the client.
 
 import type { Metadata } from "next";
 import { headers } from "next/headers";
 import { setRequestLocale, getTranslations } from "next-intl/server";
-import { Hero } from "@/components/sections/hero";
-import { FeaturedCategories } from "@/components/sections/featured-categories";
-import { BrandStory } from "@/components/sections/brand-story";
+import { Hero } from "@/components/home/Hero";
+import { FeaturedCategories } from "@/components/home/FeaturedCategories";
+import { SignatureProducts } from "@/components/home/SignatureProducts";
+import { BrandStory } from "@/components/home/BrandStory";
+import { QualityStrip } from "@/components/home/QualityStrip";
+import { VisitStrip } from "@/components/home/VisitStrip";
 import { Faq } from "@/components/sections/faq";
 import { JsonLd } from "@/components/json-ld";
 import { AeoSummaryPanel } from "@/components/sections/aeo-summary";
@@ -118,7 +136,10 @@ export default async function HomePage({ params }: Props) {
 
       <Hero />
       <FeaturedCategories />
+      <SignatureProducts />
       <BrandStory />
+      <QualityStrip />
+      <VisitStrip />
       <AeoSummaryPanel summary={homeAeoSummary(locale, cats)} id="aeo-home" />
       <Faq title={t("faqTitle")} items={faqEntries} />
     </>

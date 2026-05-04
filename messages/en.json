@@ -10,14 +10,51 @@
     "switchLanguage": "Switch language"
   },
   "home": {
-    "heroTitle": "Modern furniture, handcrafted to last",
-    "heroSubtitle": "Sofas, bedrooms and dining pieces built in warm, minimal forms — every detail considered for the way you actually live.",
-    "heroCtaPrimary": "Explore sofas",
-    "heroCtaSecondary": "See all categories",
-    "categoriesTitle": "Our categories",
-    "categoriesSubtitle": "Find the right piece for every room",
-    "storyTitle": "Our story",
-    "storyBody": "Furnituremodern is a Tbilisi-based studio building modern, long-lasting furniture from solid oak, walnut and natural fabrics. Every piece is produced in small batches, hand-finished, and inspected for fit before it leaves the workshop.",
+    "hero": {
+      "eyebrow": "Made in Tbilisi",
+      "heading": "Furniture made to outlast trends",
+      "body": "Solid oak, walnut and natural fabrics — every sofa, bed and table is built in small batches by hand at our workshop in Tbilisi.",
+      "cta_primary": "Browse the collection",
+      "cta_secondary": "Explore categories"
+    },
+    "featured_categories": {
+      "eyebrow": "Categories",
+      "heading": "A piece for every room, considered down to the joint",
+      "cta_label": "View →"
+    },
+    "signature_products": {
+      "eyebrow": "Signature pieces",
+      "heading": "What's coming out of the workshop",
+      "intro": "A selection from the current collection — handmade, inspected, and ready to live with."
+    },
+    "brand_story": {
+      "eyebrow": "Our story",
+      "heading": "Handcrafted quality, made for your home",
+      "body": "Furnituremodern is a Tbilisi-based studio building modern, long-lasting furniture from solid oak, walnut and natural fabrics. Every piece is produced in small batches, hand-finished and inspected for fit before it leaves the workshop — so it can stay with your family for a decade or more.",
+      "image_alt": "A warm-toned living room with timber furniture and a linen sofa"
+    },
+    "quality": {
+      "eyebrow": "Why Furnituremodern",
+      "heading": "What we do — and what we don't",
+      "item1": {
+        "heading": "Handcrafted",
+        "body": "Every piece is jointed, sanded and finished by hand — not on an assembly line."
+      },
+      "item2": {
+        "heading": "Natural materials",
+        "body": "Solid oak, walnut and linen only — no chipboard, no veneer pretending to be wood."
+      },
+      "item3": {
+        "heading": "10-year warranty",
+        "body": "Every piece comes with a ten-year warranty on the frame and hardware."
+      }
+    },
+    "visit": {
+      "eyebrow": "Visit us",
+      "heading": "See the work in our Tbilisi studio",
+      "body": "Drop into our workshop-studio in Tbilisi to feel the materials, see colour samples, and meet the maker — all visits by appointment.",
+      "cta": "Book a visit"
+    },
     "faqTitle": "Frequently asked questions"
   },
   "category": {

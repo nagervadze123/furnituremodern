@@ -91,6 +91,10 @@ CREATE TABLE public.categories (
   intro_en            text NOT NULL DEFAULT '',
   -- Top-nav inclusion flag. Admin form caps the count at 5.
   is_featured_in_nav  boolean NOT NULL DEFAULT false,
+  -- Phase 5 Task 5: optional per-category hero photo (relative path
+  -- inside the product-images bucket, e.g. "stock/sofa-linen-cream-001.jpg").
+  -- NULL means "use the code fallback in the home strip".
+  image_url           text NULL,
   -- Soft-delete: the public route returns 404 for soft-deleted rows;
   -- products that still reference the row by id keep working until the
   -- operator either restores or reassigns them.

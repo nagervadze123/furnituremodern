@@ -472,6 +472,40 @@ export const itemListJsonLd = ({
     })),
   });
 
+// Phase 5 Task 5 — home-page "signature products" carousel ItemList.
+// Distinct from itemListJsonLd above because the @id and url anchor
+// to the home URL (`/${locale}#signature-products`) rather than a
+// category page. Google treats the two as separate rich results.
+export type HomeSignatureItemListOpts = {
+  locale: Locale;
+  name: string;
+  description?: string;
+  products: DataProduct[];
+};
+
+export const homeSignatureItemListJsonLd = ({
+  locale,
+  name,
+  description,
+  products,
+}: HomeSignatureItemListOpts): Json =>
+  cleanJsonLd({
+    "@context": "https://schema.org",
+    "@type": "ItemList",
+    "@id": `${absoluteUrl(`/${locale}`)}#signature-products`,
+    name,
+    description,
+    url: absoluteUrl(`/${locale}`),
+    numberOfItems: products.length,
+    itemListOrder: "https://schema.org/ItemListOrderAscending",
+    itemListElement: products.map((product, index) => ({
+      "@type": "ListItem",
+      position: index + 1,
+      url: absoluteUrl(`/${locale}/${product.category}/${product.slug}`),
+      item: miniProductJsonLd(product, locale),
+    })),
+  });
+
 // ---------------------------------------------------------------------------
 // FAQPage + SpeakableSpecification
 // ---------------------------------------------------------------------------
