@@ -7,7 +7,13 @@
     "home": "Home",
     "openMenu": "Open menu",
     "closeMenu": "Close menu",
-    "switchLanguage": "Switch language"
+    "switchLanguage": "Switch language",
+    "switchToGeorgian": "Switch to Georgian",
+    "switchToEnglish": "Switch to English",
+    "currentLanguage": "Current language",
+    "primary": "Primary",
+    "menuTitle": "Menu",
+    "drawerLabel": "Navigation menu"
   },
   "home": {
     "hero": {
@@ -109,7 +115,19 @@
     "legal": "Legal",
     "privacy_link": "Privacy policy",
     "opens_in_new_window": "(opens in a new window)",
-    "social_label": "Social media"
+    "social_label": "Social media",
+    "tagline": "Handmade modern furniture from Tbilisi — solid oak, walnut and natural fabrics, built to outlast trends.",
+    "explore_label": "Explore",
+    "customer_label": "Customer",
+    "visit_label": "Visit",
+    "connect_label": "Connect",
+    "search_link": "Search",
+    "home_link": "Home",
+    "hours_label": "Opening hours",
+    "hours_weekdays": "Mon–Fri",
+    "hours_saturday": "Saturday",
+    "hours_sunday": "Sunday",
+    "hours_closed": "Closed"
   },
   "breadcrumbs": {
     "home": "Home",

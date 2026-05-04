@@ -1,162 +1,272 @@
-// Site footer: address, contact, navigation, social, locale list.
+// Site footer — Phase 5 Task 5.7 redesign.
+//
+// Five-column desktop grid (mobile stack):
+//   1. Brand monogram + name + short tagline (spans 2 cols).
+//   2. Explore — Home, all featured categories, Search.
+//   3. Customer — Privacy, Manage cookies, Contact mailto.
+//   4. Visit — full address, opening hours, phone, email.
+//   5. Connect — social links (Instagram, Facebook).
+//
+// Bottom band:
+//   • © current year + legal name on the left.
+//   • LanguageSwitcher mirroring the header on the right.
+//
+// Server component throughout. The only client island is
+// LanguageSwitcher (uses usePathname) and ManageLink (cookie sheet).
 
+import { Mail, MapPin, Phone, Clock } from "lucide-react";
 import { getLocale, getTranslations } from "next-intl/server";
+
+import { BrandMark } from "./BrandMark";
+import { LanguageSwitcher } from "./LanguageSwitcher";
+import { FacebookIcon, InstagramIcon } from "./social-icons";
+import { ManageLink } from "@/components/consent/manage-link";
 import { Link } from "@/i18n/navigation";
 import { siteConfig } from "@/lib/site-config";
 import { getFeaturedNavCategories } from "@/lib/data/categories";
-import { ManageLink } from "@/components/consent/manage-link";
 import type { Locale } from "@/i18n/routing";
 
 export async function Footer() {
   const t = await getTranslations("footer");
   const locale = (await getLocale()) as Locale;
-  // Phase 5 Task 3: the "Explore" column tracks the same set the
-  // header uses (operator-flagged categories) so the two stay in sync
-  // with no extra config.
   const navCats = await getFeaturedNavCategories(locale);
 
   const year = new Date().getFullYear();
 
-  // Each footer link uses the same shape: a block-level row with
-  // generous vertical padding, so the link is finger-tappable without
-  // a separate touch-target wrapper. Negative `-mx-2 px-2` keeps the
-  // visible alignment flush with the column heading.
-  const footerLinkClass =
-    "-mx-2 inline-flex min-h-10 items-center break-words rounded px-2 text-muted-foreground transition-colors hover:text-foreground";
+  // Single class for every clickable footer line. Generous min-h keeps
+  // each row finger-tappable without a separate wrapper. -mx-2 px-2
+  // keeps visual alignment flush with the column headings while still
+  // padding the focus ring outwards.
+  const linkClass =
+    "-mx-2 inline-flex min-h-10 items-center break-words rounded px-2 text-muted-foreground transition-colors hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2";
+
+  // Map the structured `openingHours` array onto two visible rows.
+  // We collapse the per-day list into a single ranged label per
+  // schedule entry — covers the typical Mon–Fri / Sat / Closed Sun
+  // pattern without rendering five identical rows. Cast each entry's
+  // `days` to a generic string[] because `as const` in site-config
+  // narrows it to a literal tuple per row, which would refuse the
+  // `.includes("Monday")` call against a row that only has "Saturday".
+  const weekdayHours = siteConfig.contact.openingHours.find((row) =>
+    (row.days as readonly string[]).includes("Monday")
+  );
+  const saturdayHours = siteConfig.contact.openingHours.find((row) =>
+    (row.days as readonly string[]).includes("Saturday")
+  );
+  const sundayHours = siteConfig.contact.openingHours.find((row) =>
+    (row.days as readonly string[]).includes("Sunday")
+  );
 
   return (
-    <footer className="mt-24 border-t border-border/50 bg-muted/40">
-      <div className="mx-auto grid max-w-7xl gap-10 px-4 py-12 md:grid-cols-5 md:px-6">
+    <footer className="mt-24 border-t border-border/60 bg-muted/30">
+      <div className="mx-auto grid max-w-7xl gap-10 px-4 py-14 md:grid-cols-5 md:gap-8 md:px-6 md:py-16">
+        {/* Col 1 — brand + tagline (spans 2 cols on desktop). */}
         <div className="min-w-0 md:col-span-2">
-          <p className="font-display text-lg font-semibold text-foreground">
-            {siteConfig.name}
-          </p>
-          <p className="mt-3 max-w-sm text-sm leading-relaxed text-muted-foreground">
-            {siteConfig.shortDescription[locale]}
+          <BrandMark className="mb-4" />
+          <p className="max-w-sm text-sm leading-relaxed text-muted-foreground">
+            {t("tagline")}
           </p>
         </div>
 
+        {/* Col 2 — Explore. */}
         <div className="min-w-0">
-          {/*
-            Wrapped in <nav> with aria-label so AT users get a labelled
-            "Explore" landmark in the page outline, distinct from the
-            primary header nav. WCAG 1.3.1 / 4.1.2 (Landmark roles).
-            The visible <h2> is still rendered for sighted users; nav
-            label and heading text intentionally match.
-          */}
           <nav aria-labelledby="footer-explore-heading" className="min-w-0">
             <h2
               id="footer-explore-heading"
-              className="text-sm font-semibold text-foreground"
+              className="text-xs font-semibold uppercase tracking-[0.14em] text-foreground"
             >
-              {t("explore")}
+              {t("explore_label")}
             </h2>
-            <ul className="mt-3 flex flex-col text-sm">
-              {/* Driven by the dynamic category list so the footer stays
-                  in sync with the header automatically. */}
+            <ul className="mt-4 flex flex-col text-sm">
+              <li>
+                <Link href="/" className={linkClass}>
+                  {t("home_link")}
+                </Link>
+              </li>
               {navCats.map((c) => (
                 <li key={c.slug}>
-                  <Link href={`/${c.slug}`} className={footerLinkClass}>
+                  <Link href={`/${c.slug}`} className={linkClass}>
                     {c.name[locale]}
                   </Link>
                 </li>
               ))}
+              <li>
+                <Link href="/search" className={linkClass}>
+                  {t("search_link")}
+                </Link>
+              </li>
             </ul>
           </nav>
         </div>
 
+        {/* Col 3 — Customer. */}
         <div className="min-w-0">
-          <h2 className="text-sm font-semibold text-foreground">
-            {t("contact")}
-          </h2>
-          {/* `not-italic` keeps the legal <address> visually flush.
-              `break-words` defends the column against very long emails
-              or phone formats. Tappable rows keep the same min-height
-              as the explore nav. */}
-          <address className="mt-3 flex flex-col text-sm not-italic text-muted-foreground">
-            <p className="py-1 break-words">{siteConfig.contact.address.street}</p>
-            <p className="py-1 break-words">
-              {siteConfig.contact.address.city},{" "}
-              {siteConfig.contact.address.postalCode}
-            </p>
-            <a
-              href={`mailto:${siteConfig.contact.email}`}
-              className={footerLinkClass + " break-all"}
-            >
-              {siteConfig.contact.email}
-            </a>
-            <a
-              href={`tel:${siteConfig.contact.phone.replace(/\s/g, "")}`}
-              className={footerLinkClass}
-            >
-              {siteConfig.contact.phone}
-            </a>
-          </address>
-        </div>
-
-        <div className="min-w-0">
-          {/* Same labelled-landmark pattern as the Explore section. */}
-          <nav aria-labelledby="footer-legal-heading" className="min-w-0">
+          <nav aria-labelledby="footer-customer-heading" className="min-w-0">
             <h2
-              id="footer-legal-heading"
-              className="text-sm font-semibold text-foreground"
+              id="footer-customer-heading"
+              className="text-xs font-semibold uppercase tracking-[0.14em] text-foreground"
             >
-              {t("legal")}
+              {t("customer_label")}
             </h2>
-            <ul className="mt-3 flex flex-col text-sm">
+            <ul className="mt-4 flex flex-col text-sm">
               <li>
-                <Link href="/privacy" className={footerLinkClass}>
+                <Link href="/privacy" className={linkClass}>
                   {t("privacy_link")}
                 </Link>
               </li>
               <li>
-                {/* Re-opens the cookie settings sheet. Client island
-                    inside an otherwise server-rendered footer. */}
-                <ManageLink className={footerLinkClass} />
+                <ManageLink className={linkClass} />
+              </li>
+              <li>
+                <a
+                  href={`mailto:${siteConfig.contact.email}`}
+                  className={linkClass}
+                >
+                  {t("contact")}
+                </a>
+              </li>
+            </ul>
+          </nav>
+        </div>
+
+        {/* Col 4 — Visit (address, hours, phone, email). */}
+        <div className="min-w-0">
+          <h2 className="text-xs font-semibold uppercase tracking-[0.14em] text-foreground">
+            {t("visit_label")}
+          </h2>
+          <address className="mt-4 flex flex-col gap-3 text-sm not-italic text-muted-foreground">
+            <div className="flex items-start gap-2">
+              <MapPin
+                aria-hidden="true"
+                className="mt-0.5 h-4 w-4 shrink-0 text-foreground/60"
+              />
+              <div className="min-w-0 break-words">
+                <p>{siteConfig.contact.address.street}</p>
+                <p>
+                  {siteConfig.contact.address.city},{" "}
+                  {siteConfig.contact.address.postalCode}
+                </p>
+              </div>
+            </div>
+
+            {(weekdayHours || saturdayHours) && (
+              <div className="flex items-start gap-2">
+                <Clock
+                  aria-hidden="true"
+                  className="mt-0.5 h-4 w-4 shrink-0 text-foreground/60"
+                />
+                <div className="min-w-0">
+                  <p className="text-xs font-semibold uppercase tracking-[0.1em] text-foreground/70">
+                    {t("hours_label")}
+                  </p>
+                  <ul className="mt-1 space-y-0.5">
+                    {weekdayHours && (
+                      <li className="break-words">
+                        <span className="text-foreground/70">
+                          {t("hours_weekdays")}:
+                        </span>{" "}
+                        <span>
+                          {weekdayHours.opens} – {weekdayHours.closes}
+                        </span>
+                      </li>
+                    )}
+                    {saturdayHours && (
+                      <li className="break-words">
+                        <span className="text-foreground/70">
+                          {t("hours_saturday")}:
+                        </span>{" "}
+                        <span>
+                          {saturdayHours.opens} – {saturdayHours.closes}
+                        </span>
+                      </li>
+                    )}
+                    {!sundayHours && (
+                      <li className="break-words">
+                        <span className="text-foreground/70">
+                          {t("hours_sunday")}:
+                        </span>{" "}
+                        <span>{t("hours_closed")}</span>
+                      </li>
+                    )}
+                  </ul>
+                </div>
+              </div>
+            )}
+
+            <div className="flex items-start gap-2">
+              <Phone
+                aria-hidden="true"
+                className="mt-0.5 h-4 w-4 shrink-0 text-foreground/60"
+              />
+              <a
+                href={`tel:${siteConfig.contact.phone.replace(/\s/g, "")}`}
+                className="-mx-1 inline-flex min-h-9 items-center rounded px-1 transition-colors hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+              >
+                {siteConfig.contact.phone}
+              </a>
+            </div>
+
+            <div className="flex items-start gap-2">
+              <Mail
+                aria-hidden="true"
+                className="mt-0.5 h-4 w-4 shrink-0 text-foreground/60"
+              />
+              <a
+                href={`mailto:${siteConfig.contact.email}`}
+                className="-mx-1 inline-flex min-h-9 items-center break-all rounded px-1 transition-colors hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+              >
+                {siteConfig.contact.email}
+              </a>
+            </div>
+          </address>
+        </div>
+
+        {/* Col 5 — Connect (social). */}
+        <div className="min-w-0">
+          <nav aria-labelledby="footer-connect-heading" className="min-w-0">
+            <h2
+              id="footer-connect-heading"
+              className="text-xs font-semibold uppercase tracking-[0.14em] text-foreground"
+            >
+              {t("connect_label")}
+            </h2>
+            <ul className="mt-4 flex flex-col text-sm">
+              <li>
+                <a
+                  href={siteConfig.social.instagram}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className={`${linkClass} gap-2`}
+                >
+                  <InstagramIcon className="h-4 w-4 text-foreground/60" />
+                  Instagram
+                  <span className="sr-only"> {t("opens_in_new_window")}</span>
+                </a>
+              </li>
+              <li>
+                <a
+                  href={siteConfig.social.facebook}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className={`${linkClass} gap-2`}
+                >
+                  <FacebookIcon className="h-4 w-4 text-foreground/60" />
+                  Facebook
+                  <span className="sr-only"> {t("opens_in_new_window")}</span>
+                </a>
               </li>
             </ul>
           </nav>
         </div>
       </div>
-      <div className="border-t border-border/50">
-        {/* `pb-safe-4` reserves at least 1rem of bottom padding plus the
-            iOS home-indicator inset, so the © line never sits flush
-            with the indicator on a notched phone. */}
+
+      {/* Bottom band — © left, language switcher right. */}
+      <div className="border-t border-border/60">
         <div className="mx-auto flex max-w-7xl flex-col gap-3 px-4 py-6 text-xs text-muted-foreground pb-safe-4 md:flex-row md:items-center md:justify-between md:px-6">
           <p className="break-words">
             © {year} {siteConfig.legalName}. {t("rights")}.
           </p>
-          {/*
-            Social links open in a new window. WCAG 3.2.5 (AAA, Change
-            on Request) recommends warning users when a link leaves the
-            current document. We append a visually-hidden suffix per
-            link so screen readers announce "Instagram, opens in a new
-            window" without altering the visible UI. aria-label on the
-            <nav> identifies this as the social-media landmark.
-          */}
-          <nav
-            aria-label={t("social_label")}
-            className="flex flex-wrap items-center gap-x-4 gap-y-1"
-          >
-            <a
-              href={siteConfig.social.instagram}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="-mx-2 inline-flex min-h-10 items-center rounded px-2 transition-colors hover:text-foreground"
-            >
-              Instagram
-              <span className="sr-only"> {t("opens_in_new_window")}</span>
-            </a>
-            <a
-              href={siteConfig.social.facebook}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="-mx-2 inline-flex min-h-10 items-center rounded px-2 transition-colors hover:text-foreground"
-            >
-              Facebook
-              <span className="sr-only"> {t("opens_in_new_window")}</span>
-            </a>
-          </nav>
+          <LanguageSwitcher className="self-start md:self-auto" />
         </div>
       </div>
     </footer>

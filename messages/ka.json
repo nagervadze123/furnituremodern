@@ -7,7 +7,13 @@
     "home": "მთავარი",
     "openMenu": "მენიუს გახსნა",
     "closeMenu": "მენიუს დახურვა",
-    "switchLanguage": "ენის შეცვლა"
+    "switchLanguage": "ენის შეცვლა",
+    "switchToGeorgian": "ქართულზე გადართვა",
+    "switchToEnglish": "ინგლისურზე გადართვა",
+    "currentLanguage": "მიმდინარე ენა",
+    "primary": "ძირითადი ნავიგაცია",
+    "menuTitle": "მენიუ",
+    "drawerLabel": "ნავიგაციის მენიუ"
   },
   "home": {
     "hero": {
@@ -109,7 +115,19 @@
     "legal": "სამართლებრივი",
     "privacy_link": "კონფიდენციალურობის პოლიტიკა",
     "opens_in_new_window": "(იხსნება ახალ ფანჯარაში)",
-    "social_label": "სოციალური ქსელები"
+    "social_label": "სოციალური ქსელები",
+    "tagline": "ხელნაკეთი ავეჯი თბილისიდან — მუხის და კაკლის მიერ შექმნილი ნივთები, რომლებიც წლებს გაიტანენ.",
+    "explore_label": "გადახედეთ",
+    "customer_label": "მომხმარებელი",
+    "visit_label": "ეწვიეთ",
+    "connect_label": "სოციალური ქსელები",
+    "search_link": "ძიება",
+    "home_link": "მთავარი",
+    "hours_label": "სამუშაო საათები",
+    "hours_weekdays": "ორშაბათი–პარასკევი",
+    "hours_saturday": "შაბათი",
+    "hours_sunday": "კვირა",
+    "hours_closed": "დახურულია"
   },
   "breadcrumbs": {
     "home": "მთავარი",

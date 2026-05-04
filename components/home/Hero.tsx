@@ -76,7 +76,7 @@ export async function Hero() {
       // so the photo is genuinely full-bleed; we add equivalent
       // top-padding inside to keep the headline below the chrome.
       aria-labelledby="hero-headline"
-      className="relative -mt-16 flex min-h-[78svh] w-full items-end overflow-hidden md:min-h-[92svh]"
+      className="relative -mt-20 flex min-h-[78svh] w-full items-end overflow-hidden md:min-h-[92svh]"
     >
       {/*
         BACKGROUND IMAGE

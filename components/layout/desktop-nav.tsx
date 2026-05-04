@@ -1,12 +1,14 @@
 // Desktop primary nav. Renders any `NavItem[]` (already-translated
-// labels) supplied by the parent header, supporting one-level
-// dropdowns when an item has `children`.
+// labels) supplied by the parent header, supporting one-level dropdowns
+// when an item has `children`.
 //
-// Server component. Dropdown items still work without JS — they fall
-// back to displaying their label as plain text — but become an
-// accessible disclosure on hover/focus via CSS group-hover.
+// Server component shell with per-item client `NavLink` islands so
+// active-state highlighting (accent underline on the current category)
+// works without re-rendering the whole header on every route change.
 
 import { ChevronDown } from "lucide-react";
+
+import { NavLink } from "./NavLink";
 import { Link } from "@/i18n/navigation";
 import type { NavItem } from "@/lib/navigation";
 
@@ -15,10 +17,11 @@ type Props = { items: NavItem[] };
 export function DesktopNav({ items }: Props) {
   return (
     <nav
-      // aria-label uses a generic "main navigation" since the nav covers
-      // the whole site, not a specific section.
-      aria-label="Main navigation"
-      className="hidden items-center gap-8 md:flex"
+      // The wrapping <header> already provides the banner landmark; the
+      // explicit `aria-label="Primary"` distinguishes this from the
+      // footer landmarks ("Explore", "Customer", etc.).
+      aria-label="Primary"
+      className="hidden items-center gap-6 md:flex lg:gap-8"
     >
       {items.map((item) => (
         <NavTopItem key={item.href} item={item} />
@@ -29,25 +32,29 @@ export function DesktopNav({ items }: Props) {
 
 function NavTopItem({ item }: { item: NavItem }) {
   const hasChildren = !!item.children?.length;
+  const baseLink =
+    "relative inline-flex h-10 items-center text-sm font-medium tracking-tight text-foreground/70 transition-colors hover:text-foreground";
+  const activeUnderline =
+    "after:absolute after:inset-x-0 after:-bottom-1 after:h-[2px] after:bg-accent after:content-[''] text-foreground";
 
   if (!hasChildren) {
     return (
-      <Link
+      <NavLink
         href={item.href}
-        className="text-sm font-medium text-foreground/80 transition-colors hover:text-foreground"
+        className={baseLink}
+        activeClassName={activeUnderline}
+        exact={item.href === "/"}
       >
         {item.label}
-      </Link>
+      </NavLink>
     );
   }
 
-  // One-level dropdown. Pure CSS hover/focus disclosure — no JS needed.
-  // The chevron rotates to signal open state.
   return (
     <div className="group relative">
       <Link
         href={item.href}
-        className="flex items-center gap-1 text-sm font-medium text-foreground/80 transition-colors hover:text-foreground"
+        className={`${baseLink} gap-1`}
       >
         {item.label}
         <ChevronDown
@@ -56,8 +63,6 @@ function NavTopItem({ item }: { item: NavItem }) {
         />
       </Link>
       <ul
-        // The dropdown is hidden by default and revealed when its parent
-        // is hovered or any descendant is focused.
         className="invisible absolute left-1/2 top-full mt-2 min-w-44 -translate-x-1/2 rounded-lg border border-border/60 bg-popover p-1 opacity-0 shadow-lg ring-1 ring-foreground/5 transition group-hover:visible group-hover:opacity-100 group-focus-within:visible group-focus-within:opacity-100"
       >
         {item.children!.map((child) => (
