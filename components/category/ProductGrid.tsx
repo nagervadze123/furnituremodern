@@ -82,7 +82,16 @@ export async function ProductGrid({ products, listName }: Props) {
                   unrelated children.
                 */}
                 <div className="group/card motion-safe:transition-all motion-safe:duration-300 motion-safe:hover:-translate-y-0.5">
-                  <ProductCard product={product} listName={listName} />
+                  {/*
+                    First two cards (top row at every breakpoint — mobile
+                    is 2-col) load with priority so the LCP image is
+                    preloaded. Index >=2 stays lazy.
+                  */}
+                  <ProductCard
+                    product={product}
+                    listName={listName}
+                    priority={index < 2}
+                  />
                 </div>
               </Reveal>
             </li>

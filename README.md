@@ -325,6 +325,18 @@ To replace a stock placeholder with a real product photo: open `/admin/products/
 
 Once Supabase is configured, upload real photos via the admin: open `/admin/products/[id]/edit` and use the **Images** panel (multi-select upload, drag to reorder, click to set primary, alt text per locale). Files land in the `product-images` Storage bucket; their public URLs are served via the Supabase host (already whitelisted in `next.config.ts` via `images.remotePatterns`). If you serve images from a different CDN, add that host explicitly.
 
+### Replacing stock photos with real product photography
+
+The Phase 5 Task 4 stock placeholders carry a non-null `product_images.source` (`'unsplash'` or `'pexels'`) so the admin can flag what still needs swapping. Replace them in this order, one product at a time, then verify on production before moving to the next:
+
+1. **Photograph the product.** 5–10 angles per product, well-lit, neutral or styled background per brand direction. Recommended: a 3/4 hero shot, a head-on elevation, a 4/5 portrait detail of the joint or fabric, a wide environmental shot in a styled room, plus close-ups of any signature material (oak grain, walnut endgrain, linen weave). Long-edge ≥ 2400 px so Next/Image has room to derive every srcset entry without upscaling. JPEG is fine — Next/Image converts to AVIF/WebP at the edge.
+2. **Upload via `/admin/products/[id]/edit` → Image Manager.** Multi-select drop is supported. Drag to reorder; the first row in the manager is what the catalogue grid and OG card use as the hero.
+3. **Set the primary image.** Click the radio next to the new hero row. The admin updates `is_primary` atomically — exactly one row stays primary per product.
+4. **Delete the stock placeholder rows for that product.** They're tagged with a coloured chip in the manager. Removing them also revokes the underlying Storage object (admin-only DELETE policy in Supabase). Leaving them in place inflates the gallery and risks a Lighthouse "Avoid duplicate content" flag if the manager allows two primaries during the swap window.
+5. **Verify on the production product page within ~5 minutes.** The category-page and product-page revalidate ticks land within `revalidate = 3600`, but the admin server actions also call `revalidatePath()` on save, so a visible refresh usually arrives in seconds. If the page still shows the stock photo after a hard refresh + 5 min, check Vercel deploy logs for a revalidate failure.
+
+When every active product has been swapped, run the production verification line in CHECKLIST.md "Final pre-launch verification" — re-run Lighthouse mobile on `/ka`, `/ka/sofas`, one real product slug, `/ka/privacy`, `/en` and confirm Performance ≥ 95.
+
 ## 9. URL safety: redirects
 
 Slug changes happen — but old URLs must keep working. Every product slug change automatically inserts two rows into the `redirects` table (one for each locale). On every request, `proxy.ts` looks up the path in `redirects` and 301s to `to_path` if a match is found.
@@ -361,11 +373,16 @@ The bilingual privacy policy lives at `/[locale]/privacy`. Visitors can revisit 
 
 - `npm run analyze` runs a webpack production build with `@next/bundle-analyzer` enabled (`ANALYZE=true`). Results land in `.next/analyze/{client,nodejs,edge}.html` — open the client report to spot oversized dependencies. The script uses `--webpack` because the analyzer is webpack-only at Next 16.2.4.
 - For a Turbopack-native size view, run `npx next experimental-analyze` (interactive UI on `localhost:4000`) after a regular build. Output-only mode: `npx next experimental-analyze -o`.
-- **Per-route JS budget (target):** 180 KB First Load JS on public routes, ratcheted at *current baseline + 5%* once the analyzer pipeline reports per-route numbers natively. Until Next 16's build summary prints those again, treat 180 KB as a rough Lighthouse-derived ceiling rather than a CI gate.
-- **Lighthouse mobile targets** (run against a production build):
-  - Now (curated Unsplash/Pexels stock placeholders served via Supabase Storage): Performance ≥ 90, SEO 100, Accessibility ≥ 95, Best Practices 100.
-  - After real product photos land: Performance ≥ 95.
-- **INP target:** p75 < 200 ms (Core Web Vitals "Good" threshold). Verify after the RUM dashboard from Plan 3 ships and a week of real traffic accumulates.
+- **First Load JS budget (gzipped, measured on production HTML):**
+  - Home (`/ka`): ≤ 200 KB target / current baseline ~273 KB. The bulk is React DOM hydration runtime + Next 16 + i18n; three.js + drei lazy-load on the 3D showcase mount and do not count against first-load.
+  - Product (`/ka/sofas/[slug]`): ≤ 250 KB target / current baseline ~275 KB. Same composition as home minus the 3D showcase.
+  - Category (`/ka/sofas`): unconstrained ceiling — sub-200 KB measured.
+  - The 73 KB / 25 KB overage on home and product is dominated by framework code; further trimming requires architectural moves (PPR, Server Actions migration of admin-only logic, dropping Sentry's browser SDK in favour of `<noscript>`-only telemetry).
+- **Lighthouse mobile targets** (run against the production deploy at `https://furnituremodern.vercel.app/`, NOT against `next dev`):
+  - Now (curated Unsplash/Pexels stock placeholders via Supabase Storage): Performance ≥ 90, SEO 100, Accessibility ≥ 98, Best Practices 100.
+  - After real product photos land: Performance ≥ 95, SEO 100, Accessibility ≥ 98, Best Practices 100.
+- **INP target:** p75 < 200 ms (Core Web Vitals "Good" threshold). Verify after the RUM dashboard from Plan 3 ships and a week of real traffic accumulates. The home page's only client-side interactivity (RevealStagger, the 3D viewer mount) is debounced via `IntersectionObserver` so input latency stays bounded by browser-native paths.
+- **TTFB note (Phase 5 Task 5.10):** every public HTML route currently sends `Cache-Control: private, no-cache, no-store` because the per-request CSP nonce in `proxy.ts` forces dynamic rendering. Cold TTFB on the production Vercel function clusters around 0.9–1.4 s; warm 0.6–1.1 s. Reaching Lighthouse Perf ≥ 95 mobile under those numbers requires the LCP image preload + Next/Image AVIF + edge-cached fonts already in place. Removing the nonce-dynamic coupling (e.g. PPR + hashed JSON-LD or proxy-side body rewrites) would let the HTML cache at the edge and pull TTFB under 200 ms — tracked as a Phase 6 architecture task, not blocked on launch.
 - **View Transitions** are enabled via `experimental.viewTransition: true` in `next.config.ts` and a `<ViewTransition>` wrapper around `<main>` in `app/[locale]/layout.tsx`. Browsers without the View Transitions API fall back silently. `prefers-reduced-motion` collapses transition durations to zero in `app/globals.css` — content swaps instantly, matching the default non-VT behavior.
 - **Resource hints are consent-gated.** The Supabase preconnect in the root layout fires only when `NEXT_PUBLIC_SUPABASE_URL` is configured. Analytics preconnects (Google Tag Manager, Facebook, Plausible) live inside `components/analytics-loader.tsx` and only emit *after* the visitor accepts the cookie banner — there is no analytics network warm-up before consent.
 

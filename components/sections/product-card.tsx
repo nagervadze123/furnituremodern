@@ -17,9 +17,16 @@ type Props = {
   product: DataProduct;
   /** Optional list_name passed to select_item analytics. */
   listName?: string;
+  /**
+   * Hint that this card is rendered above the fold so the image should
+   * be preloaded as the LCP candidate. Set true ONLY for the first row
+   * in a category grid (mobile shows 2 cards in row 1; desktop shows 4).
+   * Default false — every other card lazy-loads.
+   */
+  priority?: boolean;
 };
 
-export async function ProductCard({ product, listName }: Props) {
+export async function ProductCard({ product, listName, priority = false }: Props) {
   const locale = (await getLocale()) as Locale;
   const primary = product.images[0];
   const item = productToItem(product, locale);
@@ -49,6 +56,7 @@ export async function ProductCard({ product, listName }: Props) {
             sizes="(min-width: 1024px) 25vw, (min-width: 640px) 50vw, 50vw"
             placeholder="blur"
             blurDataURL={BRAND_PORTRAIT_BLUR}
+            priority={priority}
             // Hover scale is purely decorative. Limited to fine pointers
             // by `motion-safe:` so reduced-motion / touch-only users
             // don't see a sticky scaled state after a tap.
