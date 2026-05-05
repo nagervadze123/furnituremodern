@@ -13,7 +13,8 @@
 //   • hover:  bone-50 bg, ink-900 text
 // Sharp edges, no border-radius (editorial).
 //
-// Section anchor: id="visit". The EyebrowNav contact link jumps here.
+// Section anchor: id="visit". The IssueRibbon's "V. Visit" link
+// jumps here.
 
 import { getLocale, getTranslations } from "next-intl/server";
 

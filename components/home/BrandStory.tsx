@@ -17,7 +17,7 @@
 // `lifestyle-livingroom-001.jpg` placeholder via `siteConfig.brand`.
 //
 // Section anchor: id="workshop". The hero's secondary CTA and the
-// EyebrowNav both jump here.
+// IssueRibbon's "IV. Workshop" link both jump here.
 
 import { getTranslations } from "next-intl/server";
 

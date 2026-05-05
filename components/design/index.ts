@@ -11,6 +11,8 @@ export type { SectionVariant } from "./Section";
 
 export { Eyebrow } from "./Eyebrow";
 
+export { SectionMarker } from "./SectionMarker";
+
 export { Display } from "./Display";
 export type { DisplayVariant } from "./Display";
 

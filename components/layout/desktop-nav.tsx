@@ -3,10 +3,18 @@
 // when an item has `children`.
 //
 // Server component shell with per-item client `NavLink` islands so
-// active-state highlighting (accent underline on the current category)
-// works without re-rendering the whole header on every route change.
+// active-state highlighting works without re-rendering the whole
+// header on every route change.
+//
+// Phase 6 Slice 2 — editorial typography. 12 px / 0.18 em tracking /
+// 500 weight / uppercase. Resting colour ink-500 for inactive links,
+// ink-900 for the active route. Top-level items are separated by 3 px
+// ink-300 middle-dots so the nav reads as a single magazine masthead
+// row instead of a Tailwind utility gap. Visual reference:
+// `_design-reference/components/site-chrome.jsx:68-87`.
 
 import { ChevronDown } from "lucide-react";
+import { Fragment } from "react";
 
 import { NavLink } from "./NavLink";
 import { Link } from "@/i18n/navigation";
@@ -21,10 +29,21 @@ export function DesktopNav({ items }: Props) {
       // explicit `aria-label="Primary"` distinguishes this from the
       // footer landmarks ("Explore", "Customer", etc.).
       aria-label="Primary"
-      className="hidden items-center gap-6 md:flex lg:gap-8"
+      className="hidden items-center md:flex"
     >
-      {items.map((item) => (
-        <NavTopItem key={item.href} item={item} />
+      {items.map((item, i) => (
+        <Fragment key={item.href}>
+          {i > 0 && (
+            // Middle-dot separator between top-level items. ink-300
+            // sits visually back from both inactive and active link
+            // colours; aria-hidden so screen readers skip it.
+            <span
+              aria-hidden="true"
+              className="mx-3.5 inline-block h-[3px] w-[3px] rounded-full bg-[var(--color-ink-300)] lg:mx-4"
+            />
+          )}
+          <NavTopItem item={item} />
+        </Fragment>
       ))}
     </nav>
   );
@@ -33,9 +52,9 @@ export function DesktopNav({ items }: Props) {
 function NavTopItem({ item }: { item: NavItem }) {
   const hasChildren = !!item.children?.length;
   const baseLink =
-    "relative inline-flex h-10 items-center text-sm font-medium tracking-tight text-foreground/70 transition-colors hover:text-foreground";
+    "relative inline-flex h-10 items-center text-xs font-medium uppercase tracking-[0.18em] text-[var(--color-ink-500)] transition-colors hover:text-[var(--color-ink-900)] focus-visible:outline-none focus-visible:text-[var(--color-ink-900)]";
   const activeUnderline =
-    "after:absolute after:inset-x-0 after:-bottom-1 after:h-[2px] after:bg-accent after:content-[''] text-foreground";
+    "text-[var(--color-ink-900)] after:absolute after:inset-x-0 after:-bottom-1 after:h-[1px] after:bg-[var(--color-ink-900)] after:content-['']";
 
   if (!hasChildren) {
     return (

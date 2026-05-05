@@ -13,7 +13,8 @@
     "currentLanguage": "Current language",
     "primary": "Primary",
     "menuTitle": "Menu",
-    "drawerLabel": "Navigation menu"
+    "drawerLabel": "Navigation menu",
+    "visit": "Visit"
   },
   "home": {
     "hero": {
@@ -24,10 +25,14 @@
       "cta_secondary": "About us",
       "meta": "Tbilisi · Est. 2024 · 47 pieces"
     },
-    "eyebrow_nav": {
-      "collection": "Collection",
-      "workshop": "Workshop",
-      "contact": "Contact"
+    "issue_ribbon": {
+      "in_this_issue": "In this issue —",
+      "issue": "№06 · 2026",
+      "section_1": "Categories",
+      "section_2": "Featured",
+      "section_3": "Recent works",
+      "section_4": "The workshop",
+      "section_5": "Visit"
     },
     "featured_categories": {
       "eyebrow": "Categories",

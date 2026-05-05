@@ -131,4 +131,30 @@ describe("Header", () => {
     expect(items[0]!.href).toBe("/");
     expect(items.some((i) => i.href === "/sofas")).toBe(true);
   });
+
+  // Phase 6 Slice 2 — editorial Visit CTA. Painted via the shadcn
+  // `buttonVariants` CVA's `editorialGhost` variant on a Link
+  // (the base-ui Button doesn't accept asChild; see header.tsx).
+  // No `EditorialButton.tsx` file is added — that's enforced by
+  // the precommit invariant `git ls-files '**/[A-Z]*Button.tsx'`.
+  it("renders the Visit CTA as a Link with editorialGhost variant classes", async () => {
+    const tree = (await Header()) as AnyElement;
+    const visit = findAll(
+      tree,
+      (el) => (el.props as Record<string, unknown>).href === "/#visit"
+    )[0];
+    expect(visit).toBeTruthy();
+    const cn = ((visit!.props as Record<string, unknown>).className ?? "") as string;
+    // editorialGhost variant classes — hairline border, ink text,
+    // bone-50 hover. Lock at least one signature class so a future
+    // variant rename surfaces in CI.
+    expect(cn).toContain("border-[var(--color-hairline-strong)]");
+    expect(cn).toContain("text-[var(--color-ink-900)]");
+    // editorialCompact size — h-10, sharp corners, uppercase tracking.
+    expect(cn).toMatch(/h-10/);
+    expect(cn).toMatch(/rounded-none/);
+    // Hidden until lg so the mobile drawer trigger doesn't get
+    // crowded.
+    expect(cn).toMatch(/hidden\s+lg:inline-flex/);
+  });
 });

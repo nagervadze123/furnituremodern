@@ -61,6 +61,10 @@ export async function FeaturedCollection() {
 
   return (
     <Section
+      // `id="featured"` is the IssueRibbon's "II. Featured" anchor
+      // target. Phase 5b had no in-page anchor here; Phase 6 Slice 2
+      // wires this section into the home masthead TOC.
+      id="featured"
       aria-labelledby="featured-collection-heading"
       className="bg-[var(--color-bone-100)] py-24 md:py-44"
     >
