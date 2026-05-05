@@ -37,8 +37,10 @@ fi
 
 # 2. No data-screen-label attributes outside the staged reference.
 #    data-screen-label is a claude.ai/design canvas annotation; it
-#    must not leak into production markup.
-hits=$(git grep -nI "data-screen-label" -- ':!*_design-reference*' 2>/dev/null)
+#    must not leak into production markup. Scoped to markup file
+#    extensions so docs/scripts that quote the term as prose don't
+#    trip the check.
+hits=$(git grep -nI "data-screen-label" -- ':!*_design-reference*' '*.tsx' '*.jsx' '*.ts' '*.js' '*.html' '*.css' 2>/dev/null)
 if [ -n "$hits" ]; then
   fail "data-screen-label outside _design-reference/"
   printf '%s\n' "$hits"
@@ -50,7 +52,7 @@ fi
 #    reference only; importing from it would pull hardcoded Georgian
 #    strings, plain <img> placeholders, and inline event handlers
 #    into the production graph.
-hits=$(git grep -nIE "from\s+['\"][^'\"]*_design-reference|import\s+['\"][^'\"]*_design-reference" -- ':!*_design-reference*' 2>/dev/null)
+hits=$(git grep -nIE "from\s+['\"][^'\"]*_design-reference|import\s+['\"][^'\"]*_design-reference" -- ':!*_design-reference*' '*.tsx' '*.jsx' '*.ts' '*.js' '*.mjs' 2>/dev/null)
 if [ -n "$hits" ]; then
   fail "imports from _design-reference/"
   printf '%s\n' "$hits"
