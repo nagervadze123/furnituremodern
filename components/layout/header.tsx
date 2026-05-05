@@ -38,6 +38,7 @@ import { DesktopNav } from "./desktop-nav";
 import { HeaderScrollEffect } from "./HeaderScrollEffect";
 import { LanguageSwitcher } from "./LanguageSwitcher";
 import { MobileNav } from "./mobile-nav";
+import { buttonVariants } from "@/components/ui/button";
 import { Link } from "@/i18n/navigation";
 import { siteConfig } from "@/lib/site-config";
 import { getFeaturedNavCategories } from "@/lib/data/categories";
@@ -111,6 +112,27 @@ export async function Header() {
             <div className="hidden md:block">
               <LanguageSwitcher />
             </div>
+            {/* Phase 6 Slice 2 — editorial Visit CTA painted via the
+                shadcn `buttonVariants` CVA's new `editorialGhost`
+                variant. The base-ui Button doesn't accept `asChild`
+                (and an `<a>` inside `<button>` is invalid HTML), so
+                we apply the variant classes directly to a Link —
+                mirroring the existing pattern at
+                `app/[locale]/error.tsx:103-112`. Routes to
+                `/[locale]/#visit` from any page so non-home routes
+                still scroll-jump to the visit section after a
+                navigation. Hidden on `<lg` to avoid crowding the
+                mobile drawer trigger. */}
+            <Link
+              href="/#visit"
+              className={buttonVariants({
+                variant: "editorialGhost",
+                size: "editorialCompact",
+                className: "hidden lg:inline-flex",
+              })}
+            >
+              {t("visit")}
+            </Link>
             <MobileNav items={items} />
           </div>
         </div>

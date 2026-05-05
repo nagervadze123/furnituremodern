@@ -1,10 +1,12 @@
 // Home page — route: /ka or /en
 //
-// Phase 5b editorial composition:
+// Phase 5b → Phase 6 editorial composition:
 //   1. Hero               — 12-col editorial grid, text left + 4/5 portrait
 //                            right. No overlay; static reveal.
-//   2. EyebrowNav         — magazine-masthead strip (Collection · Workshop
-//                            · Contact) with hairline borders.
+//   2. IssueRibbon        — magazine-masthead "In this issue" strip
+//                            (Slice 2 — replaces the Phase 5b EyebrowNav).
+//                            Five numerated section anchors with an
+//                            issue number on the right.
 //   3. FeaturedCategories — 3-row alternating image/text editorial layout.
 //   4. FeaturedCollection — single "in focus" moment (operator-controlled
 //                            via siteConfig.brand.featuredProductSlug;
@@ -26,7 +28,7 @@ import type { Metadata } from "next";
 import { headers } from "next/headers";
 import { setRequestLocale, getTranslations } from "next-intl/server";
 import { Hero } from "@/components/home/Hero";
-import { EyebrowNav } from "@/components/home/EyebrowNav";
+import { IssueRibbon } from "@/components/home/IssueRibbon";
 import { FeaturedCategories } from "@/components/home/FeaturedCategories";
 import { FeaturedCollection } from "@/components/home/FeaturedCollection";
 import { SignatureProducts } from "@/components/home/SignatureProducts";
@@ -143,7 +145,7 @@ export default async function HomePage({ params }: Props) {
       <JsonLd id="ld-faq" data={faqPageJsonLd(faqEntries)} nonce={nonce} />
 
       <Hero />
-      <EyebrowNav />
+      <IssueRibbon />
       <FeaturedCategories />
       <FeaturedCollection />
       <SignatureProducts />

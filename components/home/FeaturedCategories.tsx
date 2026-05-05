@@ -82,7 +82,7 @@ export async function FeaturedCategories() {
       id="categories"
       aria-labelledby="featured-categories-heading"
       // scroll-mt-20 keeps the sticky header from covering the anchor
-      // when the EyebrowNav's "Collection" link jumps here.
+      // when the IssueRibbon's "I. Categories" link jumps here.
       className="scroll-mt-20 bg-[var(--color-bone-50)] py-20 md:py-32"
     >
       {/* Visually-hidden h2 lets screen readers announce the section

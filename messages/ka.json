@@ -13,7 +13,8 @@
     "currentLanguage": "მიმდინარე ენა",
     "primary": "ძირითადი ნავიგაცია",
     "menuTitle": "მენიუ",
-    "drawerLabel": "ნავიგაციის მენიუ"
+    "drawerLabel": "ნავიგაციის მენიუ",
+    "visit": "ვიზიტი"
   },
   "home": {
     "hero": {
@@ -24,10 +25,14 @@
       "cta_secondary": "ჩვენს შესახებ",
       "meta": "თბილისი · დაარსდა 2024 · 47 ნაკეთობა"
     },
-    "eyebrow_nav": {
-      "collection": "კოლექცია",
-      "workshop": "სახელოსნო",
-      "contact": "კონტაქტი"
+    "issue_ribbon": {
+      "in_this_issue": "ამ ნომერში —",
+      "issue": "№06 · 2026",
+      "section_1": "კატეგორიები",
+      "section_2": "ფოკუსში",
+      "section_3": "ახალი ნაჭრები",
+      "section_4": "სახელოსნო",
+      "section_5": "ვიზიტი"
     },
     "featured_categories": {
       "eyebrow": "კატეგორიები",
