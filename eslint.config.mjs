@@ -12,6 +12,11 @@ const eslintConfig = defineConfig([
     "out/**",
     "build/**",
     "next-env.d.ts",
+    // Phase 6 editorial reference: claude.ai/design export staged for
+    // visual reference only. Hardcoded Georgian, no i18n, no
+    // Next.js — never imported into the app graph. See
+    // `_design-reference/README.md` for the contract.
+    "_design-reference/**",
   ]),
 ]);
 

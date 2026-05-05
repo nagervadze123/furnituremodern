@@ -127,6 +127,37 @@
   --color-brass-500: #a08555;
   --color-sage-500: #6f7a6b;
 
+  /* -----------------------------------------------------------------
+     Phase 6 editorial deltas — token additions ported from
+     `_design-reference/styles/system.css`. Tokens already in the Phase
+     5b palette above are NOT repeated; only the values that are
+     genuinely new land here. Audit trail with per-line citations
+     lives at `docs/design/sessions/phase-a.md`.
+     ----------------------------------------------------------------- */
+
+  /* Bone-300 extends the warm-neutral scale beyond Phase 5b's
+     bone-50/100/200. Used for placeholder washes and parallax fills
+     in the editorial mocks. */
+  --color-bone-300: #ddd1bd;
+
+  /* Hairline tokens — translucent ink-900 used for editorial dividers,
+     subtle borders on dark surfaces, and ghost-button outlines.
+     Registering as `--color-*` exposes `border-hairline` and
+     `border-hairline-strong` Tailwind utilities. */
+  --color-hairline: rgba(28, 24, 22, 0.10);
+  --color-hairline-strong: rgba(28, 24, 22, 0.22);
+
+  /* Editorial motion tokens — single shared easing curve plus three
+     duration stops. The `--ease-*` and `--duration-*` prefixes are
+     recognised by Tailwind v4, so these surface as `ease-fm` /
+     `duration-fm-fast` / `duration-fm-mid` / `duration-fm-slow`
+     transition utilities in addition to being usable as raw CSS
+     variables. */
+  --ease-fm: cubic-bezier(0.2, 0.7, 0, 1);
+  --duration-fm-fast: 200ms;
+  --duration-fm-mid: 320ms;
+  --duration-fm-slow: 600ms;
+
   /* Premium spacing stops (additive on top of Tailwind's defaults). */
   --spacing-18: 4.5rem;
   --spacing-22: 5.5rem;
@@ -150,6 +181,50 @@
   --z-modal: 50;
   --z-popover: 60;
   --z-toast: 70;
+}
+
+/* ---------------------------------------------------------------------
+   Phase 6 editorial — non-utility CSS variables for layout, type
+   scale and font-variation-settings axis values. These names don't
+   match a Tailwind v4 theme prefix, so they DON'T generate utilities;
+   they're consumed by the editorial class primitives at the end of
+   this file and can also be referenced via `var(--editorial-*)` from
+   ad-hoc styles during the Phase B section ports.
+   --------------------------------------------------------------------- */
+:root {
+  /* Container widths — used by editorial layouts that need to break
+     out of the 1280px max into the wider 1440px frame. The project's
+     React `<Container>` primitive (components/design/Container.tsx)
+     remains the preferred way to wrap a section; these vars exist so
+     ad-hoc styled blocks during the Phase B port can match the same
+     measurements without re-deriving them. */
+  --editorial-container: 1280px;
+  --editorial-container-wide: 1440px;
+  --editorial-gutter: clamp(20px, 4vw, 56px);
+
+  /* Editorial type scale — fluid clamp() values used by the
+     `.display-1` / `.display-2` / `.display-3` / `.lede` class
+     primitives below. Tailwind utilities still cover most type, so
+     these vars exist mainly for the magazine-style display steps
+     where balanced clamp ranges matter. */
+  --editorial-t-display-1: clamp(3rem, 6.2vw, 5.25rem);
+  --editorial-t-display-2: clamp(2.5rem, 4.6vw, 4rem);
+  --editorial-t-display-3: clamp(2rem, 3.2vw, 2.75rem);
+  --editorial-t-h-lede: clamp(1.25rem, 1.4vw, 1.5rem);
+
+  /* Fraunces optical-sizing axis values. Fraunces is a variable font
+     with an `opsz` axis (9-144); these constants pin two presets:
+     - 144 for hero displays (more contrast, dramatic terminals)
+     - 24 for lede / sub-headline copy (legible at small sizes)
+     The other display steps (.display-2, .display-3) inline 100 / 60
+     directly because they're unique to those classes.
+
+     Latin glyphs come from Fraunces; Georgian glyphs fall through to
+     Noto Serif Georgian (which doesn't carry the opsz axis but does
+     respect the same weights). Per-glyph fallthrough is handled by
+     the font stack in the class primitives, not by per-locale CSS. */
+  --fraunces-opsz-display: 144;
+  --fraunces-opsz-body: 24;
 }
 
 :root {
@@ -448,4 +523,230 @@
     transition-duration: 0.001ms !important;
     scroll-behavior: auto !important;
   }
+}
+
+/* ---------------------------------------------------------------------
+   Phase 6 editorial primitives — additive class layer
+   ---------------------------------------------------------------------
+   Class-based helpers ported from `_design-reference/styles/system.css`.
+   They sit ALONGSIDE (not in place of) the React design primitives in
+   `components/design/` — both will coexist while sections migrate in
+   Phase B. Anything mapping cleanly to a Tailwind utility was
+   intentionally left out; only the editorial patterns whose styling
+   would be awkward in pure utilities live here.
+
+   Deliberately NOT ported from system.css:
+     - The Google Fonts `@import` (system.css:8) — would violate the
+       project's strict CSP. Inter / Fraunces / Noto Serif Georgian /
+       Noto Sans Georgian are already self-hosted by `next/font/google`
+       in `app/layout.tsx` (Next downloads the files at build time and
+       serves them from the project origin — no runtime call to
+       fonts.googleapis.com or fonts.gstatic.com). The OG-image
+       generator loads the same families from `@fontsource/*`
+       packages, so even server-rendered images stay offline.
+     - `--font-display` / `--font-body` / `--font-mono` redeclarations
+       (system.css:33-35) — these CSS variables are already set by
+       next/font on the html element; redeclaring them would clobber
+       the runtime values.
+     - `.container` (system.css:162) — would shadow a Tailwind v4
+       container utility if the project ever opts in. Use the React
+       `<Container>` primitive instead.
+     - `.section` / `.section-tight` / `.divider*` (system.css:168-171) —
+       prefer the React `<Section>` primitive; padding/divider styling
+       can be expressed with Tailwind utilities at call sites.
+     - `.body` / `.body-ka` / `.caption` (system.css:148-159) — covered
+       by Tailwind text-size + text-color utilities.
+     - `.ph` / `.ph-label` / `.ph.dark` (system.css:220-254) — image
+       placeholders used only by the design-canvas mocks. Production
+       uses `next/image` with real assets; the placeholder stays scoped
+       to `_design-reference/` JSX.
+     - `.ar-*` aspect-ratio classes (system.css:257-263) — Tailwind v4
+       has `aspect-[4/3]` etc., so these are redundant.
+     - `.annot` (system.css:282-297) — design-canvas spec callout chip,
+       not a production primitive.
+
+   Audit trail with per-line citations:
+   `docs/design/sessions/phase-a.md`.
+   --------------------------------------------------------------------- */
+
+/* Type primitives ----------------------------------------------------- */
+
+/* `.eyebrow` — small uppercase label preceded by a hairline rule.
+   Pairs with display headlines as a kicker. The rule is a ::before
+   pseudo-element so it scales with the surrounding flex gap; add the
+   `no-rule` modifier to drop the dash (used in masthead-style strips
+   where multiple eyebrows already share a hairline border above). */
+.eyebrow {
+  font-family: var(--font-body), var(--font-georgian-sans), system-ui, sans-serif;
+  font-weight: 500;
+  font-size: 0.75rem;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--color-ink-500);
+  display: inline-flex;
+  align-items: center;
+  gap: 12px;
+}
+.eyebrow::before {
+  content: "";
+  width: 24px;
+  height: 1px;
+  background: var(--color-terracotta-500);
+}
+.eyebrow.no-rule::before { display: none; }
+
+/* `.display-1` / `.display-2` / `.display-3` — magazine display steps.
+   The italic `<em>` inside any display switches into a lighter
+   Fraunces weight at terracotta-500 — a recurring editorial accent
+   pattern. The font stack chains Fraunces → Noto Serif Georgian →
+   serif fallback so a single line can mix Latin + Mkhedruli without
+   missing-glyph rectangles (Fraunces ships no Mkhedruli). */
+.display-1 {
+  font-family: var(--font-display), var(--font-georgian-serif), Georgia, "Times New Roman", serif;
+  font-weight: 400;
+  font-size: var(--editorial-t-display-1);
+  font-variation-settings: "opsz" var(--fraunces-opsz-display);
+  line-height: 1.02;
+  letter-spacing: -0.025em;
+  color: var(--color-ink-900);
+  text-wrap: balance;
+  margin: 0;
+}
+.display-2 {
+  font-family: var(--font-display), var(--font-georgian-serif), Georgia, "Times New Roman", serif;
+  font-weight: 400;
+  font-size: var(--editorial-t-display-2);
+  font-variation-settings: "opsz" 100;
+  line-height: 1.05;
+  letter-spacing: -0.022em;
+  color: var(--color-ink-900);
+  text-wrap: balance;
+  margin: 0;
+}
+.display-3 {
+  font-family: var(--font-display), var(--font-georgian-serif), Georgia, "Times New Roman", serif;
+  font-weight: 400;
+  font-size: var(--editorial-t-display-3);
+  font-variation-settings: "opsz" 60;
+  line-height: 1.1;
+  letter-spacing: -0.02em;
+  color: var(--color-ink-900);
+  margin: 0;
+}
+.display-1 em,
+.display-2 em,
+.display-3 em {
+  font-style: italic;
+  font-weight: 300;
+  color: var(--color-terracotta-500);
+}
+
+/* `.lede` — italic-leaning Fraunces sub-headline that sits beneath a
+   display headline. Uses the smaller opsz preset (24) so terminals stay
+   legible at sub-headline sizes. */
+.lede {
+  font-family: var(--font-display), var(--font-georgian-serif), Georgia, "Times New Roman", serif;
+  font-weight: 300;
+  font-size: var(--editorial-t-h-lede);
+  font-variation-settings: "opsz" var(--fraunces-opsz-body);
+  line-height: 1.5;
+  color: var(--color-ink-700);
+  text-wrap: pretty;
+}
+
+/* Editorial buttons + link styles ------------------------------------ */
+
+/* `.btn` — base outlined button. `.btn-primary` is the terracotta
+   filled variant, `.btn-ghost` the soft-bordered variant. 48px min
+   height keeps the touch target above the 44px floor enforced by
+   `.touch-target` elsewhere. */
+.btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 12px;
+  padding: 16px 24px;
+  min-height: 48px;
+  font-family: var(--font-body), var(--font-georgian-sans), system-ui, sans-serif;
+  font-weight: 500;
+  font-size: 0.875rem;
+  letter-spacing: 0.04em;
+  border: 1px solid var(--color-ink-900);
+  background: transparent;
+  color: var(--color-ink-900);
+  cursor: pointer;
+  transition:
+    background var(--duration-fm-mid) var(--ease-fm),
+    color var(--duration-fm-mid) var(--ease-fm),
+    border-color var(--duration-fm-mid) var(--ease-fm);
+}
+.btn:hover {
+  background: var(--color-ink-900);
+  color: var(--color-bone-50);
+  border-color: var(--color-ink-900);
+}
+.btn-primary {
+  background: var(--color-terracotta-500);
+  border-color: var(--color-terracotta-500);
+  color: var(--color-bone-50);
+}
+.btn-primary:hover {
+  background: var(--color-terracotta-600);
+  border-color: var(--color-terracotta-600);
+}
+.btn-ghost {
+  border-color: var(--color-hairline-strong);
+  color: var(--color-ink-900);
+}
+.btn-ghost:hover {
+  border-color: var(--color-ink-900);
+  background: transparent;
+  color: var(--color-ink-900);
+}
+
+/* `.text-link` — underlined editorial link with a hover gap+arrow
+   nudge. `.arrow` is the explicit class the JSX reference puts on the
+   trailing arrow span; we keep the same name so Phase B ports stay
+   1-for-1. */
+.text-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  font-family: var(--font-body), var(--font-georgian-sans), system-ui, sans-serif;
+  font-weight: 500;
+  color: var(--color-ink-900);
+  border-bottom: 1px solid var(--color-ink-900);
+  padding-bottom: 4px;
+  transition:
+    gap var(--duration-fm-mid) var(--ease-fm),
+    color var(--duration-fm-mid) var(--ease-fm),
+    border-color var(--duration-fm-mid) var(--ease-fm);
+}
+.text-link:hover {
+  gap: 16px;
+  color: var(--color-terracotta-500);
+  border-bottom-color: var(--color-terracotta-500);
+}
+.text-link .arrow {
+  transition: transform var(--duration-fm-mid) var(--ease-fm);
+}
+.text-link:hover .arrow { transform: translateX(4px); }
+
+/* Reveal-on-scroll hook ---------------------------------------------- */
+/* Pair with an IntersectionObserver that toggles `.in` on the element
+   when it enters the viewport. The existing `lib/motion` <Reveal>
+   primitive may eventually emit `data-reveal`; until then this rule
+   keeps the editorial mocks in `_design-reference/` legible. */
+[data-reveal] {
+  opacity: 0;
+  transform: translateY(8px);
+  transition:
+    opacity var(--duration-fm-slow) var(--ease-fm),
+    transform var(--duration-fm-slow) var(--ease-fm);
+}
+[data-reveal].in {
+  opacity: 1;
+  transform: translateY(0);
+}
+@media (prefers-reduced-motion: reduce) {
+  [data-reveal] { opacity: 1; transform: none; }
 }
