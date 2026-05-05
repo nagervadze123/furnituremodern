@@ -17,56 +17,47 @@
   },
   "home": {
     "hero": {
-      "eyebrow": "Made in Tbilisi",
-      "heading": "Furniture made to outlast trends",
-      "body": "Solid oak, walnut and natural fabrics — every sofa, bed and table is built in small batches by hand at our workshop in Tbilisi.",
+      "eyebrow": "Handcrafted in Georgia",
+      "heading": "Furniture that doesn't rush life",
+      "body": "Sofas, beds, and tables built by hand in Tbilisi. Natural materials, unhurried craft, decade-long warranty.",
       "cta_primary": "Browse the collection",
-      "cta_secondary": "Explore categories"
+      "cta_secondary": "About us",
+      "meta": "Tbilisi · Est. 2024 · 47 pieces"
     },
-    "showcase_3d": {
-      "eyebrow": "See it in 3D",
-      "heading": "Spin a piece. Inspect every joint.",
-      "body": "We design and build in three dimensions — and so should you. Drag the chair to spin it, take in the lines from any angle, and get a feel for the proportions before you set foot in the showroom.",
-      "hint": "Click and drag to rotate. Auto-rotates when idle.",
-      "canvas_label": "Interactive 3D armchair preview"
+    "eyebrow_nav": {
+      "collection": "Collection",
+      "workshop": "Workshop",
+      "contact": "Contact"
     },
     "featured_categories": {
       "eyebrow": "Categories",
-      "heading": "A piece for every room, considered down to the joint",
-      "cta_label": "View →"
+      "view_link": "View category →"
+    },
+    "featured_collection": {
+      "eyebrow": "In focus",
+      "heading": "Sadgisi — the story of one sofa",
+      "body": "One piece, in which Georgian oak grain settles into every seam. Six months of work in our maker's hands — from raw board through hand-cut joinery to the final coat of oil. A single sofa, finished the way our grandparents would have finished it.",
+      "image_alt": "In focus — the Sadgisi sofa from our workshop",
+      "cta": "View piece →"
     },
     "signature_products": {
-      "eyebrow": "Signature pieces",
-      "heading": "What's coming out of the workshop",
-      "intro": "A selection from the current collection — handmade, inspected, and ready to live with."
+      "eyebrow": "Recent pieces",
+      "heading": "From the collection",
+      "intro": "Hand-built pieces, each one unique."
     },
     "brand_story": {
-      "eyebrow": "Our story",
-      "heading": "Handcrafted quality, made for your home",
-      "body": "Furnituremodern is a Tbilisi-based studio building modern, long-lasting furniture from solid oak, walnut and natural fabrics. Every piece is produced in small batches, hand-finished and inspected for fit before it leaves the workshop — so it can stay with your family for a decade or more.",
-      "image_alt": "A warm-toned living room with timber furniture and a linen sofa"
-    },
-    "quality": {
-      "eyebrow": "Why Furnituremodern",
-      "heading": "What we do — and what we don't",
-      "item1": {
-        "heading": "Handcrafted",
-        "body": "Every piece is jointed, sanded and finished by hand — not on an assembly line."
-      },
-      "item2": {
-        "heading": "Natural materials",
-        "body": "Solid oak, walnut and linen only — no chipboard, no veneer pretending to be wood."
-      },
-      "item3": {
-        "heading": "10-year warranty",
-        "body": "Every piece comes with a ten-year warranty on the frame and hardware."
-      }
+      "eyebrow": "Workshop",
+      "heading": "Made by hand, in Tbilisi",
+      "body_p1": "Every piece begins with a single clean board. It doesn't rush — first it rests and acclimates, then it's shaped, finally it's hand-finished. Each piece carries our makers' time, their knowledge of the wood, and the small decisions only a hand can make.",
+      "body_p2": "Each piece carries its own story and sings of its variation — the natural openness of a tied joint, the shadow under a curve, the breath of grain through finish. These details aren't flaws — they're how a piece introduces itself.",
+      "image_alt": "Warm-toned wooden workshop, hand tools laid out on the bench",
+      "video_link": "Watch from the workshop →",
+      "signature": "Niko, maker"
     },
     "visit": {
       "eyebrow": "Visit us",
-      "heading": "See the work in our Tbilisi studio",
-      "body": "Drop into our workshop-studio in Tbilisi to feel the materials, see colour samples, and meet the maker — all visits by appointment.",
-      "cta": "Book a visit"
+      "heading_prefix": "Tbilisi",
+      "cta": "Send a message"
     },
     "faqTitle": "Frequently asked questions"
   },

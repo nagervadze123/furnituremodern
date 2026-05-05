@@ -1,30 +1,37 @@
-// Home featured-categories strip. Phase 5 Task 5.
+// Phase 5b editorial category showcase.
 //
-// Editorial asymmetric grid:
-//   • Desktop: one tall "feature" card on the left + a vertical stack
-//     of small cards on the right.
-//   • Tablet (sm): a 2-column grid where the feature card spans both.
-//   • Mobile: a single-column stack — feature first, then the rest.
+// Three-row layout, each row dedicated to a single category with the
+// image / text alternating sides for visual rhythm:
+//   • Row 1 (index 0): image LEFT (cols 1-7), text RIGHT (cols 8-12)
+//   • Row 2 (index 1): image RIGHT (cols 6-12), text LEFT (cols 1-5)
+//   • Row 3 (index 2): image LEFT (cols 1-7), text RIGHT (cols 8-12)
 //
-// Each card links to /[locale]/[category]. The first category (highest
-// sort_order from the data layer) renders as the feature; up to three
-// more render as small cards in the right column. Categories beyond
-// the fourth are dropped — this is the home strip, not the directory.
+// Each row renders:
+//   • AspectImage 4/5 with a 1px bone-200 hairline border, subtle 1.01
+//     scale on hover (motion-safe; reduced-motion users see static).
+//   • Text column with caption-type "01 / 03" eyebrow, display-2 name
+//     (locale-correct serif via the Display primitive), body-lg from
+//     category.intro (truncated to a sensible visible length), and an
+//     anchor-style "View category →" link in ink-900 → terracotta-500.
 //
-// Image source priority:
-//   1. category.imageUrl from the DB (operator-set in /admin/categories)
-//   2. Hardcoded category-keyed stock fallback (Phase 5 Task 4 photos)
-//   3. /icon.svg if Supabase is unconfigured (offline dev / CI)
+// Mobile: each row collapses to single column (image first, text second),
+// full-width, generous gap between rows.
+//
+// Animation: the parent uses RevealStagger so the three rows cascade
+// fade-up as they intersect viewport. Reduced-motion = no transforms.
+//
+// Categories are pulled from getCategories() (Phase 5 Task 3 — Supabase
+// backed). The first three rows render; any beyond are dropped (this is
+// the home strip, not the category directory).
 
-import { ArrowUpRight } from "lucide-react";
 import { getLocale, getTranslations } from "next-intl/server";
 
 import { Link } from "@/i18n/navigation";
 import {
   AspectImage,
+  Body,
   Container,
-  Eyebrow,
-  Heading,
+  Display,
   Section,
 } from "@/components/design";
 import { Reveal, RevealStagger } from "@/lib/motion";
@@ -34,8 +41,7 @@ import type { DataCategory } from "@/lib/data/types";
 import type { Locale } from "@/i18n/routing";
 
 // Final fallback when neither a DB image_url nor a Supabase URL is
-// available. The keys mirror the slugs the seed catalog ships with so
-// the offline build still renders coherent imagery.
+// available. Mirrors the seed catalog's slugs.
 const CATEGORY_STOCK_KEYS: Record<string, string> = {
   sofas: "stock/sofa-linen-cream-001.jpg",
   bedrooms: "stock/bed-platform-minimal-001.jpg",
@@ -45,212 +51,159 @@ const CATEGORY_STOCK_KEYS: Record<string, string> = {
 function categoryImageUrl(category: DataCategory): string {
   const supabaseBase = process.env.NEXT_PUBLIC_SUPABASE_URL;
   const path = category.imageUrl ?? CATEGORY_STOCK_KEYS[category.slug];
-
   if (!path) return "/icon.svg";
-  // Operator may set image_url to an absolute URL; pass through as-is.
   if (/^https?:\/\//i.test(path)) return path;
   if (!supabaseBase) return "/icon.svg";
   return `${supabaseBase.replace(/\/$/, "")}/storage/v1/object/public/product-images/${path}`;
 }
 
+// Pad to two digits so "01 / 03" renders monospace-clean at every
+// position. We don't load a tabular font; the eyebrow is short.
+function pad2(n: number): string {
+  return n.toString().padStart(2, "0");
+}
+
 export async function FeaturedCategories() {
   const t = await getTranslations("home.featured_categories");
-  const tCommon = await getTranslations("home");
   const locale = (await getLocale()) as Locale;
 
   const allCategories = await getCategories(locale);
-  // Cap at 4 — one feature + up to three in the side stack.
-  const categories = allCategories.slice(0, 4);
+  const categories = allCategories.slice(0, 3);
 
   if (categories.length === 0) {
-    // Defensive: render nothing rather than an empty grid skeleton.
+    // Defensive: never render an empty editorial strip.
     return null;
   }
 
-  const [feature, ...rest] = categories;
+  const total = pad2(categories.length);
 
   return (
     <Section
       id="categories"
       aria-labelledby="featured-categories-heading"
       // scroll-mt-20 keeps the sticky header from covering the anchor
-      // when the hero's secondary CTA jumps here.
-      className="scroll-mt-20"
+      // when the EyebrowNav's "Collection" link jumps here.
+      className="scroll-mt-20 bg-[var(--color-bone-50)] py-20 md:py-32"
     >
+      {/* Visually-hidden h2 lets screen readers announce the section
+          even though the visible h2 lives inside each row's heading. */}
+      <h2 id="featured-categories-heading" className="sr-only">
+        {t("eyebrow")}
+      </h2>
+
       <Container variant="wide">
-        <RevealStagger as="div" className="mb-10 flex flex-col gap-3 md:mb-14">
-          <Eyebrow>{t("eyebrow")}</Eyebrow>
-          <Heading
-            id="featured-categories-heading"
-            variant={1}
-            as="h2"
-            className="max-w-2xl"
-          >
-            {t("heading")}
-          </Heading>
+        <RevealStagger as="div" className="flex flex-col gap-20 md:gap-32">
+          {categories.map((cat, idx) => {
+            const isImageLeft = idx % 2 === 0;
+            const positionLabel = `${pad2(idx + 1)} / ${total}`;
+
+            return (
+              <CategoryRow
+                key={cat.slug}
+                category={cat}
+                locale={locale}
+                positionLabel={positionLabel}
+                isImageLeft={isImageLeft}
+                viewLinkLabel={t("view_link")}
+              />
+            );
+          })}
         </RevealStagger>
-
-        {/*
-          Asymmetric grid:
-            • mobile  → single column, feature first
-            • sm      → 2 cols, feature spans both (full-width)
-            • lg      → 12-col grid, feature on left (7), stack on right (5)
-        */}
-        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 sm:gap-5 lg:grid-cols-12 lg:gap-6">
-          {/* Feature card — tall, dominant. */}
-          <Reveal variant="slideUp" className="sm:col-span-2 lg:col-span-7">
-            <FeatureCategoryCard
-              href={`/${feature.slug}`}
-              name={feature.name[locale]}
-              tagline={feature.description[locale]}
-              imageUrl={categoryImageUrl(feature)}
-              imageAlt={feature.name[locale]}
-              ctaLabel={tCommon("featured_categories.cta_label")}
-            />
-          </Reveal>
-
-          {/* Right-hand stack — small cards, vertical on lg, in-grid on sm. */}
-          {rest.length > 0 ? (
-            <div className="grid gap-4 sm:col-span-2 sm:grid-cols-2 sm:gap-5 lg:col-span-5 lg:grid-cols-1 lg:gap-6">
-              {rest.map((cat) => (
-                <Reveal key={cat.slug} variant="slideUp">
-                  <SideCategoryCard
-                    href={`/${cat.slug}`}
-                    name={cat.name[locale]}
-                    tagline={cat.description[locale]}
-                    imageUrl={categoryImageUrl(cat)}
-                    imageAlt={cat.name[locale]}
-                    ctaLabel={tCommon("featured_categories.cta_label")}
-                  />
-                </Reveal>
-              ))}
-            </div>
-          ) : null}
-        </div>
       </Container>
     </Section>
   );
 }
 
 // ---------------------------------------------------------------------------
-// Local card variants
+// CategoryRow — single-row editorial layout
 // ---------------------------------------------------------------------------
-//
-// Kept inline rather than extracted to components/ — they're shaped
-// specifically for this strip and would only confuse the catalogue's
-// reusable CategoryCard if generalized.
 
-type CardProps = {
-  href: string;
-  name: string;
-  tagline: string;
-  imageUrl: string;
-  imageAlt: string;
-  ctaLabel: string;
+type CategoryRowProps = {
+  category: DataCategory;
+  locale: Locale;
+  positionLabel: string;
+  isImageLeft: boolean;
+  viewLinkLabel: string;
 };
 
-function FeatureCategoryCard({
-  href,
-  name,
-  tagline,
-  imageUrl,
-  imageAlt,
-  ctaLabel,
-}: CardProps) {
+function CategoryRow({
+  category,
+  locale,
+  positionLabel,
+  isImageLeft,
+  viewLinkLabel,
+}: CategoryRowProps) {
+  const imageUrl = categoryImageUrl(category);
+  const isFallbackSvg = imageUrl.endsWith(".svg");
+
+  // Trim the intro to a target visible length so the text column reads
+  // tight against the image column. Cuts on the nearest word boundary
+  // before the cap. Operator-supplied long intros still render in full
+  // on the category page itself.
+  const intro = truncateAtWord(category.intro[locale], 200);
+
+  // Image / text grid spans differ by row index:
+  //   left layout  → image cols 1-7, text cols 8-12
+  //   right layout → image cols 6-12, text cols 1-5 (image visually right)
+  const imageCols = isImageLeft ? "md:col-span-7" : "md:col-span-7 md:col-start-6";
+  const textCols = isImageLeft ? "md:col-span-5" : "md:col-span-5 md:col-start-1 md:row-start-1";
+
   return (
-    <Link
-      href={href}
-      className="group relative block min-w-0 overflow-hidden rounded-3xl bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
-    >
-      <AspectImage
-        ratio="4/5"
-        src={imageUrl}
-        alt={imageAlt}
-        sizes="(min-width: 1024px) 56vw, (min-width: 640px) 100vw, 100vw"
-        placeholder="blur"
-        blurDataURL={BRAND_PORTRAIT_BLUR}
-        className="motion-safe:transition-transform motion-safe:duration-700 motion-safe:group-hover:scale-[1.04]"
-        overlay={
-          <div
-            aria-hidden="true"
-            className="pointer-events-none absolute inset-0 bg-gradient-to-t from-black/65 via-black/20 to-transparent"
+    <article className="grid grid-cols-1 gap-8 md:grid-cols-12 md:items-center md:gap-12 lg:gap-16">
+      {/* IMAGE */}
+      <Reveal variant="fadeIn" className={`min-w-0 ${imageCols}`}>
+        <Link
+          href={`/${category.slug}`}
+          className="group block focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-terracotta-500)] focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--color-bone-50)]"
+          aria-label={category.name[locale]}
+        >
+          <AspectImage
+            ratio="4/5"
+            src={imageUrl}
+            alt={category.name[locale]}
+            sizes="(min-width: 1024px) 56vw, 100vw"
+            placeholder={isFallbackSvg ? undefined : "blur"}
+            blurDataURL={isFallbackSvg ? undefined : BRAND_PORTRAIT_BLUR}
+            unoptimized={isFallbackSvg}
+            wrapperClassName="border border-[var(--color-bone-200)] bg-[var(--color-bone-100)]"
+            className="motion-safe:transition-transform motion-safe:duration-700 motion-safe:group-hover:scale-[1.01]"
           />
-        }
-      />
-      <div className="absolute inset-x-0 bottom-0 flex items-end justify-between gap-4 p-6 text-white sm:p-8">
-        <div className="min-w-0 max-w-xl">
-          <Heading
-            variant={2}
-            as="h3"
-            className="break-words !text-white"
-          >
-            {name}
-          </Heading>
-          <p className="mt-2 text-base text-white/85 break-words sm:text-lg">{tagline}</p>
-          {/* Hover-revealed eyebrow CTA — opacity-0 by default, fades
-              in on group-hover/group-focus-within. motion-safe gates
-              the transition for reduced-motion users (they always see
-              it visible to keep the affordance discoverable). */}
-          <span className="mt-4 inline-flex items-center gap-1 text-sm font-medium uppercase tracking-[0.18em] text-white/90 motion-safe:opacity-0 motion-safe:transition-opacity motion-safe:duration-300 motion-safe:group-hover:opacity-100 motion-safe:group-focus-within:opacity-100">
-            {ctaLabel}
-          </span>
-        </div>
-        <ArrowUpRight
-          aria-hidden="true"
-          className="h-6 w-6 shrink-0 motion-safe:transition-transform motion-safe:duration-300 motion-safe:group-hover:-translate-y-0.5 motion-safe:group-hover:translate-x-0.5"
-        />
+        </Link>
+      </Reveal>
+
+      {/* TEXT */}
+      <div className={`flex min-w-0 flex-col gap-5 ${textCols}`}>
+        <span className="text-xs uppercase tracking-[0.08em] text-[var(--color-ink-500)]">
+          {positionLabel}
+        </span>
+        <Display variant={2} as="h3" className="break-words">
+          {category.name[locale]}
+        </Display>
+        <Body variant="lg" className="text-[var(--color-ink-700)]">
+          {intro}
+        </Body>
+        <Link
+          href={`/${category.slug}`}
+          className="mt-2 inline-flex items-center self-start text-sm font-medium text-[var(--color-ink-900)] transition-colors duration-300 hover:text-[var(--color-terracotta-500)] focus-visible:outline-none focus-visible:text-[var(--color-terracotta-500)]"
+        >
+          {viewLinkLabel}
+        </Link>
       </div>
-    </Link>
+    </article>
   );
 }
 
-function SideCategoryCard({
-  href,
-  name,
-  tagline,
-  imageUrl,
-  imageAlt,
-  ctaLabel,
-}: CardProps) {
-  return (
-    <Link
-      href={href}
-      className="group relative block min-w-0 overflow-hidden rounded-2xl bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
-    >
-      <AspectImage
-        ratio="4/5"
-        src={imageUrl}
-        alt={imageAlt}
-        sizes="(min-width: 1024px) 28vw, 50vw"
-        placeholder="blur"
-        blurDataURL={BRAND_PORTRAIT_BLUR}
-        className="motion-safe:transition-transform motion-safe:duration-700 motion-safe:group-hover:scale-[1.04]"
-        overlay={
-          <div
-            aria-hidden="true"
-            className="pointer-events-none absolute inset-0 bg-gradient-to-t from-black/55 via-black/15 to-transparent"
-          />
-        }
-      />
-      <div className="absolute inset-x-0 bottom-0 flex items-end justify-between gap-3 p-4 text-white sm:p-5">
-        <div className="min-w-0">
-          <Heading
-            variant={3}
-            as="h3"
-            className="break-words !text-white"
-          >
-            {name}
-          </Heading>
-          <p className="mt-1 text-sm text-white/85 break-words">{tagline}</p>
-          <span className="mt-2 inline-flex items-center gap-1 text-[11px] font-medium uppercase tracking-[0.16em] text-white/85 motion-safe:opacity-0 motion-safe:transition-opacity motion-safe:duration-300 motion-safe:group-hover:opacity-100 motion-safe:group-focus-within:opacity-100">
-            {ctaLabel}
-          </span>
-        </div>
-        <ArrowUpRight
-          aria-hidden="true"
-          className="h-5 w-5 shrink-0 motion-safe:transition-transform motion-safe:duration-300 motion-safe:group-hover:-translate-y-0.5 motion-safe:group-hover:translate-x-0.5"
-        />
-      </div>
-    </Link>
-  );
+// ---------------------------------------------------------------------------
+// Helpers
+// ---------------------------------------------------------------------------
+
+// Truncate to the nearest word boundary before `cap` characters. Adds
+// an ellipsis only when truncation actually occurred. Keeps trailing
+// whitespace clean. Returns the input as-is when shorter than the cap.
+function truncateAtWord(input: string, cap: number): string {
+  if (input.length <= cap) return input;
+  const sliced = input.slice(0, cap);
+  const lastSpace = sliced.lastIndexOf(" ");
+  const trimmed = (lastSpace > 0 ? sliced.slice(0, lastSpace) : sliced).trimEnd();
+  return `${trimmed}…`;
 }

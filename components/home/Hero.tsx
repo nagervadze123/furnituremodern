@@ -1,42 +1,31 @@
-// Home-page hero. Cinematic full-bleed redesign.
+// Phase 5b editorial home hero.
 //
-// 2026-trend layout:
-//   • Full-viewport hero — image fills the entire section edge-to-edge
-//     with a soft gradient overlay so the headline stays readable on
-//     top of any photo. Replaces the centred 5/7 grid that used to
-//     leave a column of empty paper on either side of the page on
-//     wide monitors.
-//   • Content (eyebrow + h1 + body + CTAs) anchors to the bottom-left
-//     inside the wide editorial container so it lines up with every
-//     other section below.
-//   • Subtle entrance: lib/motion's RevealStagger handles the cascaded
-//     reveal of headline + body + CTAs the first time they paint.
+// Layout — 12-column grid on desktop, stacked on mobile:
+//   • Text column (cols 1-6, vertically centred): eyebrow, oversized
+//     display headline, body-lg subhead, two side-by-side CTAs, and a
+//     small caption-type meta line.
+//   • Image column (cols 7-12): a 4/5 portrait photo with a 1px
+//     bone-200 hairline border. No overlay, no text on the image.
+//   • Mobile (< 768px): text first, image below — image becomes 3/4
+//     full-width, hairline preserved.
 //
-// Performance:
-//   • LCP candidate is the hero <Image> with `priority`. We use one
-//     image instance now (instead of duplicating between mobile/desktop
-//     wrappers) — the full-bleed treatment uses object-cover at every
-//     breakpoint, and `sizes="100vw"` lets Next pick the right srcset.
-//   • The h1 + image both render server-side. JS hydration only
-//     handles the entrance reveal, never the content.
+// Static reveal — no entrance animation. The new design treats the
+// hero as a confident statement; an animated reveal would weaken it.
 //
-// A11y:
-//   • One <h1> on the page (the hero headline).
-//   • CTAs meet 44×44px touch target via `min-h-11` on the button
-//     wrapper; focus-visible ring is inherited from buttonVariants.
-//   • Reduced-motion users see headline + image in their final state
-//     without any transition (lib/motion guards the entire flow).
-//   • Decorative gradient overlays are `aria-hidden`.
-
-import Image from "next/image";
+// LCP — the right-column image is the LCP candidate. priority=true,
+// sizes calibrated for the half-width layout (≈ 50vw on desktop,
+// 100vw on mobile). AVIF/WebP delivery comes through next/image.
+//
+// A11y — the headline carries the page's only h1; section is named
+// via aria-labelledby. Image alt text from siteConfig.brand.heroImage.
+// Both CTAs are real <Link>s; primary uses solid terracotta, secondary
+// uses outlined ink-900. Sharp edges (no border-radius) — editorial.
 
 import { getLocale, getTranslations } from "next-intl/server";
 
 import { Link } from "@/i18n/navigation";
-import { buttonVariants } from "@/components/ui/button";
-import { Body, Display, Eyebrow } from "@/components/design";
-import { RevealStagger } from "@/lib/motion";
-import { BRAND_LANDSCAPE_BLUR } from "@/lib/perf/blur";
+import { AspectImage, Body, Display, Eyebrow } from "@/components/design";
+import { BRAND_PORTRAIT_BLUR } from "@/lib/perf/blur";
 import { siteConfig } from "@/lib/site-config";
 import type { Locale } from "@/i18n/routing";
 
@@ -59,102 +48,76 @@ export async function Hero() {
   const heroAlt = hero.alt[locale];
   const isFallbackSvg = heroSrc.endsWith(".svg");
 
-  // Primary CTA deep-links to the first published category. We default
-  // to "sofas" because it's both the highest-traffic category in the
-  // catalogue today and the slug that's stable across the offline
-  // fallback. Operator can override via siteConfig.brand later.
+  // Primary CTA → first featured category landing page (kept as
+  // /sofas — operator can later wire a different default via siteConfig).
+  // Secondary CTA → in-page anchor to the brand-story section.
   const primaryHref = "/sofas";
-  // Secondary CTA scrolls to the categories anchor lower on the page.
-  const secondaryHref = "#categories";
+  const secondaryHref = "#workshop";
 
   return (
     <section
-      // Cinematic height: as tall as the viewport allows (using svh so
-      // mobile browser chrome doesn't shorten it), with a sensible
-      // floor so very tall portrait monitors still get a balanced
-      // composition. -mt-16 pulls the section under the sticky header
-      // so the photo is genuinely full-bleed; we add equivalent
-      // top-padding inside to keep the headline below the chrome.
       aria-labelledby="hero-headline"
-      className="relative -mt-20 flex min-h-[78svh] w-full items-end overflow-hidden md:min-h-[92svh]"
+      // -mt-20 pulls the hero under the sticky header so the image flush-
+      // tops the viewport edge; pt-32 inside reserves room for the chrome.
+      className="-mt-20 w-full bg-[var(--color-bone-50)] pt-32 md:pt-32"
     >
-      {/*
-        BACKGROUND IMAGE
-        position:absolute via Next/Image fill so it occupies the full
-        section bounds. object-position favours the bottom 35% of the
-        photo so faces / focal points generally stay in frame even when
-        the aspect ratio crops aggressively at narrow widths.
-      */}
-      <Image
-        src={heroSrc}
-        alt={heroAlt}
-        fill
-        priority
-        sizes="100vw"
-        placeholder={isFallbackSvg ? undefined : "blur"}
-        blurDataURL={isFallbackSvg ? undefined : BRAND_LANDSCAPE_BLUR}
-        unoptimized={isFallbackSvg}
-        className="object-cover object-[center_60%]"
-      />
-
-      {/*
-        OVERLAY STACK
-        Two layered gradients give us editorial depth without crushing
-        the photo. First one darkens the lower 70% so the headline can
-        read against any background; second adds a subtle warm vignette
-        on the right edge so the composition leans into the type.
-      */}
-      <div
-        aria-hidden="true"
-        className="pointer-events-none absolute inset-0 bg-gradient-to-t from-black/75 via-black/35 to-black/10"
-      />
-      <div
-        aria-hidden="true"
-        className="pointer-events-none absolute inset-0 bg-gradient-to-r from-black/40 via-transparent to-transparent"
-      />
-
-      {/*
-        CONTENT
-        Anchored to the bottom-left within the wide editorial cap so it
-        sits flush with FeaturedCategories below. pt-32 reserves room
-        under the 64px sticky header on every breakpoint.
-      */}
-      <div className="relative z-10 mx-auto w-full max-w-[1760px] px-4 pb-16 pt-32 sm:px-6 sm:pb-20 lg:px-8 lg:pb-24">
-        <RevealStagger
-          as="div"
-          className="flex max-w-2xl flex-col gap-6 text-white"
-        >
-          <Eyebrow className="text-white/80">{t("eyebrow")}</Eyebrow>
+      <div className="mx-auto grid max-w-[1760px] grid-cols-1 gap-10 px-6 pb-16 md:min-h-[88svh] md:grid-cols-12 md:gap-12 md:px-12 md:pb-24">
+        {/* TEXT COLUMN — cols 1-6 desktop, full-width / first on mobile */}
+        <div className="order-1 flex min-w-0 flex-col justify-center gap-6 md:col-span-6">
+          <Eyebrow>{t("eyebrow")}</Eyebrow>
           <Display
             id="hero-headline"
             variant={1}
-            className="break-words !text-white drop-shadow-[0_2px_8px_rgba(0,0,0,0.35)]"
+            className="break-words"
           >
             {t("heading")}
           </Display>
-          <Body variant="lg" className="max-w-xl !text-white/90">
+          <Body
+            variant="lg"
+            className="max-w-xl text-[var(--color-ink-700)]"
+          >
             {t("body")}
           </Body>
-          <div className="mt-2 flex flex-col flex-wrap gap-3 sm:flex-row">
+          <div className="mt-2 flex flex-col gap-3 sm:flex-row sm:gap-4">
+            {/* Primary — solid terracotta-500 → terracotta-600 hover.
+                Sharp edges (rounded-none) read as editorial print. */}
             <Link
               href={primaryHref}
-              className={
-                buttonVariants({ size: "lg" }) +
-                " min-h-11 w-full justify-center px-7 sm:w-auto motion-safe:transition-transform motion-safe:hover:scale-[1.02]"
-              }
+              className="inline-flex min-h-11 items-center justify-center rounded-none bg-[var(--color-terracotta-500)] px-7 py-[14px] text-base font-medium text-[var(--color-bone-50)] transition-colors hover:bg-[var(--color-terracotta-600)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-terracotta-500)] focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--color-bone-50)]"
             >
               {t("cta_primary")}
             </Link>
+            {/* Secondary — outlined ink-900 → bone-100 hover. */}
             <Link
               href={secondaryHref}
-              className={
-                "inline-flex min-h-11 w-full items-center justify-center rounded-md border border-white/40 bg-white/10 px-7 text-base font-medium text-white backdrop-blur-sm sm:w-auto motion-safe:transition-colors hover:bg-white/20 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white focus-visible:ring-offset-2 focus-visible:ring-offset-black/40"
-              }
+              className="inline-flex min-h-11 items-center justify-center rounded-none border border-[var(--color-ink-900)] bg-[var(--color-bone-50)] px-7 py-[14px] text-base font-medium text-[var(--color-ink-900)] transition-colors hover:bg-[var(--color-bone-100)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-ink-900)] focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--color-bone-50)]"
             >
               {t("cta_secondary")}
             </Link>
           </div>
-        </RevealStagger>
+          {/* Meta strip — small caption type. Pulled from i18n so the
+              dot-separated values are operator-editable per locale. */}
+          <p className="mt-4 text-xs uppercase tracking-[0.08em] text-[var(--color-ink-500)]">
+            {t("meta")}
+          </p>
+        </div>
+
+        {/* IMAGE COLUMN — cols 7-12 desktop, second on mobile */}
+        <div className="order-2 min-w-0 md:col-span-6">
+          <AspectImage
+            // 4/5 portrait on desktop, 3/4 on mobile — both editorial.
+            ratio="4/5"
+            src={heroSrc}
+            alt={heroAlt}
+            sizes="(min-width: 1024px) 50vw, 100vw"
+            priority
+            placeholder={isFallbackSvg ? undefined : "blur"}
+            blurDataURL={isFallbackSvg ? undefined : BRAND_PORTRAIT_BLUR}
+            unoptimized={isFallbackSvg}
+            // 1px bone-200 hairline frame — subtle, premium.
+            wrapperClassName="border border-[var(--color-bone-200)]"
+          />
+        </div>
       </div>
     </section>
   );

@@ -7,10 +7,13 @@ import type { ComponentPropsWithoutRef, ElementType, ReactNode } from "react";
 
 import { cn } from "@/lib/utils";
 
+// Phase 5b editorial scale with mobile step-down. variant 1 is the
+// section H1 / H2 (2rem desktop / 1.625rem mobile); variant 2 is sub-
+// section (1.5rem / 1.25rem); variant 3 is card titles (1.125rem / 1rem).
 const VARIANT_CLASS = {
-  1: "text-[2.25rem] leading-[1.15] tracking-[-0.015em]",
-  2: "text-[1.75rem] leading-[1.2] tracking-[-0.01em]",
-  3: "text-[1.375rem] leading-[1.3]",
+  1: "text-[1.625rem] md:text-[2rem] leading-[1.18] tracking-[-0.015em]",
+  2: "text-[1.25rem] md:text-[1.5rem] leading-[1.25] tracking-[-0.01em]",
+  3: "text-[1rem] md:text-[1.125rem] leading-[1.4]",
 } as const;
 
 const DEFAULT_TAG = {

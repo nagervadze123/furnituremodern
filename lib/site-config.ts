@@ -155,13 +155,16 @@ export const brandTokens = {
     en: "Handmade modern furniture from Tbilisi",
   },
   // Warm earth accent — matches the existing terracotta band already in
-  // the legacy app/opengraph-image.tsx.
+  // the legacy app/opengraph-image.tsx. Phase 5b editorial palette uses
+  // this as `terracotta-500`; unchanged.
   accent: "#b85c38",
-  // Off-white render background. Slightly warmer than pure white so the
-  // image doesn't read as "default Vercel template".
-  background: "#fbf8f3",
-  // Deep neutral text. Reads as charcoal on both Slack light and dark.
-  foreground: "#28201a",
+  // Phase 5b editorial palette → `bone-50`. Slightly warmer than the
+  // previous #fbf8f3 (more chroma in the warm direction). Foreground is
+  // `ink-900` from the same palette (#1c1816, was #28201a — slightly
+  // deeper). Both surface in `--background` / `--foreground` and on
+  // every OG/Twitter card.
+  background: "#faf7f2",
+  foreground: "#1c1816",
   // Muted text colour for eyebrows and footer captions.
   muted: "#7a6f5e",
   // 1-2 character monogram fallback used when no logo SVG is present.
@@ -185,6 +188,14 @@ export const brandTokens = {
   // a real slug from the catalogue before launch; null falls back to
   // the first featured product.
   signatureProductSlug: null as string | null,
+
+  // PLACEHOLDER — Phase 5b "featured collection" editorial moment on
+  // the home page (`components/home/FeaturedCollection.tsx`). When set
+  // to a real product slug, the home page renders a single large image
+  // + display headline + 50-word prose. When null (default), the entire
+  // section is omitted — the home page does not render an empty
+  // placeholder. The matching i18n keys live under home.featured_collection.
+  featuredProductSlug: null as string | null,
 
   // Phase 5 Task 4 — cinematic 21:9 lifestyle hero shot for the home
   // page, sourced from Unsplash/Pexels. Replace `url` with a real

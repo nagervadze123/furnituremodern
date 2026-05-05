@@ -1,15 +1,22 @@
 // Home page — route: /ka or /en
 //
-// Sections render in this order:
-//   1. Hero               — cinematic full-bleed image + headline
-//   2. Showcase3D         — interactive WebGL armchair preview
-//   3. FeaturedCategories — asymmetric grid of category cards
-//   4. SignatureProducts  — 8 most-recent products (emits ItemList JSON-LD)
-//   5. BrandStory         — 60/40 image+prose with parallax
-//   6. QualityStrip       — 3-column trust signals
-//   7. VisitStrip         — pre-footer "visit our studio" band
-//   8. AeoSummaryPanel    — preserved from the previous home for AI search
-//   9. Faq                — preserved + emits FAQPage rich result JSON-LD
+// Phase 5b editorial composition:
+//   1. Hero               — 12-col editorial grid, text left + 4/5 portrait
+//                            right. No overlay; static reveal.
+//   2. EyebrowNav         — magazine-masthead strip (Collection · Workshop
+//                            · Contact) with hairline borders.
+//   3. FeaturedCategories — 3-row alternating image/text editorial layout.
+//   4. FeaturedCollection — single "in focus" moment (operator-controlled
+//                            via siteConfig.brand.featuredProductSlug;
+//                            section omitted entirely when null).
+//   5. SignatureProducts  — 8 most-recent published products (emits
+//                            home-only ItemList JSON-LD).
+//   6. BrandStory         — 60/40 image + prose with subtle parallax.
+//                            Section anchor #workshop.
+//   7. VisitStrip         — deep-ink inversion band, mailto CTA.
+//                            Section anchor #visit.
+//   8. AeoSummaryPanel    — preserved (factual summary for AI crawlers).
+//   9. Faq                — preserved + emits FAQPage rich result.
 //
 // All home/* sections are server components; lib/motion ships its own
 // "use client" wrappers (Reveal / RevealStagger / Parallax) where the
@@ -19,11 +26,11 @@ import type { Metadata } from "next";
 import { headers } from "next/headers";
 import { setRequestLocale, getTranslations } from "next-intl/server";
 import { Hero } from "@/components/home/Hero";
-import { Showcase3D } from "@/components/home/Showcase3D";
+import { EyebrowNav } from "@/components/home/EyebrowNav";
 import { FeaturedCategories } from "@/components/home/FeaturedCategories";
+import { FeaturedCollection } from "@/components/home/FeaturedCollection";
 import { SignatureProducts } from "@/components/home/SignatureProducts";
 import { BrandStory } from "@/components/home/BrandStory";
-import { QualityStrip } from "@/components/home/QualityStrip";
 import { VisitStrip } from "@/components/home/VisitStrip";
 import { Faq } from "@/components/sections/faq";
 import { JsonLd } from "@/components/json-ld";
@@ -136,11 +143,11 @@ export default async function HomePage({ params }: Props) {
       <JsonLd id="ld-faq" data={faqPageJsonLd(faqEntries)} nonce={nonce} />
 
       <Hero />
-      <Showcase3D />
+      <EyebrowNav />
       <FeaturedCategories />
+      <FeaturedCollection />
       <SignatureProducts />
       <BrandStory />
-      <QualityStrip />
       <VisitStrip />
       <AeoSummaryPanel summary={homeAeoSummary(locale, cats)} id="aeo-home" />
       <Faq title={t("faqTitle")} items={faqEntries} />

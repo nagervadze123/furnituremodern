@@ -68,6 +68,68 @@ export const accent = {
   muted: "oklch(0.78 0.05 38)", // chip / badge low-saturation
 } as const;
 
+// ---------------------------------------------------------------------------
+// Phase 5b editorial palette — paired with the home-page redesign.
+// These supplement (not replace) the perceptual surface/ink/accent scales
+// above. The home redesign components reference these by their hex names
+// (bone-50, ink-900, terracotta-500, brass-500, sage-500); the existing
+// catalogue + admin UI keeps using the perceptual scales unchanged.
+// Hex values are sRGB; @theme registers matching CSS variables so
+// components can paint via `bg-bone-50`, `text-ink-900`, etc.
+// ---------------------------------------------------------------------------
+
+/**
+ * Bone — warm off-white surfaces. 50 is the page background (warmest
+ * cream), 100 is the raised-card hover state, 200 is the hairline
+ * divider colour. Designed as a calm editorial neutral, not Scandi.
+ */
+export const bone = {
+  "50": "#faf7f2",
+  "100": "#f5f0e8",
+  "200": "#ebe3d5",
+} as const;
+
+/**
+ * Editorial ink scale — Tailwind-numbered (900 = deepest, 300 = lightest).
+ * Independent of the perceptual `ink` scale above (which uses 100/80/60/
+ * 40/20). Use this scale for the new home sections; legacy components
+ * keep using `ink`.
+ */
+export const inkScale = {
+  "900": "#1c1816", // primary text, deepest
+  "700": "#3a342f", // secondary text
+  "500": "#6b6258", // tertiary text, muted
+  "300": "#a59c91", // placeholder, decorative text
+} as const;
+
+/**
+ * Terracotta — brand accent. 500 is the operator-confirmed accent
+ * (`siteConfig.brand.accent`); 600 is the pressed/hover state; 100 is
+ * a soft tinted background for badges and faint accent panels.
+ */
+export const terracotta = {
+  "500": "#b85c38",
+  "600": "#9a4a2c",
+  "100": "#f4e2d8",
+} as const;
+
+/**
+ * Brass — secondary accent for small details (links, dividers, footer
+ * captions). Never paint a large surface in brass — it loses warmth at
+ * scale and starts to read as institutional gold.
+ */
+export const brass = {
+  "500": "#a08555",
+} as const;
+
+/**
+ * Sage — muted, calm green. Reserved for low-emphasis success states
+ * and one-off editorial moments where terracotta would dominate.
+ */
+export const sage = {
+  "500": "#6f7a6b",
+} as const;
+
 /**
  * Semantic single-tone tokens. Intentionally no scale — UI signals
  * benefit from one well-chosen color per intent rather than a gradient.
@@ -97,6 +159,11 @@ export const colors = {
   accent,
   semantic,
   border,
+  bone,
+  inkScale,
+  terracotta,
+  brass,
+  sage,
 } as const;
 
 // ---------------------------------------------------------------------------
@@ -152,52 +219,58 @@ type TypeVariant = {
  * letter-spacing — the three properties you actually need to specify
  * for typography to feel intentional. Sizes are rem so user font-size
  * preferences propagate.
+ *
+ * Phase 5b editorial revision: oversized confident displays (4.5rem),
+ * generous body line-height (1.75) for a slow-reading rhythm, and
+ * uppercase captions with 0.08em tracking to anchor sections like a
+ * magazine masthead. Mobile sizes are managed at the component layer
+ * (Display.tsx / Heading.tsx scale down responsively).
  */
 export const typography = {
   "display-1": {
-    fontSize: "4rem",
-    lineHeight: "1.05",
-    letterSpacing: "-0.03em",
+    fontSize: "4.5rem", // desktop; mobile falls to 2.75rem at the component layer
+    lineHeight: "1.04",
+    letterSpacing: "-0.025em",
   },
   "display-2": {
-    fontSize: "3rem",
+    fontSize: "3rem", // desktop; mobile falls to 2rem
     lineHeight: "1.08",
     letterSpacing: "-0.02em",
   },
   "heading-1": {
-    fontSize: "2.25rem",
-    lineHeight: "1.15",
+    fontSize: "2rem", // desktop; mobile falls to 1.625rem
+    lineHeight: "1.18",
     letterSpacing: "-0.015em",
   },
   "heading-2": {
-    fontSize: "1.75rem",
-    lineHeight: "1.2",
+    fontSize: "1.5rem", // desktop; mobile falls to 1.25rem
+    lineHeight: "1.25",
     letterSpacing: "-0.01em",
   },
   "heading-3": {
-    fontSize: "1.375rem",
-    lineHeight: "1.3",
+    fontSize: "1.125rem", // desktop; mobile falls to 1rem
+    lineHeight: "1.4",
     letterSpacing: "0",
   },
   "body-lg": {
     fontSize: "1.125rem",
-    lineHeight: "1.65",
+    lineHeight: "1.7",
     letterSpacing: "0",
   },
   body: {
     fontSize: "1rem",
-    lineHeight: "1.7",
+    lineHeight: "1.75", // generous editorial reading rhythm
     letterSpacing: "0",
   },
   "body-sm": {
     fontSize: "0.875rem",
-    lineHeight: "1.6",
+    lineHeight: "1.65",
     letterSpacing: "0",
   },
   caption: {
     fontSize: "0.75rem",
     lineHeight: "1.5",
-    letterSpacing: "0.02em",
+    letterSpacing: "0.08em", // wide tracking for uppercase eyebrow labels
   },
 } as const satisfies Record<string, TypeVariant>;
 
@@ -285,3 +358,8 @@ export type AccentKey = keyof typeof accent;
 export type TypographyVariant = keyof typeof typography;
 export type RadiusKey = keyof typeof radius;
 export type ShadowKey = keyof typeof shadow;
+export type BoneKey = keyof typeof bone;
+export type InkScaleKey = keyof typeof inkScale;
+export type TerracottaKey = keyof typeof terracotta;
+export type BrassKey = keyof typeof brass;
+export type SageKey = keyof typeof sage;

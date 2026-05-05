@@ -1,14 +1,23 @@
-// Home brand-story strip. Phase 5 Task 5.
+// Phase 5b workshop / brand-story strip.
 //
-// Asymmetric editorial layout — image takes 7/12 cols on desktop,
-// prose takes 5/12. On mobile they stack: image first (so the visual
-// leads), prose second.
+// Asymmetric 60/40 editorial layout — image takes 7/12 cols on desktop
+// (the visual "60"), prose takes 5/12 (the "40"). On mobile they stack
+// (image first, text second) full-width.
 //
-// The image gets a subtle Parallax (lib/motion). The text uses
-// RevealStagger so eyebrow → heading → body cascade in.
+// The image carries a subtle Parallax (-30px max offset, lib/motion
+// gates this on prefers-reduced-motion). Hairline bone-200 border
+// frames the photo. The text column reads:
+//   • Eyebrow (Workshop)
+//   • Heading-1 (Made by hand, in Tbilisi)
+//   • Two paragraphs (~80-100 words combined)
+//   • Optional "Watch from the workshop →" anchor
+//   • Caption-type signature line (operator + role)
 //
-// Copy lives under home.brand_story.* in messages/{ka,en}.json so the
-// operator can refine without touching code.
+// Image source — operator-hand-shot photo eventually replaces the stock
+// `lifestyle-livingroom-001.jpg` placeholder via `siteConfig.brand`.
+//
+// Section anchor: id="workshop". The hero's secondary CTA and the
+// EyebrowNav both jump here.
 
 import { getTranslations } from "next-intl/server";
 
@@ -21,11 +30,10 @@ import {
   Section,
 } from "@/components/design";
 import { Parallax, Reveal, RevealStagger } from "@/lib/motion";
-import { BRAND_LANDSCAPE_BLUR } from "@/lib/perf/blur";
+import { BRAND_PORTRAIT_BLUR } from "@/lib/perf/blur";
 
-// Brand story uses a wide lifestyle frame. Mirrors the seeded Phase 5
-// Task 4 manifest filename. When operator-uploaded story photo lands,
-// add `siteConfig.brand.storyImage` and switch this to read from there.
+// Same path as Phase 5 placeholder. Operator replaces with a real
+// workshop photograph before launch (CHECKLIST item).
 const STORY_IMAGE_KEY = "stock/lifestyle-livingroom-001.jpg";
 
 function storyImageUrl(): string {
@@ -41,32 +49,34 @@ export async function BrandStory() {
 
   return (
     <Section
+      id="workshop"
       aria-labelledby="brand-story-heading"
-      variant="large"
+      className="scroll-mt-20 bg-[var(--color-bone-50)] py-20 md:py-32"
     >
       <Container variant="wide">
         <div className="grid grid-cols-1 gap-10 md:grid-cols-12 md:items-center md:gap-14 lg:gap-20">
-          {/* Image column. Desktop: order 1, left. Mobile: order 1, top. */}
+          {/* IMAGE — desktop cols 1-7 (60%), mobile order 1 */}
           <Reveal
-            variant="imageReveal"
+            variant="fadeIn"
             threshold={0.1}
             className="order-1 min-w-0 md:col-span-7"
           >
-            <Parallax maxOffset={32}>
+            <Parallax maxOffset={30}>
               <AspectImage
-                ratio="3/2"
+                // 5/7 portrait — taller than wide for "workshop intimacy".
+                ratio="4/5"
                 src={src}
                 alt={t("image_alt")}
-                wrapperClassName="rounded-3xl bg-muted shadow-[0_30px_60px_-30px_rgba(40,32,26,0.35)]"
                 sizes="(min-width: 1024px) 56vw, 100vw"
                 placeholder={isFallbackSvg ? undefined : "blur"}
-                blurDataURL={isFallbackSvg ? undefined : BRAND_LANDSCAPE_BLUR}
+                blurDataURL={isFallbackSvg ? undefined : BRAND_PORTRAIT_BLUR}
                 unoptimized={isFallbackSvg}
+                wrapperClassName="border border-[var(--color-bone-200)] bg-[var(--color-bone-100)]"
               />
             </Parallax>
           </Reveal>
 
-          {/* Text column. Desktop: order 2, right. Mobile: order 2, below. */}
+          {/* TEXT — desktop cols 8-12 (40%), mobile order 2 */}
           <RevealStagger
             as="div"
             className="order-2 flex min-w-0 flex-col gap-5 md:col-span-5"
@@ -76,13 +86,21 @@ export async function BrandStory() {
               id="brand-story-heading"
               variant={1}
               as="h2"
-              className="break-words"
+              className="max-w-md break-words"
             >
               {t("heading")}
             </Heading>
-            <Body variant="lg" className="max-w-prose">
-              {t("body")}
+            <Body variant="lg" className="max-w-md text-[var(--color-ink-700)]">
+              {t("body_p1")}
             </Body>
+            <Body variant="lg" className="max-w-md text-[var(--color-ink-700)]">
+              {t("body_p2")}
+            </Body>
+            {/* Signature line — small caption type, ink-500. Operator
+                supplies the name + role via i18n. */}
+            <p className="mt-4 text-xs uppercase tracking-[0.08em] text-[var(--color-ink-500)]">
+              {t("signature")}
+            </p>
           </RevealStagger>
         </div>
       </Container>

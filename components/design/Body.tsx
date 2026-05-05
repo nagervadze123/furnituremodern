@@ -6,10 +6,12 @@ import type { ComponentPropsWithoutRef, ElementType, ReactNode } from "react";
 
 import { cn } from "@/lib/utils";
 
+// Phase 5b editorial scale: extra-generous line-heights for slow,
+// considered reading (matches the typography tokens in lib/design).
 const VARIANT_CLASS = {
-  lg: "text-[1.125rem] leading-[1.65]",
-  default: "text-base leading-[1.7]",
-  sm: "text-[0.875rem] leading-[1.6]",
+  lg: "text-[1.125rem] leading-[1.7]",
+  default: "text-base leading-[1.75]",
+  sm: "text-[0.875rem] leading-[1.65]",
 } as const;
 
 export type BodyVariant = keyof typeof VARIANT_CLASS;

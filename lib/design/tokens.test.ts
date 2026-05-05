@@ -20,6 +20,11 @@ import {
   shadow,
   zIndex,
   breakpoint,
+  bone,
+  inkScale,
+  terracotta,
+  brass,
+  sage,
 } from "./tokens";
 
 const OKLCH_RE = /^oklch\(\s*[0-9.]+\s+[0-9.]+\s+[0-9.]+(?:\s*\/\s*[0-9.%]+)?\s*\)$/;
@@ -95,6 +100,50 @@ describe("color tokens — accent scale", () => {
     for (const [key, value] of Object.entries(accent)) {
       expect(isValidColor(value), `accent-${key} = ${value}`).toBe(true);
     }
+  });
+});
+
+describe("color tokens — Phase 5b editorial palette", () => {
+  it("declares bone 50 / 100 / 200", () => {
+    expect(Object.keys(bone).sort()).toEqual(["50", "100", "200"].sort());
+    for (const [key, value] of Object.entries(bone)) {
+      expect(isValidColor(value), `bone-${key} = ${value}`).toBe(true);
+    }
+  });
+
+  it("declares editorial ink 900 / 700 / 500 / 300 (Tailwind-numbered)", () => {
+    expect(Object.keys(inkScale).sort()).toEqual(
+      ["900", "700", "500", "300"].sort()
+    );
+    for (const [key, value] of Object.entries(inkScale)) {
+      expect(isValidColor(value), `inkScale-${key} = ${value}`).toBe(true);
+    }
+  });
+
+  it("declares terracotta 500 / 600 / 100", () => {
+    expect(Object.keys(terracotta).sort()).toEqual(
+      ["500", "600", "100"].sort()
+    );
+    for (const [key, value] of Object.entries(terracotta)) {
+      expect(isValidColor(value), `terracotta-${key} = ${value}`).toBe(true);
+    }
+    // Operator-confirmed brand accent must remain the canonical hex.
+    expect(terracotta["500"]).toBe("#b85c38");
+  });
+
+  it("declares brass 500 + sage 500 (single-stop accent tones)", () => {
+    expect(Object.keys(brass)).toEqual(["500"]);
+    expect(Object.keys(sage)).toEqual(["500"]);
+    expect(isValidColor(brass["500"])).toBe(true);
+    expect(isValidColor(sage["500"])).toBe(true);
+  });
+
+  it("colors aggregates the new editorial scales", () => {
+    expect(colors.bone).toBe(bone);
+    expect(colors.inkScale).toBe(inkScale);
+    expect(colors.terracotta).toBe(terracotta);
+    expect(colors.brass).toBe(brass);
+    expect(colors.sage).toBe(sage);
   });
 });
 

@@ -103,6 +103,30 @@
   --color-border-default: oklch(0.91 0.008 75);
   --color-border-strong: oklch(0.85 0.01 75);
 
+  /* -----------------------------------------------------------------
+     Phase 5b editorial palette — paired with the home-page redesign.
+     Hex sRGB values; designed as a calm warm-earth set crossed with
+     Japanese restraint. Bone is the page background family; ink is the
+     editorial text scale (Tailwind-numbered, 900 deepest); terracotta
+     is the brand accent (operator-confirmed); brass + sage are
+     small-detail accents reserved for tight, non-large surfaces.
+     ----------------------------------------------------------------- */
+  --color-bone-50: #faf7f2;
+  --color-bone-100: #f5f0e8;
+  --color-bone-200: #ebe3d5;
+
+  --color-ink-900: #1c1816;
+  --color-ink-700: #3a342f;
+  --color-ink-500: #6b6258;
+  --color-ink-300: #a59c91;
+
+  --color-terracotta-500: #b85c38;
+  --color-terracotta-600: #9a4a2c;
+  --color-terracotta-100: #f4e2d8;
+
+  --color-brass-500: #a08555;
+  --color-sage-500: #6f7a6b;
+
   /* Premium spacing stops (additive on top of Tailwind's defaults). */
   --spacing-18: 4.5rem;
   --spacing-22: 5.5rem;
@@ -129,28 +153,29 @@
 }
 
 :root {
-  /* Warm-cream backgrounds and stone neutrals — premium-furniture aesthetic.
-     Hue ~70 is a soft, paper-warm yellow; chroma is low so it never
-     shouts. The accent is reserved for buttons and highlights only. */
-  --background: oklch(0.99 0.005 80);
-  --foreground: oklch(0.18 0.01 50);
-  --card: oklch(1 0 0);
-  --card-foreground: oklch(0.18 0.01 50);
-  --popover: oklch(1 0 0);
-  --popover-foreground: oklch(0.18 0.01 50);
+  /* Phase 5b editorial palette — bone (warm off-white) on ink (deep
+     near-black). Background hex matches `--color-bone-50`; foreground
+     matches `--color-ink-900`. The accent stays terracotta and is
+     reserved for buttons, eyebrows and small highlights. */
+  --background: #faf7f2;
+  --foreground: #1c1816;
+  --card: #ffffff;
+  --card-foreground: #1c1816;
+  --popover: #ffffff;
+  --popover-foreground: #1c1816;
   /* Primary = deep ink. Used for buttons + headlines. */
-  --primary: oklch(0.22 0.015 60);
-  --primary-foreground: oklch(0.985 0.005 80);
-  --secondary: oklch(0.96 0.008 75);
-  --secondary-foreground: oklch(0.22 0.015 60);
-  --muted: oklch(0.96 0.008 75);
-  --muted-foreground: oklch(0.45 0.015 60);
+  --primary: #1c1816;
+  --primary-foreground: #faf7f2;
+  --secondary: #f5f0e8;
+  --secondary-foreground: #1c1816;
+  --muted: #f5f0e8;
+  --muted-foreground: #6b6258;
   /* Accent = warm terracotta, used sparingly. */
   --accent: oklch(0.62 0.13 38);
   --accent-foreground: oklch(0.985 0.005 80);
   --destructive: oklch(0.577 0.245 27.325);
-  --border: oklch(0.91 0.008 75);
-  --input: oklch(0.91 0.008 75);
+  --border: #ebe3d5;
+  --input: #ebe3d5;
   --ring: oklch(0.62 0.13 38);
   --chart-1: oklch(0.62 0.13 38);
   --chart-2: oklch(0.55 0.05 60);

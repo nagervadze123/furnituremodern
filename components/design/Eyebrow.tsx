@@ -14,7 +14,8 @@ export function Eyebrow({ className, children, ...rest }: EyebrowProps) {
   return (
     <span
       className={cn(
-        "inline-block text-xs font-medium uppercase tracking-[0.12em] text-[var(--color-accent-strong)]",
+        // Phase 5b: 0.08em tracking, terracotta-500 default, masthead-style.
+        "inline-block text-xs font-medium uppercase tracking-[0.08em] text-[var(--color-terracotta-500)]",
         className
       )}
       {...rest}
