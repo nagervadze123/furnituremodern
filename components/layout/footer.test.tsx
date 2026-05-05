@@ -193,4 +193,67 @@ describe("Footer", () => {
     expect(text).toContain(siteConfig.contact.openingHours[0].opens);
     expect(text).toContain(siteConfig.contact.openingHours[0].closes);
   });
+
+  // Phase 6 Slice 3 — dark editorial surface. Lock the foundational
+  // palette + grid contract so a future restyle has to update this
+  // test deliberately rather than drift past it silently.
+  it("paints the surface with ink-900 bg + bone-100 body text", async () => {
+    const tree = (await Footer()) as AnyElement;
+    const footer = findAll(tree, (el) => el.type === "footer")[0];
+    expect(footer).toBeTruthy();
+    const cn = ((footer!.props as Record<string, unknown>).className ??
+      "") as string;
+    expect(cn).toContain("bg-[var(--color-ink-900)]");
+    expect(cn).toContain("text-[var(--color-bone-100)]");
+  });
+
+  // The masthead grid is `2.2fr 1fr 1fr 1fr 1fr` — brand column
+  // wider, four masthead columns equal. Confirmed by walking the
+  // tree for the wrapper div with the grid template arbitrary class.
+  it("uses the 2.2fr + 4×1fr grid template on desktop", async () => {
+    const tree = (await Footer()) as AnyElement;
+    const gridWrapper = findAll(tree, (el) => {
+      const cn = ((el.props as Record<string, unknown>).className ??
+        "") as string;
+      return cn.includes("md:grid-cols-[2.2fr_1fr_1fr_1fr_1fr]");
+    });
+    expect(gridWrapper.length).toBeGreaterThanOrEqual(1);
+  });
+
+  // Tagline caption — new key under footer.tagline_caption.
+  it("renders the tagline_caption italic line below the tagline", async () => {
+    const tree = (await Footer()) as AnyElement;
+    const text = flatText(tree);
+    expect(text).toContain("footer.tagline_caption");
+  });
+
+  // brass-500 is the footer's link hover/focus colour. Lock at
+  // least one occurrence on the link class so a swap to e.g.
+  // bone-50 surfaces in CI.
+  it("paints brass-500 on link hover/focus, not terracotta-500", async () => {
+    const tree = (await Footer()) as AnyElement;
+    const linkLikes = findAll(
+      tree,
+      (el) => typeof (el.props as Record<string, unknown>).href === "string"
+    );
+    const classes = linkLikes
+      .map((l) => ((l.props as Record<string, unknown>).className ?? "") as string)
+      .filter(Boolean);
+    const brassHovers = classes.filter((c) =>
+      c.includes("hover:text-[var(--color-brass-500)]")
+    );
+    expect(brassHovers.length).toBeGreaterThan(0);
+  });
+
+  // Phase 6 terracotta-500 use rule — never paint terracotta-500
+  // on any element of the footer (body-size text or otherwise).
+  // Brass-500 is the footer's accent.
+  it("never paints terracotta-500 anywhere on the footer", async () => {
+    const tree = (await Footer()) as AnyElement;
+    const offenders = findAll(tree, (el) => {
+      const cn = ((el.props as Record<string, unknown>).className ?? "") as string;
+      return cn.includes("terracotta-500");
+    });
+    expect(offenders).toHaveLength(0);
+  });
 });

@@ -31,6 +31,12 @@ Thresholds:
 | `ink-700` `#3a342f` | `bone-50` `#faf7f2` | **11.48** | ✅ pass | ✅ pass | ✅ pass |
 | `ink-500` `#6b6258` | `bone-50` `#faf7f2` | **5.59** | ✅ pass | ✅ pass | ❌ FAIL |
 | _bonus:_ `terracotta-600` `#9a4a2c` | `bone-50` `#faf7f2` | **5.80** | ✅ pass | ✅ pass | ❌ FAIL |
+| `bone-100` `#f5f0e8` | `ink-900` `#1c1816` | **15.54** | ✅ pass | ✅ pass | ✅ pass |
+| `brass-500` `#a08555` | `ink-900` `#1c1816` | **5.02** | ✅ pass | ✅ pass | ❌ FAIL |
+| `bone-100`/`α=0.7` ≈ `#b4afa9` | `ink-900` `#1c1816` | **8.09** | ✅ pass | ✅ pass | ✅ pass |
+| `bone-100`/`α=0.55` ≈ `#938f8a` | `ink-900` `#1c1816` | **5.49** | ✅ pass | ✅ pass | ❌ FAIL |
+| `bone-100`/`α=0.14` ≈ `#3a3633` | `ink-900` `#1c1816` | **1.47** | ❌ decoration only | ❌ | ❌ |
+| `brass-500` `#a08555` | `bone-50` `#faf7f2` | **3.29** | ❌ FAIL | ✅ pass | ❌ FAIL |
 
 ## Findings
 
@@ -133,6 +139,50 @@ Every slice in `docs/design/sessions/phase-b.md` must verify, before
 merging, that it has not introduced a terracotta-500 paint on text
 at body size or smaller. Slice 0 (the eyebrow contrast fix) is the
 first place this is enforced; subsequent slices inherit the rule.
+
+## Phase 6 Slice 3 — dark surface (footer)
+
+The footer is the only `ink-900`-on-`bone-100` surface in Phase 6.
+This section documents the contrast envelope for the editorial
+chrome painted on it.
+
+### Solid-foreground pairs
+
+- **`bone-100` on `ink-900` = 15.54:1** — body copy, links, brand
+  wordmark. Clears AA, AAA.
+- **`brass-500` on `ink-900` = 5.02:1** — link `:hover` /
+  `:focus-visible` colour and the underline that animates in on
+  hover. Clears AA at body size; the design ref's animated 1 px
+  underline stays well above the 3:1 floor for non-text UI under
+  SC 1.4.11.
+
+### Bone-100 alpha mixes used on the footer
+
+Tailwind's `text-[rgb(245_240_232/0.x)]` literally renders the
+mixed colour shown — the alpha is not a CSS opacity stack, it is
+the channel value baked into `rgb(...)`. The mixed colours are
+listed so future audits can grep for them.
+
+- **0.7 mix ≈ `#b4afa9` on `ink-900` = 8.09:1** — paragraph tagline
+  on the brand column and the visit address copy. Clears AA, AAA.
+- **0.55 mix ≈ `#938f8a` on `ink-900` = 5.49:1** — column eyebrow
+  headings, italic tagline caption, Connect-column social icon
+  glyphs, the bottom-band copyright row. Clears AA at body size
+  but not AAA — caption / eyebrow roles only.
+- **0.14 mix ≈ `#3a3633` on `ink-900` = 1.47:1** — the masthead
+  divider hairline above the bottom band. **Decoration only**, never
+  applied to text. Below the SC 1.4.11 3:1 floor, but that floor
+  applies to functional UI components; a static visual rule between
+  two text blocks is decorative under WCAG.
+
+### Why brass-500 is footer-only
+
+`brass-500` (`#a08555`) measures **3.29:1 on `bone-50`** — that
+fails AA at body size and is only acceptable for AA Large or
+decoration on the light surface. On the dark `ink-900` footer it
+flips to 5.02:1 — the same swatch becomes a legitimate inline-text
+accent. This is why the brass link colour appears on the footer
+only and not elsewhere in the editorial chrome.
 
 ## Sources
 

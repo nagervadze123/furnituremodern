@@ -1,7 +1,16 @@
-// Site footer — Phase 5 Task 5.7 redesign.
+// Site footer — Phase 6 Slice 3 editorial dark-surface port.
+//
+// Visual reference: `_design-reference/components/site-chrome.jsx:120-196`.
+//
+// Surface: ink-900 background, bone-100 body text. The grid template
+// `2.2fr 1fr 1fr 1fr 1fr` (brand wider, four masthead columns equal)
+// reads as a magazine colophon rather than a five-equal-bay utility
+// footer. A single 1 px hairline at bone-100/14 separates the masthead
+// from the bottom band.
 //
 // Five-column desktop grid (mobile stack):
-//   1. Brand monogram + name + short tagline (spans 2 cols).
+//   1. Brand monogram + name + tagline + italic English caption
+//      (spans the wider 2.2fr track; conceptually one column).
 //   2. Explore — Home, all featured categories, Search.
 //   3. Customer — Privacy, Manage cookies, Contact mailto.
 //   4. Visit — full address, opening hours, phone, email.
@@ -11,7 +20,13 @@
 //   • © current year + legal name on the left.
 //   • LanguageSwitcher mirroring the header on the right.
 //
-// Server component throughout. The only client island is
+// All link hover states are pure CSS :hover with brass-500 — no
+// inline JS mouse handlers (precommit invariant 4 forbids them). The
+// `linkClass` resting state paints bone-100 with a transparent 1 px
+// underline; on hover the underline animates in at brass-500. brass-500
+// on ink-900 measures 5.02:1 (AA-clear); see docs/design/contrast.md.
+//
+// Server component throughout. The only client islands are
 // LanguageSwitcher (uses usePathname) and ManageLink (cookie sheet).
 
 import { Mail, MapPin, Phone, Clock } from "lucide-react";
@@ -33,12 +48,18 @@ export async function Footer() {
 
   const year = new Date().getFullYear();
 
-  // Single class for every clickable footer line. Generous min-h keeps
-  // each row finger-tappable without a separate wrapper. -mx-2 px-2
-  // keeps visual alignment flush with the column headings while still
-  // padding the focus ring outwards.
+  // Single class for every clickable footer line. bone-100 resting,
+  // brass-500 on hover/focus, paired with a 1 px underline that fades
+  // from transparent to brass-500. min-h-10 keeps each row finger-
+  // tappable without an extra wrapper.
   const linkClass =
-    "-mx-2 inline-flex min-h-10 items-center break-words rounded px-2 text-muted-foreground transition-colors hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2";
+    "inline-flex min-h-10 items-center break-words border-b border-transparent text-sm leading-relaxed text-[var(--color-bone-100)] transition-colors duration-200 hover:text-[var(--color-brass-500)] hover:border-[var(--color-brass-500)] focus-visible:outline-none focus-visible:text-[var(--color-brass-500)] focus-visible:border-[var(--color-brass-500)]";
+
+  // Eyebrow column heading — 12 px / 0.18em / weight 500 / uppercase,
+  // bone-100 at 0.55 alpha (5.49:1 on ink-900, AA-clear). No leading
+  // hairline rule on this surface; the masthead block is the rule.
+  const headingClass =
+    "text-xs font-medium uppercase tracking-[0.18em] text-[rgb(245_240_232/0.55)]";
 
   // Map the structured `openingHours` array onto two visible rows.
   // We collapse the per-day list into a single ranged label per
@@ -58,26 +79,30 @@ export async function Footer() {
   );
 
   return (
-    <footer className="mt-24 border-t border-border/60 bg-muted/30">
-      <div className="mx-auto grid max-w-7xl gap-10 px-4 py-14 md:grid-cols-5 md:gap-8 md:px-6 md:py-16">
-        {/* Col 1 — brand + tagline (spans 2 cols on desktop). */}
-        <div className="min-w-0 md:col-span-2">
-          <BrandMark className="mb-4" />
-          <p className="max-w-sm text-sm leading-relaxed text-muted-foreground">
+    <footer className="mt-32 bg-[var(--color-ink-900)] text-[var(--color-bone-100)]">
+      <div className="mx-auto grid max-w-7xl gap-10 px-4 pt-20 pb-14 md:grid-cols-[2.2fr_1fr_1fr_1fr_1fr] md:gap-10 md:px-6 md:pt-24">
+        {/* Col 1 — brand + tagline + italic English caption. */}
+        <div className="min-w-0">
+          <BrandMark
+            className="mb-5"
+            nameClassName="text-[var(--color-bone-100)]"
+            tileClassName="border-[rgb(245_240_232/0.16)] bg-[var(--color-bone-100)] text-[var(--color-ink-900)]"
+          />
+          <p className="max-w-[36ch] text-sm leading-relaxed text-[rgb(245_240_232/0.7)]">
             {t("tagline")}
+          </p>
+          <p className="mt-3.5 text-xs italic text-[rgb(245_240_232/0.55)]">
+            {t("tagline_caption")}
           </p>
         </div>
 
         {/* Col 2 — Explore. */}
         <div className="min-w-0">
           <nav aria-labelledby="footer-explore-heading" className="min-w-0">
-            <h3
-              id="footer-explore-heading"
-              className="text-xs font-semibold uppercase tracking-[0.14em] text-foreground"
-            >
+            <h3 id="footer-explore-heading" className={headingClass}>
               {t("explore_label")}
             </h3>
-            <ul className="mt-4 flex flex-col text-sm">
+            <ul className="mt-5 flex flex-col text-sm">
               <li>
                 <Link href="/" className={linkClass}>
                   {t("home_link")}
@@ -102,13 +127,10 @@ export async function Footer() {
         {/* Col 3 — Customer. */}
         <div className="min-w-0">
           <nav aria-labelledby="footer-customer-heading" className="min-w-0">
-            <h3
-              id="footer-customer-heading"
-              className="text-xs font-semibold uppercase tracking-[0.14em] text-foreground"
-            >
+            <h3 id="footer-customer-heading" className={headingClass}>
               {t("customer_label")}
             </h3>
-            <ul className="mt-4 flex flex-col text-sm">
+            <ul className="mt-5 flex flex-col text-sm">
               <li>
                 <Link href="/privacy" className={linkClass}>
                   {t("privacy_link")}
@@ -131,14 +153,12 @@ export async function Footer() {
 
         {/* Col 4 — Visit (address, hours, phone, email). */}
         <div className="min-w-0">
-          <h3 className="text-xs font-semibold uppercase tracking-[0.14em] text-foreground">
-            {t("visit_label")}
-          </h3>
-          <address className="mt-4 flex flex-col gap-3 text-sm not-italic text-muted-foreground">
+          <h3 className={headingClass}>{t("visit_label")}</h3>
+          <address className="mt-5 flex flex-col gap-3 text-sm not-italic text-[rgb(245_240_232/0.7)]">
             <div className="flex items-start gap-2">
               <MapPin
                 aria-hidden="true"
-                className="mt-0.5 h-4 w-4 shrink-0 text-foreground/60"
+                className="mt-0.5 h-4 w-4 shrink-0 text-[rgb(245_240_232/0.55)]"
               />
               <div className="min-w-0 break-words">
                 <p>{siteConfig.contact.address.street}</p>
@@ -153,16 +173,16 @@ export async function Footer() {
               <div className="flex items-start gap-2">
                 <Clock
                   aria-hidden="true"
-                  className="mt-0.5 h-4 w-4 shrink-0 text-foreground/60"
+                  className="mt-0.5 h-4 w-4 shrink-0 text-[rgb(245_240_232/0.55)]"
                 />
                 <div className="min-w-0">
-                  <p className="text-xs font-semibold uppercase tracking-[0.1em] text-foreground/70">
+                  <p className="text-xs font-medium uppercase tracking-[0.1em] text-[rgb(245_240_232/0.55)]">
                     {t("hours_label")}
                   </p>
                   <ul className="mt-1 space-y-0.5">
                     {weekdayHours && (
                       <li className="break-words">
-                        <span className="text-foreground/70">
+                        <span className="text-[rgb(245_240_232/0.55)]">
                           {t("hours_weekdays")}:
                         </span>{" "}
                         <span>
@@ -172,7 +192,7 @@ export async function Footer() {
                     )}
                     {saturdayHours && (
                       <li className="break-words">
-                        <span className="text-foreground/70">
+                        <span className="text-[rgb(245_240_232/0.55)]">
                           {t("hours_saturday")}:
                         </span>{" "}
                         <span>
@@ -182,7 +202,7 @@ export async function Footer() {
                     )}
                     {!sundayHours && (
                       <li className="break-words">
-                        <span className="text-foreground/70">
+                        <span className="text-[rgb(245_240_232/0.55)]">
                           {t("hours_sunday")}:
                         </span>{" "}
                         <span>{t("hours_closed")}</span>
@@ -196,11 +216,11 @@ export async function Footer() {
             <div className="flex items-start gap-2">
               <Phone
                 aria-hidden="true"
-                className="mt-0.5 h-4 w-4 shrink-0 text-foreground/60"
+                className="mt-0.5 h-4 w-4 shrink-0 text-[rgb(245_240_232/0.55)]"
               />
               <a
                 href={`tel:${siteConfig.contact.phone.replace(/\s/g, "")}`}
-                className="-mx-1 -my-1 inline-flex min-h-11 items-center rounded px-1 py-1 transition-colors hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+                className="-mx-1 -my-1 inline-flex min-h-11 items-center rounded px-1 py-1 text-[var(--color-bone-100)] transition-colors duration-200 hover:text-[var(--color-brass-500)] focus-visible:outline-none focus-visible:text-[var(--color-brass-500)]"
               >
                 {siteConfig.contact.phone}
               </a>
@@ -209,11 +229,11 @@ export async function Footer() {
             <div className="flex items-start gap-2">
               <Mail
                 aria-hidden="true"
-                className="mt-0.5 h-4 w-4 shrink-0 text-foreground/60"
+                className="mt-0.5 h-4 w-4 shrink-0 text-[rgb(245_240_232/0.55)]"
               />
               <a
                 href={`mailto:${siteConfig.contact.email}`}
-                className="-mx-1 -my-1 inline-flex min-h-11 items-center break-all rounded px-1 py-1 transition-colors hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+                className="-mx-1 -my-1 inline-flex min-h-11 items-center break-all rounded px-1 py-1 text-[var(--color-bone-100)] transition-colors duration-200 hover:text-[var(--color-brass-500)] focus-visible:outline-none focus-visible:text-[var(--color-brass-500)]"
               >
                 {siteConfig.contact.email}
               </a>
@@ -224,13 +244,10 @@ export async function Footer() {
         {/* Col 5 — Connect (social). */}
         <div className="min-w-0">
           <nav aria-labelledby="footer-connect-heading" className="min-w-0">
-            <h3
-              id="footer-connect-heading"
-              className="text-xs font-semibold uppercase tracking-[0.14em] text-foreground"
-            >
+            <h3 id="footer-connect-heading" className={headingClass}>
               {t("connect_label")}
             </h3>
-            <ul className="mt-4 flex flex-col text-sm">
+            <ul className="mt-5 flex flex-col text-sm">
               <li>
                 <a
                   href={siteConfig.social.instagram}
@@ -238,7 +255,7 @@ export async function Footer() {
                   rel="noopener noreferrer"
                   className={`${linkClass} gap-2`}
                 >
-                  <InstagramIcon className="h-4 w-4 text-foreground/60" />
+                  <InstagramIcon className="h-4 w-4 text-[rgb(245_240_232/0.55)]" />
                   Instagram
                   <span className="sr-only"> {t("opens_in_new_window")}</span>
                 </a>
@@ -250,7 +267,7 @@ export async function Footer() {
                   rel="noopener noreferrer"
                   className={`${linkClass} gap-2`}
                 >
-                  <FacebookIcon className="h-4 w-4 text-foreground/60" />
+                  <FacebookIcon className="h-4 w-4 text-[rgb(245_240_232/0.55)]" />
                   Facebook
                   <span className="sr-only"> {t("opens_in_new_window")}</span>
                 </a>
@@ -260,13 +277,18 @@ export async function Footer() {
         </div>
       </div>
 
-      {/* Bottom band — © left, language switcher right. */}
-      <div className="border-t border-border/60">
-        <div className="mx-auto flex max-w-7xl flex-col gap-3 px-4 py-6 text-xs text-muted-foreground pb-safe-4 md:flex-row md:items-center md:justify-between md:px-6">
+      {/* Bottom band — © left, language switcher right.
+         Hairline divider at bone-100/14 (1.47:1 — decorative, the
+         3:1 floor under SC 1.4.11 only applies to functional UI). */}
+      <div className="border-t border-[rgb(245_240_232/0.14)]">
+        <div className="mx-auto flex max-w-7xl flex-col gap-3 px-4 py-7 pb-safe-4 text-xs tracking-[0.08em] text-[rgb(245_240_232/0.55)] md:flex-row md:items-center md:justify-between md:px-6">
           <p className="break-words">
             © {year} {siteConfig.legalName}. {t("rights")}.
           </p>
-          <LanguageSwitcher className="self-start md:self-auto" />
+          <LanguageSwitcher
+            className="self-start [&_span[aria-hidden='true']]:text-[rgb(245_240_232/0.35)] md:self-auto"
+            itemClassName="text-[var(--color-bone-100)] hover:text-[var(--color-brass-500)] focus-visible:text-[var(--color-brass-500)] hover:border-[var(--color-brass-500)]"
+          />
         </div>
       </div>
     </footer>
