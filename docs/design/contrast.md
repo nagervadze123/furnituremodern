@@ -84,16 +84,55 @@ body copy in ink-500 would not clear AAA. Keep body copy at ink-700
 Large, and AAA in both directions. No constraints on size, weight, or
 placement.
 
-## Phase B follow-up
+## Phase B — terracotta-500 use rule (canonical)
 
-When porting individual components, add Tailwind class assertions
-(or a small lint rule) so any future use of
-`text-[var(--color-terracotta-500)]` paired with a sub-display font
-size triggers a review. The current React `Eyebrow` primitive
-(`components/design/Eyebrow.tsx`) already paints terracotta-500 at
-0.75 rem / 12 px — that is **below AA** and should be revisited
-during the Phase B eyebrow port (likely swapping the colour to
-ink-500 with terracotta-500 reserved for the leading hairline rule).
+This is the rule every Phase B component decision must follow.
+It exists because `terracotta-500` measured 4.25:1 on bone-50 — a
+real WCAG AA failure for text at body size or smaller, present in
+production today via `components/design/Eyebrow.tsx`.
+
+### Permitted uses of terracotta-500
+
+- Italic accent runs inside display-step text (`.display-1` /
+  `.display-2` / `.display-3` `<em>` — covered by AA Large at 3:1).
+- `.btn-primary` background fill — the text on top is `bone-50`
+  (`#faf7f2`), so the foreground/background pair is bone-on-terracotta
+  at the same 4.25:1 ratio, which the WCAG 1.4.11 carve-out for
+  user-interface components reads at 3:1.
+- Decorative rules and the **NEW** product-card tag — non-text
+  graphical elements, 3:1 floor under SC 1.4.11.
+- The 1 px hairline drawn before `.eyebrow` text via `::before` —
+  decoration, not text.
+
+### Forbidden uses of terracotta-500
+
+- Any text rendered at body size (≤16 px) or smaller. This includes
+  eyebrow labels (12 px), captions, table cell content, breadcrumb
+  segments, footer links, pagination, sort-bar links.
+- Inline links inside paragraphs (always smaller than display).
+- Muted accents on caption/secondary text.
+- The `<a>` colour inside `_design-reference/components/site-chrome.jsx:217`
+  cookie-banner privacy link — must port as `ink-700` with an
+  `ink-700` (or `terracotta-600`) underline, not `terracotta-500`.
+
+### Canonical substitutions for body-size accent text
+
+- **Eyebrow text** → `ink-500` (`#6b6258`, 5.59:1, AA-clear).
+  The 1 px terracotta-500 hairline before the eyebrow stays — that
+  is where the brand accent lives at body size.
+- **Inline-text accent** (links, hover states, body-size emphasis)
+  → `terracotta-600` (`#9a4a2c`, 5.80:1, AA-clear).
+- **Body copy** → `ink-700` (`#3a342f`, 11.48:1, AAA-clear) or
+  `ink-900` (`#1c1816`, 16.49:1, AAA-clear).
+- **Caption / secondary metadata** → `ink-500` (`#6b6258`, 5.59:1,
+  AA-clear).
+
+### Where this rule applies in Phase B
+
+Every slice in `docs/design/sessions/phase-b.md` must verify, before
+merging, that it has not introduced a terracotta-500 paint on text
+at body size or smaller. Slice 0 (the eyebrow contrast fix) is the
+first place this is enforced; subsequent slices inherit the rule.
 
 ## Sources
 
