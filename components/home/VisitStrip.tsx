@@ -2,10 +2,11 @@
 //
 // Closing-punctuation section: full-width ink-900 background (deep
 // inverse of the page bone-50), py-32 desktop / py-20 mobile. Text is
-// centred inside a max-w-3xl column. Eyebrow uses terracotta-500 — it
-// pops against the deep ink. The display-2 headline reads "Tbilisi,
-// {address}" and the body lines beneath show opening hours + a
-// `tel:` link to the phone number, both pulled from siteConfig.contact.
+// centred inside a max-w-3xl column. Eyebrow paints bone-50/55 — a
+// muted-on-dark variant that reads at ~5:1 against ink-900 (AA-clear).
+// The display-2 headline reads "Tbilisi, {address}" and the body
+// lines beneath show opening hours + a `tel:` link to the phone
+// number, both pulled from siteConfig.contact.
 //
 // Single CTA — "Send a message", styled as outlined-inverse:
 //   • rest:   transparent bg, 1px bone-50 border, bone-50 text
@@ -82,8 +83,11 @@ export async function VisitStrip() {
     >
       <Container variant="default" className="max-w-3xl">
         <div className="flex flex-col items-center gap-6 text-center">
-          {/* Eyebrow pops in terracotta against ink-900 (high contrast). */}
-          <Eyebrow className="!text-[var(--color-terracotta-500)]">
+          {/* Phase 6 Slice 0 — bone-50 at 55% opacity reads as a muted
+              eyebrow on the ink-900 surface (~5:1, AA-clear). The
+              prior terracotta-500 paint here measured 3.88:1 — fails
+              AA at 12 px. See `docs/design/contrast.md`. */}
+          <Eyebrow className="!text-[var(--color-bone-50)]/55">
             {t("eyebrow")}
           </Eyebrow>
           <Display

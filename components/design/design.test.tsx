@@ -156,6 +156,17 @@ describe("Eyebrow", () => {
     expect(tree.props.className).toMatch(/tracking/);
     expect(tree.props.className).toMatch(/text-xs|text-\[0\.75rem\]/);
   });
+
+  // Phase 6 Slice 0 — terracotta-500 fails AA at 12 px (4.25:1 on
+  // bone-50). Default eyebrow text now paints ink-500 (5.59:1,
+  // AA-clear). The brand accent at body size lives in the .eyebrow
+  // class hairline (Phase A), not the text itself. Regression-guard
+  // both directions.
+  it("paints ink-500 by default and never terracotta-500", () => {
+    const tree = Eyebrow({ children: "label" }) as AnyElement;
+    expect(tree.props.className).toContain("text-[var(--color-ink-500)]");
+    expect(tree.props.className).not.toContain("text-[var(--color-terracotta-500)]");
+  });
 });
 
 describe("Display", () => {
