@@ -96,6 +96,17 @@ describe("isNewProduct", () => {
     expect(isNewProduct({})).toBe(false);
   });
 
+  // Distinct from undefined: `null` arrives if a downstream caller
+  // explicitly nulls the field (or if a TS-loose call site passes
+  // `Object.assign({}, product, { isNew: null })`). Lock it
+  // separately so the strict-equality contract holds against both
+  // shapes Postgres / TypeScript can produce.
+  it("returns false when isNew is null", () => {
+    expect(
+      isNewProduct({ isNew: null as unknown as boolean | undefined })
+    ).toBe(false);
+  });
+
   // Strict-equality check: anything other than the boolean true reads
   // as not-new. Guards against accidental coercion (a stray string
   // from a migration, a 1 from a different DB driver) silently
