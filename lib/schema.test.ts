@@ -386,11 +386,23 @@ describe("productJsonLd byte-identity (Slice 7 merge gate)", () => {
   it("every non-locale-bound field is identical across locales", () => {
     const en = productJsonLd(SAMPLE_PRODUCT_FULL, "en", NOW);
     const ka = productJsonLd(SAMPLE_PRODUCT_FULL, "ka", NOW);
-    // Strip the locale-bound fields and compare the rest.
-    const stripLocaleBound = (o: Record<string, unknown>) => {
-      const { "@id": _id, url: _u, name: _n, description: _d, inLanguage: _il, isPartOf: _ip, offers: _o, ...rest } = o;
-      return rest;
-    };
+    // Strip the locale-bound fields and compare the rest. A
+    // property-name allowlist filter is clearer than a multi-line
+    // destructuring rest pattern (which also tripped @typescript-
+    // eslint/no-unused-vars on every locale-bound key).
+    const LOCALE_BOUND_KEYS = new Set([
+      "@id",
+      "url",
+      "name",
+      "description",
+      "inLanguage",
+      "isPartOf",
+      "offers",
+    ]);
+    const stripLocaleBound = (o: Record<string, unknown>) =>
+      Object.fromEntries(
+        Object.entries(o).filter(([k]) => !LOCALE_BOUND_KEYS.has(k))
+      );
     expect(stripLocaleBound(en as Record<string, unknown>)).toEqual(
       stripLocaleBound(ka as Record<string, unknown>)
     );

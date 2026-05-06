@@ -86,6 +86,35 @@ const AVAILABILITY_KEY: Record<ProductAvailability, string> = {
 
 const RELATED_LIMIT = 4;
 
+/**
+ * Italic Fraunces caption beneath the H1 — Latin name + SKU.
+ *
+ * Locale-independent by design: this is the bilingual editorial
+ * pairing (mirrors _design-reference/components/page-product.jsx:57-62),
+ * not a localized field. The Latin name renders on both /ka and /en
+ * so the rhythm holds regardless of the page locale.
+ *
+ * Falls through to `null` cleanly when neither name.en nor SKU is
+ * available, so the paragraph is not emitted at all rather than
+ * shipping a `"undefined — N°…"` artifact.
+ *
+ * Lifted to a module-level export so the test can exercise the
+ * truthy/empty/missing matrix without rendering the full layout.
+ */
+export function getProductCaption(product: {
+  name: { en: string };
+  sku?: string | null;
+}): string | null {
+  const parts: string[] = [];
+  if (product.name.en) {
+    parts.push(product.name.en);
+  }
+  if (product.sku) {
+    parts.push(`N°${product.sku}`);
+  }
+  return parts.length > 0 ? parts.join(" — ") : null;
+}
+
 export async function ProductLayout({
   product,
   locale,
@@ -149,18 +178,9 @@ export async function ProductLayout({
   const availabilityKey = availability ? AVAILABILITY_KEY[availability] : null;
   const isInStock = availability === "InStock";
 
-  // Italic Fraunces caption beneath the H1 — Latin name + SKU when
-  // both exist. Falls through cleanly when the data layer doesn't
-  // ship an SKU. Mirrors the reference treatment at
-  // _design-reference/components/page-product.jsx:57-62.
-  const captionParts: string[] = [];
-  if (product.name.en !== product.name[locale]) {
-    captionParts.push(product.name.en);
-  }
-  if (product.sku) {
-    captionParts.push(`N°${product.sku}`);
-  }
-  const caption = captionParts.length > 0 ? captionParts.join(" — ") : null;
+  // Italic Fraunces caption beneath the H1 — bilingual editorial
+  // pairing. Locale-independent: see `getProductCaption` doc.
+  const caption = getProductCaption(product);
 
   // mailto: link with subject pre-filled — preserved from the
   // pre-port behaviour. Slice 7 is a visual port; commerce flow
