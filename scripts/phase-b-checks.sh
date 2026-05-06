@@ -85,8 +85,50 @@ else
   pass "no PascalCase *Button.tsx files"
 fi
 
+# 6. terracotta-500 paint inventory baseline. Slice 4 documented
+#    exactly TC500_BASELINE permitted production paints in
+#    docs/design/contrast.md (filled-button surfaces, decorative
+#    focus rings, display em accent, eyebrow ::before hairline).
+#    Any growth above the baseline fails CI so the diff surfaces
+#    in code review and either gets fixed or consciously bumped
+#    against the contrast.md inventory in the same PR.
+#
+#    Grep counts every `var(--color-terracotta-500)` paint in
+#    production code (includes app/, components/, lib/) and excludes
+#    _design-reference/ + *.test.* files. Comments that reference
+#    the colour by *name* don't include the CSS variable syntax so
+#    they don't inflate the count.
+TC500_BASELINE=10
+# Markdown / mdx prose that references the CSS variable inside
+# inline code blocks is documentation, not a paint — exclude .md
+# and .mdx via pathspec so the count stays focused on actual
+# stylesheet + JSX paints. Test files are also excluded so
+# negative-assertion strings in regression guards don't inflate.
+TC500_PATHSPEC=(
+  ':!*_design-reference*'
+  ':!*.test.tsx' ':!*.test.ts'
+  ':!*.md' ':!*.mdx'
+)
+tc500_count=$(git grep -hI -o 'var(--color-terracotta-500)' \
+  -- "${TC500_PATHSPEC[@]}" 'app' 'components' 'lib' \
+  2>/dev/null | wc -l | tr -d ' ')
+if [ "$tc500_count" -gt "$TC500_BASELINE" ]; then
+  fail "terracotta-500 paint count drift: $tc500_count > baseline $TC500_BASELINE"
+  printf '%s\n' "Audit against docs/design/contrast.md inventory:"
+  git grep -nI 'var(--color-terracotta-500)' \
+    -- "${TC500_PATHSPEC[@]}" 'app' 'components' 'lib' 2>/dev/null
+elif [ "$tc500_count" -lt "$TC500_BASELINE" ]; then
+  # Fewer paints is healthy progress, but the baseline (and the
+  # contrast.md inventory) need updating in the same PR. Report
+  # rather than fail so a deliberate cleanup doesn't block work,
+  # but make the drift visible in CI output.
+  pass "terracotta-500 paint count: $tc500_count (below baseline $TC500_BASELINE — bump TC500_BASELINE + contrast.md)"
+else
+  pass "terracotta-500 paint count at baseline ($tc500_count)"
+fi
+
 if [ "$ok" -eq 1 ]; then
-  printf '\nAll 5 Phase B precommit checks clean.\n'
+  printf '\nAll 6 Phase B precommit checks clean.\n'
   exit 0
 else
   printf '\nAt least one Phase B precommit check failed.\n'

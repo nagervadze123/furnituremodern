@@ -49,6 +49,15 @@ const CATEGORY_STOCK_KEYS: Record<string, string> = {
   "tables-chairs": "stock/dining-oak-table-001.jpg",
 };
 
+// "View category →" CTA link styling for each row. Exported so the
+// element-tree test can assert the painted token directly without
+// reaching into the private CategoryRow function (which the harness
+// can't enter — vitest runs in node, no React renderer). Phase B
+// Slice 4 swept this from terracotta-500 to terracotta-600 (5.80:1
+// on bone-50, AA-clear); see docs/design/contrast.md.
+export const CATEGORY_CTA_LINK_CLASS =
+  "mt-2 inline-flex items-center self-start text-sm font-medium text-[var(--color-ink-900)] transition-colors duration-300 hover:text-[var(--color-terracotta-600)] focus-visible:outline-none focus-visible:text-[var(--color-terracotta-600)]";
+
 function categoryImageUrl(category: DataCategory): string {
   const supabaseBase = process.env.NEXT_PUBLIC_SUPABASE_URL;
   const path = category.imageUrl ?? CATEGORY_STOCK_KEYS[category.slug];
@@ -185,7 +194,7 @@ function CategoryRow({
         </Body>
         <Link
           href={`/${category.slug}`}
-          className="mt-2 inline-flex items-center self-start text-sm font-medium text-[var(--color-ink-900)] transition-colors duration-300 hover:text-[var(--color-terracotta-600)] focus-visible:outline-none focus-visible:text-[var(--color-terracotta-600)]"
+          className={CATEGORY_CTA_LINK_CLASS}
         >
           {viewLinkLabel}
         </Link>

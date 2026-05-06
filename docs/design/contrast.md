@@ -208,9 +208,9 @@ carry the interaction. Verified zero production consumers via
 the swap; the class stays in `globals.css` for Slice 5 / 6 to
 consume now that hover paints AAA-clear.
 
-### Remaining intentional `terracotta-500` occurrences
+### Remaining intentional `terracotta-500` paints
 
-After the sweep, repo-wide `grep -rn "terracotta-500" --include="*.tsx" --include="*.ts" --include="*.css" -- app components lib` returns nine production-code references plus eight comment / token-definition references. Every paint falls into a permitted decorative role:
+After the sweep, `git grep -o 'var(--color-terracotta-500)' -- app components lib` (excluding `_design-reference/`, test files, and markdown prose) returns exactly **10 paints** across **8 source-code lines**. Two lines paint twice — `Hero.tsx:86` (background fill + focus ring) and `button.tsx:53` (border + background on the `editorialPrimary` variant). Every paint falls into a permitted decorative role:
 
 **Filled-button surfaces (SC 1.4.11 — UI components, 3:1 floor):**
 
@@ -256,6 +256,15 @@ deleting `_design-reference/`, the expected post-sweep grep should
 match the inventory above exactly. Anything new beyond this list
 indicates a regression introduced between Slice 4 and Slice 8 and
 needs auditing against the canonical rule.
+
+The baseline is enforced automatically by Phase B precommit
+invariant 6 (`scripts/phase-b-checks.sh`): the script counts paints
+via `git grep -hI -o 'var(--color-terracotta-500)'` and fails if
+the total exceeds `TC500_BASELINE=10`. Drift below the baseline
+prints a notice ("bump TC500_BASELINE + contrast.md") rather than
+failing — a conscious cleanup shouldn't block work, but the divergence
+must surface in CI output so the inventory and the script stay
+synchronised in the same PR.
 
 ## Sources
 

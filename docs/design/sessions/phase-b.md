@@ -127,7 +127,7 @@ Every Phase B PR must check off every item before merge:
 - [ ] `npm run lint` clean
 - [ ] `npm test` clean (all suites)
 - [ ] `npm run build` clean (only the expected Sentry-auth-token warning)
-- [ ] `bash scripts/phase-b-checks.sh` clean (zero matches across all 5 checks)
+- [ ] `bash scripts/phase-b-checks.sh` clean (all 6 checks pass)
 - [ ] No new visual-variant `*Button.tsx` file added (D2)
 - [ ] No production component imports from `_design-reference/`
 - [ ] No new `<link>` to fonts.googleapis.com / fonts.gstatic.com
@@ -154,8 +154,8 @@ Every Phase B PR must check off every item before merge:
 
 ## Precommit script
 
-`scripts/phase-b-checks.sh` runs five static checks. Zero matches
-required across all five before any commit on a Phase B branch.
+`scripts/phase-b-checks.sh` runs six static checks. All must pass
+before any commit on a Phase B branch.
 
 | # | Check | Why |
 | --- | --- | --- |
@@ -164,6 +164,7 @@ required across all five before any commit on a Phase B branch.
 | 3 | imports from `_design-reference/` in production code | The folder is a visual reference only; importing pulls hardcoded Georgian, plain `<img>`, and inline event handlers. |
 | 4 | inline `onMouseEnter` / `onMouseLeave` handlers | Hover styling must come from CSS `:hover` so it survives SSR + the strict CSP. |
 | 5 | PascalCase `*Button.tsx` files | Single Button source-of-truth (D2). |
+| 6 | `var(--color-terracotta-500)` paint count exceeds baseline | Slice 4 sweep documented exactly 10 permitted production paints (filled-button surfaces, decorative focus rings, display em accent, eyebrow ::before hairline) in `docs/design/contrast.md`. New growth fails CI so the diff surfaces in code review and either gets fixed or consciously bumped against the inventory in the same PR. Baseline lives in the script as `TC500_BASELINE`; bump it deliberately when the inventory legitimately changes. |
 
 ## Standing protected-surface contract (every slice)
 
@@ -294,14 +295,13 @@ Slice 5).
 5. `bash scripts/phase-b-checks.sh` clean.
 6. `npm run lint` / `npm test` / `npm run build` clean.
 
-## Slices 5–8 — see plan delivered in conversation
+## Slices 5–8 — scope captured in this document
 
-Each slice's full per-component plan was delivered in conversation
-during the Phase B planning round and is referenced here in
-abbreviated form. The detailed acceptance criteria, citations,
-and protected-surface concerns expand back from the plan when each
-slice opens its own branch.
-
-(Slice plan documents land alongside each PR description so future
-agents working from the repo alone have the full context — see
-`docs/design/sessions/phase-b-slice-<n>.md` once each opens.)
+Each remaining slice's scope, files-touched list, out-of-scope
+items, and acceptance criteria land directly as a section in **this
+document** when the branch opens. Earlier slices (`phase-b-slice-2.md`,
+`phase-b-slice-4.md`) used a separate per-slice scope file; that
+pattern stops here. A single `phase-b.md` keeps the audit trail in
+one place and removes the awkward "where is this slice's scope?"
+lookup. The PR description carries the slice's summary; the section
+in this document carries the contract.
