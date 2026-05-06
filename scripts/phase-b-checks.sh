@@ -104,7 +104,13 @@ fi
 # paints"). Bumping this number without updating that document
 # silently widens the permitted-paint envelope; the two MUST stay
 # synchronised in the same PR.
-TC500_BASELINE=10
+#
+# Slice 5 (homepage body) bumped 10 → 11 for the hero eyebrow's
+# 6×6 px decorative dot prefix in `components/home/Hero.tsx`.
+# The dot is `aria-hidden`, sits at the 4.25:1 graphic-element
+# floor (SC 1.4.11, 3:1 satisfied), and is recorded in contrast.md
+# under the "Decorative dots" subsection.
+TC500_BASELINE=11
 # Markdown / mdx prose that references the CSS variable inside
 # inline code blocks is documentation, not a paint — exclude .md
 # and .mdx via pathspec so the count stays focused on actual

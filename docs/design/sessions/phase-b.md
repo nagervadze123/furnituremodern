@@ -295,6 +295,42 @@ Slice 5).
 5. `bash scripts/phase-b-checks.sh` clean.
 6. `npm run lint` / `npm test` / `npm run build` clean.
 
+## Slice 5 — Homepage body (port + EditorialHeading + AspectFrame)
+
+**Branch.** `phase-b/5-homepage-body`
+
+**New primitives (D1 — primitives ship with first consumer).**
+
+- `components/design/EditorialHeading.tsx` — variant: `'hero' | 1 | 2 | 3`, defaults to `<h1>` (hero / 1), `<h2>` (2), `<h3>` (3); override via `as`. Variant maps onto the `.display-hero` / `.display-1` / `.display-2` / `.display-3` CSS class primitives in `app/globals.css`. No `sizeOverride` escape hatch (per D4) — new sizes get new variant values.
+- `components/design/AspectFrame.tsx` — aspect-locked editorial frame with the bone-200 hairline border + bone-100 inner background. Children compose freely (`<Image fill>`, overlays, captions). Ratios: `'1/1' | '4/5' | '4/3' | '3/2' | '16/9'`.
+- `app/globals.css` — new `.display-hero` rule (font-size `clamp(3.5rem, 7vw, 6.5rem)`, opsz 144) so the hero can step a notch above `.display-1` without an inline style override.
+
+**Consumers ported.**
+
+- `components/home/Hero.tsx` — LCP element. `next/image` retains the `priority` flag; the editorial port swaps the heading to `<EditorialHeading variant="hero">`, picks up the dark-surface eyebrow + lede pattern from `_design-reference/components/page-homepage.jsx:38-87`, and pairs the primary CTA (existing terracotta-500 fill, AA Large) with a ghost CTA (Slice 2 `editorialGhost` button variant).
+- `components/home/FeaturedCategories.tsx` — three editorial rows. `EditorialHeading variant={2}` for each row name; AspectFrame for each image well; `CATEGORY_CTA_LINK_CLASS` constant introduced in Slice 4 stays the link contract.
+- `components/home/FeaturedCollection.tsx` — featured product spread. EditorialHeading variant 2 for the headline, AspectFrame at 3/2.
+- `components/home/SignatureProducts.tsx` — recent-pieces grid. Per-card AspectFrame at 4/5; product names in serif via Display chain (kept; Display still resolves correctly until Slice 8 deprecation).
+- `components/home/BrandStory.tsx` — workshop / story section. EditorialHeading 2; lede paragraph + body copy; no image change required.
+- `components/home/VisitStrip.tsx` — dark-surface visit panel. EditorialHeading 2 painted bone-50; brass-500 link accent per the Slice 3 footer pattern; eyebrow already locked to bone-50/55 in Slice 0.
+
+**Acceptance.**
+
+1. EditorialHeading is the only rendering path for editorial display-step text on the homepage. The legacy `Display` primitive remains in the barrel (Category and PDP slices migrate it later) but does not appear in any homepage component.
+2. AspectFrame ships with at least three first-consumer call sites (FeaturedCategories, FeaturedCollection, SignatureProducts at minimum).
+3. Hero `next/image` keeps `priority`; CLS on `/ka` and `/en` ≤ 0.05; Lighthouse Performance delta ≤ ±2 points vs the pre-slice production deployment (manual audit, recorded in PR description).
+4. `WebPage`, `LocalBusiness`, and `FAQPage` JSON-LD shapes are byte-identical pre- and post-slice (no `lib/schema/` files touched).
+5. New strings flow through `next-intl`; both `messages/ka.json` and `messages/en.json` updated in the same commit.
+6. No `[data-reveal]` selector appears anywhere in production code — the on-brand pattern is `<Reveal>` / `<RevealStagger>` from `lib/motion`. The `data-reveal` hook stays in `_design-reference/`.
+7. `bash scripts/phase-b-checks.sh` clean. Precommit invariant 6 (terracotta-500 paint baseline = 10) gates net-new offenders; the slice stays at or below baseline.
+8. `npm run lint` / `npm test` / `npm run build` clean.
+
+**Out of scope.**
+
+- The Category and PDP body ports (Slices 6 and 7).
+- Removing the `Display` primitive. Display has a Category consumer (`components/category/CategoryHero.tsx`); it deprecates in Slice 8 once every consumer has migrated.
+- Image asset swaps. The slice ports the layout / typography contract; the actual hero / category / story photos stay on whatever the data layer + `scripts/stock-photos-prepared/` already provide. Asset selection is a content decision tracked separately.
+
 ## Slices 5–8 — scope captured in this document
 
 Each remaining slice's scope, files-touched list, out-of-scope

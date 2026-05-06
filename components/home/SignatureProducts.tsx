@@ -19,8 +19,8 @@ import { Link } from "@/i18n/navigation";
 import {
   Body,
   Container,
+  EditorialHeading,
   Eyebrow,
-  Heading,
   Section,
 } from "@/components/design";
 import { JsonLd } from "@/components/json-ld";
@@ -66,16 +66,16 @@ export async function SignatureProducts() {
       />
 
       <Container variant="wide">
-        <div className="mb-12 flex flex-col gap-3 md:mb-16">
+        <div className="mb-12 flex flex-col gap-4 md:mb-16">
           <Eyebrow>{t("eyebrow")}</Eyebrow>
-          <Heading
+          <EditorialHeading
             id="signature-products-heading"
-            variant={1}
+            variant={2}
             as="h2"
             className="max-w-2xl"
           >
             {t("heading")}
-          </Heading>
+          </EditorialHeading>
           <Body
             variant="default"
             className="max-w-2xl text-[var(--color-ink-700)]"
@@ -128,7 +128,11 @@ function SignatureCard({ product, locale }: CardProps) {
     >
       <article className="flex flex-col">
         {/* Image — bone-100 placeholder behind, 1px padding so the
-            background peeks through and frames the photo subtly. */}
+            background peeks through and frames the photo subtly.
+            The card's hover-only bone-200 border lives on the
+            parent <Link>, so AspectFrame's resting-state hairline
+            isn't the right primitive here — a plain aspect-locked
+            div keeps the editorial "card" treatment intact. */}
         <div className="relative aspect-[4/5] overflow-hidden bg-[var(--color-bone-100)] p-px">
           {primary ? (
             <Image

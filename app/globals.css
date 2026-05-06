@@ -595,12 +595,30 @@
 }
 .eyebrow.no-rule::before { display: none; }
 
-/* `.display-1` / `.display-2` / `.display-3` — magazine display steps.
-   The italic `<em>` inside any display switches into a lighter
-   Fraunces weight at terracotta-500 — a recurring editorial accent
-   pattern. The font stack chains Fraunces → Noto Serif Georgian →
-   serif fallback so a single line can mix Latin + Mkhedruli without
-   missing-glyph rectangles (Fraunces ships no Mkhedruli). */
+/* `.display-hero` / `.display-1` / `.display-2` / `.display-3` —
+   magazine display steps. The italic `<em>` inside any display
+   switches into a lighter Fraunces weight at terracotta-500 — a
+   recurring editorial accent pattern. The font stack chains
+   Fraunces → Noto Serif Georgian → serif fallback so a single line
+   can mix Latin + Mkhedruli without missing-glyph rectangles
+   (Fraunces ships no Mkhedruli).
+
+   `.display-hero` is the homepage hero step (Phase 6 Slice 5),
+   sized one notch above `.display-1` so the LCP headline reads as
+   the largest typographic moment on the site. The clamp range was
+   chosen to mirror `_design-reference/components/page-homepage.jsx:42-47`
+   exactly. */
+.display-hero {
+  font-family: var(--font-display), var(--font-georgian-serif), Georgia, "Times New Roman", serif;
+  font-weight: 400;
+  font-size: clamp(3.5rem, 7vw, 6.5rem);
+  font-variation-settings: "opsz" var(--fraunces-opsz-display);
+  line-height: 1.02;
+  letter-spacing: -0.025em;
+  color: var(--color-ink-900);
+  text-wrap: balance;
+  margin: 0;
+}
 .display-1 {
   font-family: var(--font-display), var(--font-georgian-serif), Georgia, "Times New Roman", serif;
   font-weight: 400;
@@ -633,6 +651,7 @@
   color: var(--color-ink-900);
   margin: 0;
 }
+.display-hero em,
 .display-1 em,
 .display-2 em,
 .display-3 em {

@@ -16,6 +16,9 @@ export { SectionMarker } from "./SectionMarker";
 export { Display } from "./Display";
 export type { DisplayVariant } from "./Display";
 
+export { EditorialHeading } from "./EditorialHeading";
+export type { EditorialHeadingVariant } from "./EditorialHeading";
+
 export { Heading } from "./Heading";
 export type { HeadingVariant } from "./Heading";
 
@@ -24,3 +27,6 @@ export type { BodyVariant } from "./Body";
 
 export { AspectImage } from "./AspectImage";
 export type { AspectRatio } from "./AspectImage";
+
+export { AspectFrame } from "./AspectFrame";
+export type { AspectFrameRatio } from "./AspectFrame";
