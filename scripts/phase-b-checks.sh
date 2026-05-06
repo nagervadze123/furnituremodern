@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
-# Phase B precommit invariants. Run before every Phase B commit;
-# zero matches required across all five checks.
+# Phase B precommit invariants. Run before every commit; zero
+# matches required across all five checks.
 #
 # Usage:
 #   bash scripts/phase-b-checks.sh
@@ -9,7 +9,19 @@
 #   0  all checks clean
 #   1  at least one check found a violation
 #
-# Each check is documented in docs/design/sessions/phase-b.md.
+# Each check is documented in
+# docs/design/archive/phase-b.md (decision log) and the canonical
+# enforcement notes for individual rules live in
+# docs/design/contrast.md.
+#
+# Phase B closed at Slice 8. Check #6 (the terracotta-500 paint
+# baseline) was retired with the close of the port — its job was
+# to gate creep across 7 slices of editorial churn, and going
+# forward the canonical guard for terracotta-500 is the
+# Permitted/Forbidden lists in docs/design/contrast.md (see the
+# "Post-Phase-B enforcement" subsection there). The remaining
+# five checks survive long-term: each encodes an invariant that
+# is true regardless of whether the editorial port is live.
 
 set -u
 
@@ -85,62 +97,22 @@ else
   pass "no PascalCase *Button.tsx files"
 fi
 
-# 6. terracotta-500 paint inventory baseline. Slice 4 documented
-#    exactly TC500_BASELINE permitted production paints in
-#    docs/design/contrast.md (filled-button surfaces, decorative
-#    focus rings, display em accent, eyebrow ::before hairline).
-#    Any growth above the baseline fails CI so the diff surfaces
-#    in code review and either gets fixed or consciously bumped
-#    against the contrast.md inventory in the same PR.
-#
-#    Grep counts every `var(--color-terracotta-500)` paint in
-#    production code (includes app/, components/, lib/) and excludes
-#    _design-reference/ + *.test.* files. Comments that reference
-#    the colour by *name* don't include the CSS variable syntax so
-#    they don't inflate the count.
-# The canonical inventory for this baseline lives in
-# docs/design/contrast.md ("Phase 6 Slice 4 — terracotta-500
-# contrast sweep" → "Remaining intentional terracotta-500
-# paints"). Bumping this number without updating that document
-# silently widens the permitted-paint envelope; the two MUST stay
-# synchronised in the same PR.
-#
-# Slice 5 (homepage body) bumped 10 → 11 for the hero eyebrow's
-# 6×6 px decorative dot prefix in `components/home/Hero.tsx`.
-# The dot is `aria-hidden`, sits at the 4.25:1 graphic-element
-# floor (SC 1.4.11, 3:1 satisfied), and is recorded in contrast.md
-# under the "Decorative dots" subsection.
-TC500_BASELINE=11
-# Markdown / mdx prose that references the CSS variable inside
-# inline code blocks is documentation, not a paint — exclude .md
-# and .mdx via pathspec so the count stays focused on actual
-# stylesheet + JSX paints. Test files are also excluded so
-# negative-assertion strings in regression guards don't inflate.
-TC500_PATHSPEC=(
-  ':!*_design-reference*'
-  ':!*.test.tsx' ':!*.test.ts'
-  ':!*.md' ':!*.mdx'
-)
-tc500_count=$(git grep -hI -o 'var(--color-terracotta-500)' \
-  -- "${TC500_PATHSPEC[@]}" 'app' 'components' 'lib' \
-  2>/dev/null | wc -l | tr -d ' ')
-if [ "$tc500_count" -gt "$TC500_BASELINE" ]; then
-  fail "terracotta-500 paint count drift: $tc500_count > baseline $TC500_BASELINE"
-  printf '%s\n' "Audit against docs/design/contrast.md inventory:"
-  git grep -nI 'var(--color-terracotta-500)' \
-    -- "${TC500_PATHSPEC[@]}" 'app' 'components' 'lib' 2>/dev/null
-elif [ "$tc500_count" -lt "$TC500_BASELINE" ]; then
-  # Fewer paints is healthy progress, but the baseline (and the
-  # contrast.md inventory) need updating in the same PR. Report
-  # rather than fail so a deliberate cleanup doesn't block work,
-  # but make the drift visible in CI output.
-  pass "terracotta-500 paint count: $tc500_count (below baseline $TC500_BASELINE — bump TC500_BASELINE + contrast.md)"
-else
-  pass "terracotta-500 paint count at baseline ($tc500_count)"
-fi
+# Check #6 — terracotta-500 paint inventory baseline — retired at
+# the close of Phase B (Slice 8). The check counted every
+# `var(--color-terracotta-500)` paint in production code and held
+# the count at TC500_BASELINE=11 across 7 slices of editorial
+# churn. With the port closed it would block legitimate new uses
+# (a future filled-button placement, a new display-em accent)
+# while never actually verifying that any individual paint
+# satisfied WCAG. The canonical guard going forward is the
+# Permitted/Forbidden lists in docs/design/contrast.md (see the
+# "Post-Phase-B enforcement" subsection). If automated terracotta-
+# 500 enforcement is needed again, the right tool is a contrast-
+# aware lint rule (token + size + AA/AALarge aware), not a string
+# count — that's a separate scope.
 
 if [ "$ok" -eq 1 ]; then
-  printf '\nAll 6 Phase B precommit checks clean.\n'
+  printf '\nAll 5 Phase B precommit checks clean.\n'
   exit 0
 else
   printf '\nAt least one Phase B precommit check failed.\n'
