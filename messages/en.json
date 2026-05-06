@@ -18,12 +18,14 @@
   },
   "home": {
     "hero": {
-      "eyebrow": "Handcrafted in Georgia",
-      "heading": "Furniture that doesn't rush life",
+      "eyebrow": "Living collection · N°06 · Autumn 2026",
+      "heading": "Furniture <em>that doesn't rush</em> life",
       "body": "Sofas, beds, and tables built by hand in Tbilisi. Natural materials, unhurried craft, decade-long warranty.",
       "cta_primary": "Browse the collection",
-      "cta_secondary": "About us",
-      "meta": "Tbilisi · Est. 2024 · 47 pieces"
+      "cta_secondary": "The workshop",
+      "meta_product": "Alazani sofa — N°SF-240",
+      "meta_detail": "Built in 9 days · Steamed oak",
+      "meta_credit": "Photographed by Anna Kvirikadze, Oct 2026"
     },
     "issue_ribbon": {
       "in_this_issue": "In this issue —",
@@ -40,7 +42,7 @@
     },
     "featured_collection": {
       "eyebrow": "In focus",
-      "heading": "Sadgisi — the story of one sofa",
+      "heading": "<em>Sadgisi —</em> the story of one sofa",
       "body": "One piece, in which Georgian oak grain settles into every seam. Six months of work in our maker's hands — from raw board through hand-cut joinery to the final coat of oil. A single sofa, finished the way our grandparents would have finished it.",
       "image_alt": "In focus — the Sadgisi sofa from our workshop",
       "cta": "View piece →"

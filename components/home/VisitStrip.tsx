@@ -21,7 +21,7 @@ import { getLocale, getTranslations } from "next-intl/server";
 import {
   Body,
   Container,
-  Display,
+  EditorialHeading,
   Eyebrow,
   Section,
 } from "@/components/design";
@@ -91,26 +91,29 @@ export async function VisitStrip() {
           <Eyebrow className="!text-[var(--color-bone-50)]/55">
             {t("eyebrow")}
           </Eyebrow>
-          <Display
+          <EditorialHeading
             id="visit-heading"
             variant={2}
             as="h2"
-            // !text-[bone-50] overrides the default ink-100 from Display.
+            // EditorialHeading doesn't paint a default colour — the
+            // .display-* CSS classes do. !text-bone-50 wins via the
+            // important modifier; the dark-surface override is the
+            // entire point of the inversion here.
             className="!text-[var(--color-bone-50)] break-words"
           >
             {t("heading_prefix")}, {street}
-          </Display>
-          <Body variant="lg" className="!text-[var(--color-ink-300)]">
+          </EditorialHeading>
+          {/* Body copy on the dark surface. bone-100/0.7 ≈ 8.09:1
+              on ink-900 (AAA-clear; same band as the Slice 3 footer
+              paragraph treatment). brass-500 hover lifts the link to
+              the editorial accent. */}
+          <Body variant="lg" className="!text-[rgb(245_240_232/0.7)]">
             {hoursLine}
           </Body>
-          <Body variant="lg" className="!text-[var(--color-ink-300)]">
-            {/* tel: keeps phone tappable on mobile. Numerals are kept
-                in their original form — Intl number formatting on a
-                phone string is brittle, and operators usually want the
-                exact display they entered in siteConfig. */}
+          <Body variant="lg" className="!text-[rgb(245_240_232/0.7)]">
             <a
               href={`tel:${phone.replace(/\s+/g, "")}`}
-              className="transition-colors hover:text-[var(--color-bone-50)]"
+              className="transition-colors hover:text-[var(--color-brass-500)] focus-visible:outline-none focus-visible:text-[var(--color-brass-500)]"
             >
               {phone}
             </a>

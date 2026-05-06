@@ -23,14 +23,15 @@
 //   1. The product's primary image (resolved via getProductBySlug)
 //   2. /icon.svg if Supabase isn't configured (offline / CI)
 
+import Image from "next/image";
 import { getLocale, getTranslations } from "next-intl/server";
 
 import { Link } from "@/i18n/navigation";
 import {
-  AspectImage,
+  AspectFrame,
   Body,
   Container,
-  Display,
+  EditorialHeading,
   Eyebrow,
   Section,
 } from "@/components/design";
@@ -71,26 +72,30 @@ export async function FeaturedCollection() {
       <Container variant="default" className="max-w-4xl">
         <div className="flex flex-col items-center gap-8 text-center">
           <Eyebrow>{t("eyebrow")}</Eyebrow>
-          <Display
+          <EditorialHeading
             id="featured-collection-heading"
             variant={2}
             as="h2"
             className="max-w-3xl break-words"
           >
-            {t("heading")}
-          </Display>
+            {t.rich("heading", {
+              em: (chunks) => <em>{chunks}</em>,
+            })}
+          </EditorialHeading>
 
           <div className="w-full max-w-3xl">
-            <AspectImage
-              ratio="16/9"
-              src={imageSrc}
-              alt={imageAlt}
-              sizes="(min-width: 768px) 768px, 100vw"
-              placeholder={isFallbackSvg ? undefined : "blur"}
-              blurDataURL={isFallbackSvg ? undefined : BRAND_LANDSCAPE_BLUR}
-              unoptimized={isFallbackSvg}
-              wrapperClassName="border border-[var(--color-bone-200)] bg-[var(--color-bone-50)]"
-            />
+            <AspectFrame ratio="16/9" className="bg-[var(--color-bone-50)]">
+              <Image
+                src={imageSrc}
+                alt={imageAlt}
+                fill
+                sizes="(min-width: 768px) 768px, 100vw"
+                placeholder={isFallbackSvg ? undefined : "blur"}
+                blurDataURL={isFallbackSvg ? undefined : BRAND_LANDSCAPE_BLUR}
+                unoptimized={isFallbackSvg}
+                className="object-cover"
+              />
+            </AspectFrame>
           </div>
 
           <Body

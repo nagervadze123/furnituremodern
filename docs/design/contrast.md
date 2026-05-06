@@ -210,7 +210,7 @@ consume now that hover paints AAA-clear.
 
 ### Remaining intentional `terracotta-500` paints
 
-After the sweep, `git grep -o 'var(--color-terracotta-500)' -- app components lib` (excluding `_design-reference/`, test files, and markdown prose) returns exactly **10 paints** across **8 source-code lines**. Two lines paint twice — `Hero.tsx:86` (background fill + focus ring) and `button.tsx:53` (border + background on the `editorialPrimary` variant). Every paint falls into a permitted decorative role:
+After Slice 4 the inventory stood at exactly **10 paints** across **8 source-code lines**. Slice 5 (homepage body) added one decorative paint — the hero eyebrow's 6 × 6 px dot prefix in `components/home/Hero.tsx:80`. Current count: **11 paints across 9 source-code lines**. `git grep -o 'var(--color-terracotta-500)' -- app components lib` (excluding `_design-reference/`, test files, and markdown prose) returns those 11. Two lines paint twice — `Hero.tsx:103` (filled-button background + focus ring) and `button.tsx:53` (border + background on the `editorialPrimary` variant). Every paint falls into a permitted decorative role:
 
 **Filled-button surfaces (SC 1.4.11 — UI components, 3:1 floor):**
 
@@ -231,6 +231,10 @@ After the sweep, `git grep -o 'var(--color-terracotta-500)' -- app components li
 **Eyebrow hairline rule (decoration, not text):**
 
 - `app/globals.css:594` — `.eyebrow::before` 1 px × 24 px hairline drawn before the eyebrow text. Pure graphic element; SC 1.4.11 reads as 3:1 for non-text, satisfied at 4.25:1.
+
+**Decorative dots:**
+
+- `components/home/Hero.tsx:80` — 6 × 6 px filled circle prefixing the hero eyebrow. `aria-hidden="true"`; sits at the 4.25:1 graphic-element floor against bone-50 (SC 1.4.11 3:1 satisfied). Mirrors the design-reference treatment at `_design-reference/components/page-homepage.jsx:38-41`. Added in Phase 6 Slice 5; the precommit baseline (`TC500_BASELINE` in `scripts/phase-b-checks.sh`) was bumped 10 → 11 in the same commit.
 
 **Token definition (no paint):**
 
@@ -260,11 +264,11 @@ needs auditing against the canonical rule.
 The baseline is enforced automatically by Phase B precommit
 invariant 6 (`scripts/phase-b-checks.sh`): the script counts paints
 via `git grep -hI -o 'var(--color-terracotta-500)'` and fails if
-the total exceeds `TC500_BASELINE=10`. Drift below the baseline
-prints a notice ("bump TC500_BASELINE + contrast.md") rather than
-failing — a conscious cleanup shouldn't block work, but the divergence
-must surface in CI output so the inventory and the script stay
-synchronised in the same PR.
+the total exceeds `TC500_BASELINE` (currently 11). Drift below the
+baseline prints a notice ("bump TC500_BASELINE + contrast.md")
+rather than failing — a conscious cleanup shouldn't block work, but
+the divergence must surface in CI output so the inventory and the
+script stay synchronised in the same PR.
 
 ## Sources
 

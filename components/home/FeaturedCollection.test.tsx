@@ -11,9 +11,19 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import type { ReactElement } from "react";
 
+// next-intl's `t` is a callable function with a `.rich` property
+// for rich-text rendering. Mock both so components using either
+// `t(key)` or `t.rich(key, { em: chunks => <em>{chunks}</em> })`
+// work in vitest. The rich variant returns the same namespaced
+// fallback string — element-tree assertions on the rendered tree
+// can read the literal key.
 vi.mock("next-intl/server", () => ({
   getTranslations: async (namespace?: string) => {
-    return (key: string) => `${namespace ?? "fallback"}.${key}`;
+    const t = (key: string) => `${namespace ?? "fallback"}.${key}`;
+    (t as unknown as { rich: (key: string) => string }).rich = (
+      key: string
+    ) => `${namespace ?? "fallback"}.${key}`;
+    return t;
   },
   getLocale: async () => "ka",
 }));

@@ -25,15 +25,17 @@
 // backed). The first three rows render; any beyond are dropped (this is
 // the home strip, not the category directory).
 
+import Image from "next/image";
 import { getLocale, getTranslations } from "next-intl/server";
 
 import { Link } from "@/i18n/navigation";
 import {
-  AspectImage,
+  AspectFrame,
   Body,
   Container,
-  Display,
+  EditorialHeading,
   Section,
+  SectionMarker,
 } from "@/components/design";
 import { Reveal, RevealStagger } from "@/lib/motion";
 import { BRAND_PORTRAIT_BLUR } from "@/lib/perf/blur";
@@ -160,35 +162,35 @@ function CategoryRow({
 
   return (
     <article className="grid grid-cols-1 gap-8 md:grid-cols-12 md:items-center md:gap-12 lg:gap-16">
-      {/* IMAGE */}
+      {/* IMAGE — AspectFrame composes the editorial 1px bone-200
+          hairline + bone-100 inner surface; the Image fills it. */}
       <Reveal variant="fadeIn" className={`min-w-0 ${imageCols}`}>
         <Link
           href={`/${category.slug}`}
           className="group block focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-terracotta-500)] focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--color-bone-50)]"
           aria-label={category.name[locale]}
         >
-          <AspectImage
-            ratio="4/5"
-            src={imageUrl}
-            alt={category.name[locale]}
-            sizes="(min-width: 1024px) 56vw, 100vw"
-            placeholder={isFallbackSvg ? undefined : "blur"}
-            blurDataURL={isFallbackSvg ? undefined : BRAND_PORTRAIT_BLUR}
-            unoptimized={isFallbackSvg}
-            wrapperClassName="border border-[var(--color-bone-200)] bg-[var(--color-bone-100)]"
-            className="motion-safe:transition-transform motion-safe:duration-700 motion-safe:group-hover:scale-[1.01]"
-          />
+          <AspectFrame ratio="4/5">
+            <Image
+              src={imageUrl}
+              alt={category.name[locale]}
+              fill
+              sizes="(min-width: 1024px) 56vw, 100vw"
+              placeholder={isFallbackSvg ? undefined : "blur"}
+              blurDataURL={isFallbackSvg ? undefined : BRAND_PORTRAIT_BLUR}
+              unoptimized={isFallbackSvg}
+              className="object-cover motion-safe:transition-transform motion-safe:duration-700 motion-safe:group-hover:scale-[1.01]"
+            />
+          </AspectFrame>
         </Link>
       </Reveal>
 
       {/* TEXT */}
       <div className={`flex min-w-0 flex-col gap-5 ${textCols}`}>
-        <span className="text-xs uppercase tracking-[0.08em] text-[var(--color-ink-500)]">
-          {positionLabel}
-        </span>
-        <Display variant={2} as="h3" className="break-words">
+        <SectionMarker label={positionLabel} />
+        <EditorialHeading variant={2} as="h3" className="break-words">
           {category.name[locale]}
-        </Display>
+        </EditorialHeading>
         <Body variant="lg" className="text-[var(--color-ink-700)]">
           {intro}
         </Body>

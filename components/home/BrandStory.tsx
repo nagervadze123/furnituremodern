@@ -19,14 +19,15 @@
 // Section anchor: id="workshop". The hero's secondary CTA and the
 // IssueRibbon's "IV. Workshop" link both jump here.
 
+import Image from "next/image";
 import { getTranslations } from "next-intl/server";
 
 import {
-  AspectImage,
+  AspectFrame,
   Body,
   Container,
+  EditorialHeading,
   Eyebrow,
-  Heading,
   Section,
 } from "@/components/design";
 import { Parallax, Reveal, RevealStagger } from "@/lib/motion";
@@ -62,34 +63,37 @@ export async function BrandStory() {
             className="order-1 min-w-0 md:col-span-7"
           >
             <Parallax maxOffset={30}>
-              <AspectImage
-                // 5/7 portrait — taller than wide for "workshop intimacy".
-                ratio="4/5"
-                src={src}
-                alt={t("image_alt")}
-                sizes="(min-width: 1024px) 56vw, 100vw"
-                placeholder={isFallbackSvg ? undefined : "blur"}
-                blurDataURL={isFallbackSvg ? undefined : BRAND_PORTRAIT_BLUR}
-                unoptimized={isFallbackSvg}
-                wrapperClassName="border border-[var(--color-bone-200)] bg-[var(--color-bone-100)]"
-              />
+              <AspectFrame ratio="4/5">
+                <Image
+                  src={src}
+                  alt={t("image_alt")}
+                  fill
+                  sizes="(min-width: 1024px) 56vw, 100vw"
+                  placeholder={isFallbackSvg ? undefined : "blur"}
+                  blurDataURL={isFallbackSvg ? undefined : BRAND_PORTRAIT_BLUR}
+                  unoptimized={isFallbackSvg}
+                  className="object-cover"
+                />
+              </AspectFrame>
             </Parallax>
           </Reveal>
 
           {/* TEXT — desktop cols 8-12 (40%), mobile order 2 */}
           <RevealStagger
             as="div"
-            className="order-2 flex min-w-0 flex-col gap-5 md:col-span-5"
+            className="order-2 flex min-w-0 flex-col gap-6 md:col-span-5"
           >
             <Eyebrow>{t("eyebrow")}</Eyebrow>
-            <Heading
+            <EditorialHeading
               id="brand-story-heading"
-              variant={1}
+              variant={2}
               as="h2"
               className="max-w-md break-words"
             >
-              {t("heading")}
-            </Heading>
+              {t.rich("heading", {
+                em: (chunks) => <em>{chunks}</em>,
+              })}
+            </EditorialHeading>
             <Body variant="lg" className="max-w-md text-[var(--color-ink-700)]">
               {t("body_p1")}
             </Body>
