@@ -46,6 +46,7 @@ export default async function NewProductPage() {
             description_en: "",
             price: 0,
             is_featured: false,
+            is_new: false,
             is_published: false,
             sort_order: 0,
           }}

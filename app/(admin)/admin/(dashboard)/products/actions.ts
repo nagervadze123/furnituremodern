@@ -138,6 +138,7 @@ export async function createProductAction(
       price: parsed.price,
       currency: parsed.currency,
       is_featured: parsed.is_featured,
+      is_new: parsed.is_new,
       is_published: parsed.is_published,
       sort_order: parsed.sort_order,
     })
@@ -259,6 +260,7 @@ export async function updateProductAction(
       price: parsed.price,
       currency: parsed.currency,
       is_featured: parsed.is_featured,
+      is_new: parsed.is_new,
       is_published: parsed.is_published,
       sort_order: parsed.sort_order,
     })

@@ -331,6 +331,91 @@ Slice 5).
 - Removing the `Display` primitive. Display has a Category consumer (`components/category/CategoryHero.tsx`); it deprecates in Slice 8 once every consumer has migrated.
 - Image asset swaps. The slice ports the layout / typography contract; the actual hero / category / story photos stay on whatever the data layer + `scripts/stock-photos-prepared/` already provide. Asset selection is a content decision tracked separately.
 
+## Slice 6 — Category body (port + Tag primitive)
+
+**Branch.** `phase-b/6-category-body`
+
+**New primitives (D1 — primitives ship with first consumer).**
+
+- `components/design/Tag.tsx` — small editorial badge with two
+  variants. `'new'` paints `bone-50` on `var(--color-terracotta-500)`
+  (filled-button surface, SC 1.4.11 carve-out at 4.25:1) and
+  appears only on products whose `createdAt` is within the last
+  30 days. `'neutral'` paints `ink-700` on `bone-100` (no
+  terracotta touch). The 30-day predicate lives as a small
+  helper next to the primitive so the contract — what counts
+  as "new" — is unambiguous.
+- The `Tag` primitive lands `editorial` styling, not `shadcn` UI
+  styling. That keeps `components/ui/badge.tsx` (the shadcn
+  primitive) untouched and preserves the D2 single-Button rule
+  for buttons; Tag is a separate visual concern.
+
+**Consumers ported.**
+
+- `components/category/CategoryHero.tsx` — when an `imageUrl` is
+  present, the lead photo moves from a 4/5 rounded portrait to a
+  21/9 framed landscape via `AspectFrame` (second consumer of the
+  primitive after Slice 5 — validates the API across two surfaces).
+  Heading: `EditorialHeading variant={1} as="h1"` (the page's only
+  H1 stays at display-1 scale). Eyebrow: `Eyebrow` primitive,
+  ink-500.
+- `components/sections/product-card.tsx` — image well moves from a
+  rounded `bg-muted` div to `AspectFrame ratio="4/5"`; the
+  `is_new` Tag floats top-left in absolute position; product
+  name moves to `font-display` ink-900 with break-words; price
+  reads tabular-nums ink-500. Hover treatment unchanged
+  (motion-safe scale 1.03).
+- `components/category/ProductGrid.tsx` — small typography touch
+  on the empty-state copy + the "browse other categories" link;
+  grid layout untouched.
+- `components/category/SortBar.tsx` — refactor from native
+  `<select>` to a row of inline links. Active key paints
+  `text-[var(--color-ink-900)]` with a 1 px ink-900 underline;
+  inactive keys paint `text-[var(--color-ink-700)]`. No
+  terracotta on text. Form fallback is preserved by emitting
+  real `<a href="?sort=…">` anchors so no-JS visitors still
+  navigate; the client island intercepts the click and uses
+  `router.replace` with `useTransition` for the smooth path.
+
+**Out of scope.**
+
+- The product detail page port (Slice 7).
+- Pagination — there is no public pagination UI on the category
+  page today (the admin index has its own paginator; that one is
+  not affected by Phase B). The user's "pagination logic
+  untouched" reminder is academic for this slice.
+- Schema layer (`lib/schema.ts`, `components/json-ld.tsx`).
+  Those modules are not touched, which is the byte-identity
+  guarantee for `BreadcrumbList`, `CollectionPage`, and `ItemList`
+  JSON-LD. The existing `lib/schema.test.ts` already locks the
+  generator outputs.
+
+**Acceptance.**
+
+1. CategoryHero with image renders `AspectFrame ratio="21/9"`;
+   without image renders the centred minimalist column.
+2. The H1 paints via `EditorialHeading variant={1} as="h1"`;
+   `Display` import removed from this file.
+3. Product cards render `Tag variant="new"` only for products
+   whose `createdAt` is within the last 30 days. Products with
+   no `createdAt` (offline TS catalogue) get no tag.
+4. SortBar renders three inline `<a>` links (newest / price asc /
+   price desc) with the editorial active/inactive paint pattern;
+   client-side click handler keeps shallow `router.replace`
+   navigation; native nav remains the no-JS fallback.
+5. `WebPage`, `LocalBusiness`, `FAQPage`, `BreadcrumbList`,
+   `CollectionPage`, `ItemList` JSON-LD shapes byte-identical
+   pre- and post-slice. (Verified by not touching `lib/schema.ts`
+   or the call sites at `components/sections/category-page.tsx:105-132`.)
+6. `bash scripts/phase-b-checks.sh` clean. The Tag `'new'`
+   variant introduces a new `var(--color-terracotta-500)` paint
+   for the badge background fill — the precommit baseline either
+   holds at 11 (if the implementation reuses an existing paint
+   site) or bumps to 12 with the rationale documented in
+   `contrast.md` "Filled-button surfaces" subsection. Surface
+   the bump in the PR description if it moves.
+7. `npm run lint` / `npm test` / `npm run build` clean.
+
 ## Slices 5–8 — scope captured in this document
 
 Each remaining slice's scope, files-touched list, out-of-scope

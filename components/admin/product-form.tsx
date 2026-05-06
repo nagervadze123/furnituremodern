@@ -30,6 +30,7 @@ export type ProductFormDefaults = {
   description_en: string;
   price: number | string;
   is_featured: boolean;
+  is_new: boolean;
   is_published: boolean;
   sort_order: number;
 };
@@ -300,6 +301,15 @@ export function ProductForm({
             className="size-4"
           />
           Featured (shown on home page)
+        </label>
+        <label className="flex min-h-10 items-center gap-2 text-sm">
+          <input
+            type="checkbox"
+            name="is_new"
+            defaultChecked={defaults.is_new}
+            className="size-4"
+          />
+          New (renders the editorial "new" badge on the catalogue card)
         </label>
       </div>
 

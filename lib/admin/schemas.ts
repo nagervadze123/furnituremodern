@@ -50,6 +50,7 @@ export const productSchema = z.object({
 
   // Boolean checkboxes come through as "on" or undefined; coerce.
   is_featured: z.coerce.boolean().default(false),
+  is_new: z.coerce.boolean().default(false),
   is_published: z.coerce.boolean().default(false),
   sort_order: z.coerce.number().int().default(0),
 });

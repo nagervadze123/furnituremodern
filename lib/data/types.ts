@@ -73,6 +73,15 @@ export type DataProduct = {
   images: DataProductImage[];
   /** Used by getFeaturedProducts(). Defaults to false locally. */
   isFeatured?: boolean;
+  /**
+   * Operator-controlled "new" badge flag from the Supabase
+   * `products.is_new` column. The public product card and PDP read
+   * this directly via `isNewProduct(product)` (in
+   * `components/design/Tag.tsx`); they do not derive it from
+   * `createdAt`. Toggle on /admin/products to control the badge.
+   * Undefined / false means the editorial "new" tag is not rendered.
+   */
+  isNew?: boolean;
 
   // ---- Ecommerce / structured-data fields (all optional) ----
   sku?: string;

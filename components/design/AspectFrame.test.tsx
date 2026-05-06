@@ -39,6 +39,7 @@ describe("AspectFrame", () => {
       ["4/3", "aspect-[4/3]"],
       ["3/2", "aspect-[3/2]"],
       ["16/9", "aspect-video"],
+      ["21/9", "aspect-[21/9]"],
     ];
     for (const [ratio, expected] of cases) {
       const tree = AspectFrame({ ratio, children: "x" }) as AnyElement;

@@ -29,6 +29,7 @@ const RATIO_CLASS = {
   "4/3": "aspect-[4/3]",
   "3/2": "aspect-[3/2]",
   "16/9": "aspect-video",
+  "21/9": "aspect-[21/9]",
 } as const;
 
 export type AspectFrameRatio = keyof typeof RATIO_CLASS;

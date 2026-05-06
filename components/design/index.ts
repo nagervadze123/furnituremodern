@@ -30,3 +30,6 @@ export type { AspectRatio } from "./AspectImage";
 
 export { AspectFrame } from "./AspectFrame";
 export type { AspectFrameRatio } from "./AspectFrame";
+
+export { Tag, isNewProduct } from "./Tag";
+export type { TagVariant } from "./Tag";

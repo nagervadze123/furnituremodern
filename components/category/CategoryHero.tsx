@@ -1,22 +1,33 @@
-// Category-page hero — Phase 5 Task 5 follow-up.
+// Category-page hero — Phase 6 Slice 6 editorial port.
 //
-// Replaces the centred CategoryIntro with an editorial hero that
-// matches the home page's aesthetic. Two layouts:
+// Two layouts:
 //
-//   • imageUrl present  → 60/40 asymmetric prose + image (desktop),
-//                         stacked (mobile).
-//   • imageUrl absent   → centred minimalist editorial column.
+//   • imageUrl present  → asymmetric editorial layout: H1 + lede on
+//                         the left half (desktop), 21/9 lead photo
+//                         beneath them via AspectFrame. Mobile
+//                         stacks H1, lede, photo top-down.
+//   • imageUrl absent   → centred minimalist editorial column —
+//                         H1 + lede only, no photo well.
 //
-// Either way: single <h1> per page (the category name), Display-2
-// scale, body-lg intro paragraph, optional eyebrow above the headline.
-// Server component — relies on the parent page for breadcrumbs and
-// translations.
+// Either way: the page's only `<h1>` paints via
+// `EditorialHeading variant={1} as="h1"` so it sits at display-1
+// scale (the same scale as the homepage hero one notch smaller —
+// `display-hero` is the homepage-only step).
+//
+// AspectFrame at `21/9` is the second consumer of the primitive
+// (after the Slice 5 homepage); validates that the API holds across
+// two surfaces and across two distinct ratios.
+//
+// Server component — relies on the parent page for breadcrumbs
+// and translations.
+
+import Image from "next/image";
 
 import {
-  AspectImage,
+  AspectFrame,
   Body,
   Container,
-  Display,
+  EditorialHeading,
   Eyebrow,
   Section,
 } from "@/components/design";
@@ -46,18 +57,18 @@ export function CategoryHero({
   imageAlt,
   eyebrow,
 }: Props) {
-  // Display-2 visual scale, but render as <h1> — the category page
-  // owns the document's single h1, regardless of which type-scale step
-  // we use to size it.
+  // EditorialHeading variant 1 → `.display-1` CSS class, render
+  // as <h1>. The category page owns the document's single h1
+  // regardless of which type-scale step we use to size it.
   const heading = (
-    <Display
+    <EditorialHeading
       id="category-headline"
-      variant={2}
+      variant={1}
       as="h1"
       className="break-words"
     >
       {name}
-    </Display>
+    </EditorialHeading>
   );
 
   const body = (
@@ -74,31 +85,34 @@ export function CategoryHero({
         className="pt-10 md:pt-14"
       >
         <Container variant="wide">
-          <div className="grid grid-cols-1 gap-10 md:grid-cols-12 md:items-center md:gap-14 lg:gap-20">
-            <RevealStagger
-              as="div"
-              className="order-2 flex min-w-0 flex-col gap-5 md:order-1 md:col-span-7"
-            >
-              {eyebrow ? <Eyebrow>{eyebrow}</Eyebrow> : null}
-              {heading}
-              {body}
-            </RevealStagger>
-            <Reveal
-              variant="imageReveal"
-              threshold={0.1}
-              className="order-1 min-w-0 md:order-2 md:col-span-5"
-            >
-              <AspectImage
-                ratio="4/5"
+          <RevealStagger
+            as="div"
+            className="flex min-w-0 flex-col gap-7 md:max-w-[68ch]"
+          >
+            {eyebrow ? <Eyebrow>{eyebrow}</Eyebrow> : null}
+            {heading}
+            {body}
+          </RevealStagger>
+          {/* 21:9 cinematic lead photo beneath the prose block.
+              AspectFrame's second consumer (after Slice 5) — same
+              primitive, new ratio (validates the API). */}
+          <Reveal
+            variant="imageReveal"
+            threshold={0.1}
+            className="mt-10 min-w-0 md:mt-14"
+          >
+            <AspectFrame ratio="21/9">
+              <Image
                 src={imageUrl}
                 alt={imageAlt ?? name}
-                wrapperClassName="rounded-3xl bg-muted shadow-[0_30px_60px_-30px_rgba(40,32,26,0.35)]"
-                sizes="(min-width: 1024px) 36vw, 100vw"
+                fill
+                sizes="(min-width: 1024px) 1280px, 100vw"
                 placeholder="blur"
                 blurDataURL={BRAND_LANDSCAPE_BLUR}
+                className="object-cover"
               />
-            </Reveal>
-          </div>
+            </AspectFrame>
+          </Reveal>
         </Container>
       </Section>
     );
@@ -115,7 +129,7 @@ export function CategoryHero({
       <Container variant="narrow">
         <RevealStagger
           as="div"
-          className="flex flex-col items-center gap-5 text-center"
+          className="flex flex-col items-center gap-6 text-center"
         >
           {eyebrow ? <Eyebrow>{eyebrow}</Eyebrow> : null}
           {heading}
