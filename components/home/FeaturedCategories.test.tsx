@@ -34,7 +34,11 @@ vi.mock("@/lib/data/categories", () => ({
   getCategories: async () => [],
 }));
 
-import { CATEGORY_CTA_LINK_CLASS } from "./FeaturedCategories";
+import {
+  CATEGORY_CTA_LINK_CLASS,
+  CATEGORY_ROW_CAPTION_CLASS,
+  getCategoryRowCaption,
+} from "./FeaturedCategories";
 
 describe("FeaturedCategories CATEGORY_CTA_LINK_CLASS", () => {
   it("paints hover/focus in terracotta-600, not terracotta-500", () => {
@@ -51,5 +55,53 @@ describe("FeaturedCategories CATEGORY_CTA_LINK_CLASS", () => {
 
   it("rests at ink-900 (16.49:1 on bone-50, AAA-clear)", () => {
     expect(CATEGORY_CTA_LINK_CLASS).toContain("text-[var(--color-ink-900)]");
+  });
+});
+
+// Phase B Slice 8 — bilingual editorial pairing (the user reported
+// this as "Bedrooms missing italic accent"; investigation showed all
+// three rows were missing the italic Latin caption that the design
+// reference at `_design-reference/components/page-homepage.jsx:CategoryText`
+// renders beneath each Georgian heading).
+describe("FeaturedCategories bilingual Latin caption", () => {
+  it("paints italic Fraunces ink-500 at 14 px (matches the reference .caption styling)", () => {
+    expect(CATEGORY_ROW_CAPTION_CLASS).toContain("font-display");
+    expect(CATEGORY_ROW_CAPTION_CLASS).toContain("italic");
+    expect(CATEGORY_ROW_CAPTION_CLASS).toContain("text-sm");
+    expect(CATEGORY_ROW_CAPTION_CLASS).toContain("text-[var(--color-ink-500)]");
+  });
+
+  it("renders the Latin pairing on /ka where the heading is Georgian", () => {
+    expect(
+      getCategoryRowCaption({ en: "Sofas", ka: "დივნები" }, "ka")
+    ).toBe("Sofas");
+    expect(
+      getCategoryRowCaption({ en: "Bedrooms", ka: "საძინებლები" }, "ka")
+    ).toBe("Bedrooms");
+    expect(
+      getCategoryRowCaption(
+        { en: "Tables & Chairs", ka: "მაგიდები და სკამები" },
+        "ka"
+      )
+    ).toBe("Tables & Chairs");
+  });
+
+  it("suppresses the caption on /en where it would duplicate the heading", () => {
+    expect(
+      getCategoryRowCaption({ en: "Sofas", ka: "დივნები" }, "en")
+    ).toBeNull();
+    expect(
+      getCategoryRowCaption({ en: "Bedrooms", ka: "საძინებლები" }, "en")
+    ).toBeNull();
+  });
+
+  it("returns null when name.en is empty (defensive — e.g. operator only filled name.ka)", () => {
+    expect(getCategoryRowCaption({ en: "", ka: "დივნები" }, "ka")).toBeNull();
+  });
+
+  it("returns null when name.en exactly matches the heading on /ka (e.g. catalogue with shared script)", () => {
+    expect(
+      getCategoryRowCaption({ en: "დივნები", ka: "დივნები" }, "ka")
+    ).toBeNull();
   });
 });

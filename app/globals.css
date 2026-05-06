@@ -338,6 +338,19 @@
     /* Stop iOS Safari from auto-enlarging text after orientation change. */
     -webkit-text-size-adjust: 100%;
     text-size-adjust: 100%;
+    /* Reserve room for the sticky site header during anchor jumps so
+       the targeted element doesn't land under the header band. The
+       header is `sticky top-0 z-40`, ~80 px expanded / ~56 px when
+       scrolled (data-scrolled=true). 110 px clears the larger state
+       with a small visual buffer above the target — and matches the
+       PDP info-column sticky offset (Slice 7,
+       components/product/ProductLayout.tsx:`md:top-[110px]`) so the
+       same value gates every "clear the header" decision on the
+       site. Affects in-page anchor jumps only — has no effect on
+       normal scrolling, so it's invisible until a hash navigation
+       happens (e.g. /ka#workshop, browser back-forward to a
+       fragment, focus-restore on focus-visible into a section). */
+    scroll-padding-top: 110px;
   }
   body {
     @apply bg-background text-foreground antialiased;
@@ -755,22 +768,8 @@
 }
 .text-link:hover .arrow { transform: translateX(4px); }
 
-/* Reveal-on-scroll hook ---------------------------------------------- */
-/* Pair with an IntersectionObserver that toggles `.in` on the element
-   when it enters the viewport. The existing `lib/motion` <Reveal>
-   primitive may eventually emit `data-reveal`; until then this rule
-   keeps the editorial mocks in `_design-reference/` legible. */
-[data-reveal] {
-  opacity: 0;
-  transform: translateY(8px);
-  transition:
-    opacity var(--duration-fm-slow) var(--ease-fm),
-    transform var(--duration-fm-slow) var(--ease-fm);
-}
-[data-reveal].in {
-  opacity: 1;
-  transform: translateY(0);
-}
-@media (prefers-reduced-motion: reduce) {
-  [data-reveal] { opacity: 1; transform: none; }
-}
+/* The Phase 5b attribute-based reveal-on-scroll hook was removed in
+   Phase B Slice 8 along with the editorial reference directory: the
+   editorial port now uses lib/motion <Reveal> / <RevealStagger>
+   end-to-end (toggles inline styles via IntersectionObserver) and
+   no production code emits the attribute anymore. */

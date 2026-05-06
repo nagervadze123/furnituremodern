@@ -46,3 +46,12 @@ next-env.d.ts
 # from scripts/stock-photos.json on demand.
 /scripts/stock-photos-source/
 /scripts/stock-photos-prepared/
+
+# Phase 6 editorial design reference. The claude.ai/design export
+# was staged here for visual reference during Phase B (slices 1-7);
+# the directory was deleted at the close of Slice 8. The ignore is
+# permanent so a future re-import (paste a fresh export to compare
+# against the implementation) doesn't accidentally re-commit the
+# whole directory. Anything genuinely worth keeping should be
+# pulled into docs/design/ instead.
+/_design-reference/

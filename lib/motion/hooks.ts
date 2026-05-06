@@ -43,8 +43,18 @@ export function useReducedMotion(): boolean {
  * variant animations: when the ref'd element scrolls into view past
  * `threshold`, `inView` flips to `true` and stays there. Useful for
  * fade-in-on-scroll panels that should only animate the first time.
+ *
+ * Default threshold is `0.01` — fire the moment any pixel of the
+ * observed element enters the viewport. This clears the "1-second
+ * visible empty-space gap" reported on the homepage with the older
+ * 0.2 default: a tall section (FeaturedCategories) needed 20% of
+ * its height (~300 px) scrolled into view before the reveal fired,
+ * which read as a beat of dead space after the hero.
+ *
+ * Per-callsite overrides (0.05–0.15) tune individual reveals
+ * intentionally and are unaffected.
  */
-export function useInViewOnce(threshold = 0.2): {
+export function useInViewOnce(threshold = 0.01): {
   ref: MutableRefObject<HTMLElement | null>;
   inView: boolean;
 } {
