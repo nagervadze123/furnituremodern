@@ -76,6 +76,9 @@
     "eyebrow": "Collection",
     "no_products": "No products in this category yet — new pieces are being finished in the workshop.",
     "browse_other_categories": "Browse other categories",
+    "card": {
+      "new": "New"
+    },
     "sort": {
       "label": "Sort",
       "newest": "Newest first",

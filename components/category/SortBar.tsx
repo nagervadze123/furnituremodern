@@ -1,30 +1,40 @@
 "use client";
 
-// Tiny sort dropdown for the category grid. Phase 5 Task 5 follow-up.
+// Phase 6 Slice 6 editorial port. Three sort options rendered as a
+// row of inline anchors (newest / price ascending / price descending)
+// instead of the previous native <select>. The active key paints
+// `text-[var(--color-ink-900)]` with a 1 px ink-900 underline;
+// inactive keys paint `text-[var(--color-ink-700)]`. No terracotta
+// on text — the editorial accent colour stays out of category UI
+// per the canonical use rule in `docs/design/contrast.md`.
 //
-// Three options: newest, price ascending, price descending. The bar
-// updates the `?sort=` query param via router.replace; the page reads
-// searchParams server-side and re-orders the products before rendering.
+// Each option is a real `<a href="?sort=…">` anchor so the no-JS
+// fallback is genuinely native: with JavaScript disabled the click
+// is a full GET, the page re-renders with the new sort param, and
+// the visitor lands at the same URL the JS path would have produced.
+// With JavaScript on, an `onClick` handler intercepts the navigation
+// and swaps via `router.replace` inside `useTransition` for a smooth
+// shallow nav (no full page reload, no scroll jump).
 //
-// Implemented as a client island so the change handler can drive
-// navigation, but it degrades gracefully — the component is wrapped in
-// a <form method="GET"> so even with JS disabled the visitor can still
-// submit a sort choice (the form Submit fires the same nav).
-//
-// We use a native <select> rather than a custom dropdown because the
-// option list is short, the native control is fully accessible
-// out-of-the-box, and it tracks system preferences (e.g. dark mode
-// option highlighting) without extra work.
+// The label sits to the left of the option row; on small screens the
+// label drops above the row so the sort line never overflows.
 
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { useTranslations } from "next-intl";
-import { useId, useTransition } from "react";
+import { useTransition } from "react";
 
-import type { SortKey } from "./sort-keys";
+import { cn } from "@/lib/utils";
+import { SORT_KEYS, type SortKey } from "./sort-keys";
 
 type Props = {
   /** Currently active sort key (resolved server-side). */
   current?: SortKey;
+};
+
+const SORT_LABEL_KEY: Record<SortKey, string> = {
+  newest: "newest",
+  "price-asc": "price_asc",
+  "price-desc": "price_desc",
 };
 
 export function SortBar({ current = "newest" }: Props) {
@@ -33,64 +43,74 @@ export function SortBar({ current = "newest" }: Props) {
   const params = useSearchParams();
   const router = useRouter();
   const [, startTransition] = useTransition();
-  const selectId = useId();
 
-  const setSort = (next: SortKey) => {
+  // Build the href for a given sort key. "newest" is the default
+  // sort, so we omit the param entirely on the canonical URL — keeps
+  // the bare /[locale]/[category] path as the canonical form.
+  const hrefFor = (key: SortKey): string => {
     const sp = new URLSearchParams(params);
-    if (next === "newest") {
+    if (key === "newest") {
       sp.delete("sort");
     } else {
-      sp.set("sort", next);
+      sp.set("sort", key);
     }
     const qs = sp.toString();
-    const url = qs ? `${pathname}?${qs}` : pathname;
+    return qs ? `${pathname}?${qs}` : pathname;
+  };
+
+  const navigate = (key: SortKey) => {
     startTransition(() => {
-      router.replace(url, { scroll: false });
+      router.replace(hrefFor(key), { scroll: false });
     });
   };
 
   return (
-    <form
-      method="GET"
-      action={pathname}
-      className="flex items-center justify-end gap-3"
-      onSubmit={(e) => {
-        // JS path: navigate via router.replace and stop the native nav
-        // (which would do a full reload). The native nav is the no-JS
-        // fallback — it still goes to the right URL.
-        e.preventDefault();
-        const data = new FormData(e.currentTarget);
-        const next = (data.get("sort") as SortKey | null) ?? "newest";
-        setSort(next);
-      }}
-    >
-      <label
-        htmlFor={selectId}
-        className="text-sm font-medium text-muted-foreground"
-      >
+    <div className="flex flex-col items-start gap-3 sm:flex-row sm:items-baseline sm:justify-end sm:gap-6">
+      <span className="text-xs font-medium uppercase tracking-[0.18em] text-[var(--color-ink-500)]">
         {t("label")}
-      </label>
-      <select
-        id={selectId}
-        name="sort"
-        defaultValue={current}
-        onChange={(e) => setSort(e.currentTarget.value as SortKey)}
-        className="min-h-11 rounded-md border border-border bg-background px-3 py-1.5 text-sm text-foreground shadow-sm transition-colors hover:border-foreground/30 focus-visible:border-ring focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/40"
+      </span>
+      <div
+        role="group"
+        aria-label={t("label")}
+        className="flex flex-wrap items-baseline gap-x-5 gap-y-2"
       >
-        <option value="newest">{t("newest")}</option>
-        <option value="price-asc">{t("price_asc")}</option>
-        <option value="price-desc">{t("price_desc")}</option>
-      </select>
-      {/* Hidden submit so no-JS visitors still submit the form on
-          select change via Enter / native form-submit fallback. */}
-      <noscript>
-        <button
-          type="submit"
-          className="rounded-md border border-border bg-card px-3 py-1.5 text-sm font-medium hover:bg-muted"
-        >
-          {t("apply")}
-        </button>
-      </noscript>
-    </form>
+        {SORT_KEYS.map((key) => {
+          const isActive = key === current;
+          return (
+            <a
+              key={key}
+              href={hrefFor(key)}
+              aria-current={isActive ? "true" : undefined}
+              onClick={(e) => {
+                // Honor modifier-clicks (open in new tab, etc.) and
+                // non-primary buttons by letting the native nav take
+                // over — the same ergonomic any anchor exposes.
+                if (
+                  e.defaultPrevented ||
+                  e.button !== 0 ||
+                  e.metaKey ||
+                  e.ctrlKey ||
+                  e.shiftKey ||
+                  e.altKey
+                ) {
+                  return;
+                }
+                e.preventDefault();
+                navigate(key);
+              }}
+              className={cn(
+                "text-sm font-medium tracking-tight transition-colors",
+                "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-ink-900)] focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--color-bone-50)]",
+                isActive
+                  ? "text-[var(--color-ink-900)] underline decoration-[var(--color-ink-900)] decoration-1 underline-offset-[6px]"
+                  : "text-[var(--color-ink-700)] hover:text-[var(--color-ink-900)]"
+              )}
+            >
+              {t(SORT_LABEL_KEY[key])}
+            </a>
+          );
+        })}
+      </div>
+    </div>
   );
 }
