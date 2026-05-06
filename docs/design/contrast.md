@@ -184,6 +184,79 @@ flips to 5.02:1 — the same swatch becomes a legitimate inline-text
 accent. This is why the brass link colour appears on the footer
 only and not elsewhere in the editorial chrome.
 
+## Phase 6 Slice 4 — terracotta-500 contrast sweep
+
+The three remaining body-size `terracotta-500`-on-text paints from
+the start-of-Phase-B audit shipped in `phase-b/4-terracotta-sweep`.
+Each substitution is token-anchored — the new colour is asserted
+in element-tree tests against the resolved CSS variable name, not
+a Tailwind class fragment, so future class refactors cannot drift
+past the rule silently.
+
+### Substitutions made
+
+| Surface | Was | Is | Test |
+| --- | --- | --- | --- |
+| `components/home/FeaturedCategories.tsx:188` | `hover:text-[var(--color-terracotta-500)]` + `focus-visible:text-[var(--color-terracotta-500)]` | `hover:text-[var(--color-terracotta-600)]` + `focus-visible:text-[var(--color-terracotta-600)]` (5.80:1 on bone-50) | `components/home/FeaturedCategories.test.tsx` |
+| `components/home/FeaturedCollection.tsx:105` | same as above | same as above (5.80:1 on bone-50) | `components/home/FeaturedCollection.test.tsx` (extended) |
+| `app/globals.css` `.text-link:hover` | `color: var(--color-terracotta-500); border-bottom-color: var(--color-terracotta-500);` | `color: var(--color-ink-900); border-bottom-color: var(--color-ink-900);` (16.49:1 on bone-50) | precommit invariant; class kept available |
+
+The `.text-link` change reads as "no colour shift on hover" because
+the resting state already paints ink-900 — the gap + arrow nudge
+carry the interaction. Verified zero production consumers via
+`grep -rn '\btext-link\b' --include='*.tsx' app/ components/` before
+the swap; the class stays in `globals.css` for Slice 5 / 6 to
+consume now that hover paints AAA-clear.
+
+### Remaining intentional `terracotta-500` occurrences
+
+After the sweep, repo-wide `grep -rn "terracotta-500" --include="*.tsx" --include="*.ts" --include="*.css" -- app components lib` returns nine production-code references plus eight comment / token-definition references. Every paint falls into a permitted decorative role:
+
+**Filled-button surfaces (SC 1.4.11 — UI components, 3:1 floor):**
+
+- `components/home/Hero.tsx:86` — primary CTA `bg-[var(--color-terracotta-500)]`. Bone-50 text on terracotta-500 = 4.25:1 (clears UI 3:1 floor; ratio is identical to the bone-50 text-on-terracotta in `.btn-primary`).
+- `components/ui/button.tsx:53` — `editorialPrimary` CVA variant border + bg. Same ratio profile.
+- `app/globals.css:688-689` — `.btn-primary` background + border-color. Same ratio profile.
+
+**Decorative focus rings / borders (SC 1.4.11 — UI components, 3:1 floor):**
+
+- `components/home/Hero.tsx:86` — `focus-visible:ring-[var(--color-terracotta-500)]` on primary CTA. Decorative outline against bone-50 background — 4.25:1 clears the 3:1 UI floor.
+- `components/home/FeaturedCategories.tsx:158` — `focus-visible:ring-[var(--color-terracotta-500)]` on the image-wrapping `<Link>`. Same ratio profile.
+- `components/home/SignatureProducts.tsx:126` — `focus-visible:border-[var(--color-terracotta-500)]` on the product-card focus state. Same ratio profile.
+
+**Display-step italic accent (AA Large — 3:1 floor):**
+
+- `app/globals.css:641` — `.display-1 em / .display-2 em / .display-3 em { color: var(--color-terracotta-500); }`. Display steps clamp ≥40 px on the smallest viewport; 4.25:1 clears the AA Large 3:1 threshold.
+
+**Eyebrow hairline rule (decoration, not text):**
+
+- `app/globals.css:594` — `.eyebrow::before` 1 px × 24 px hairline drawn before the eyebrow text. Pure graphic element; SC 1.4.11 reads as 3:1 for non-text, satisfied at 4.25:1.
+
+**Token definition (no paint):**
+
+- `app/globals.css:123` — `--color-terracotta-500: #b85c38;` swatch declaration.
+
+**Comments only (no paint):**
+
+`components/sections/breadcrumbs.tsx:6`,
+`components/design/Eyebrow.tsx:7`,
+`components/home/VisitStrip.tsx:89`,
+`components/home/Hero.tsx:82`,
+`components/ui/button.tsx:49`,
+`lib/site-config.ts:159`,
+`lib/design/tokens.ts:75`,
+`app/globals.css:600`,
+`app/globals.css:726` — narrative references to the colour name in
+documentation comments; no styling impact.
+
+### Slice 8 verification target
+
+When Slice 8 polish runs the final terracotta-500 audit before
+deleting `_design-reference/`, the expected post-sweep grep should
+match the inventory above exactly. Anything new beyond this list
+indicates a regression introduced between Slice 4 and Slice 8 and
+needs auditing against the canonical rule.
+
 ## Sources
 
 - WCAG 2.1 Understanding SC 1.4.3 (Contrast Minimum):

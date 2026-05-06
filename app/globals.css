@@ -723,8 +723,13 @@
 }
 .text-link:hover {
   gap: 16px;
-  color: var(--color-terracotta-500);
-  border-bottom-color: var(--color-terracotta-500);
+  /* Phase B Slice 4 — was terracotta-500 (4.25:1 on bone-50, fails
+     AA at body size). The resting state is already ink-900, so the
+     hover swap leaves color and border-color unchanged; gap + arrow
+     translate carry the interaction. Verified zero production
+     consumers before the swap (slice 4 PR description). */
+  color: var(--color-ink-900);
+  border-bottom-color: var(--color-ink-900);
 }
 .text-link .arrow {
   transition: transform var(--duration-fm-mid) var(--ease-fm);

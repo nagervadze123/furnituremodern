@@ -131,4 +131,43 @@ describe("FeaturedCollection", () => {
     const hrefs = anchors.map((a) => (a.props as { href?: string }).href);
     expect(hrefs).toContain("/sofas/walnut-frame-loveseat");
   });
+
+  // Phase B Slice 4 — terracotta-500 contrast sweep. The "View" CTA
+  // hover/focus colour was terracotta-500 (4.25:1 on bone-50, fails
+  // AA at body size); per docs/design/contrast.md the canonical
+  // body-size accent is terracotta-600 (5.80:1, AA-clear). Token-
+  // anchored to the CSS variable name so a future Tailwind class
+  // refactor can't drift past the assertion silently.
+  it("paints the CTA link's hover/focus in terracotta-600, not terracotta-500", async () => {
+    setFeaturedSlug("walnut-frame-loveseat");
+    getProductBySlugMock.mockResolvedValueOnce({
+      id: "p1",
+      slug: "walnut-frame-loveseat",
+      category: "sofas",
+      name: { ka: "ვალნუტი", en: "Walnut" },
+      description: { ka: "x", en: "x" },
+      price: 4200,
+      currency: "GEL",
+      images: [
+        {
+          url: "https://example.com/walnut.jpg",
+          alt: { ka: "alt-ka", en: "alt-en" },
+          width: 1200,
+          height: 900,
+        },
+      ],
+    });
+
+    const tree = (await FeaturedCollection()) as AnyElement;
+    const cta = findAll(tree, (el) => {
+      const props = el.props as Record<string, unknown>;
+      return props.href === "/sofas/walnut-frame-loveseat";
+    })[0];
+    expect(cta).toBeTruthy();
+    const cn = ((cta!.props as Record<string, unknown>).className ??
+      "") as string;
+    expect(cn).toContain("hover:text-[var(--color-terracotta-600)]");
+    expect(cn).toContain("focus-visible:text-[var(--color-terracotta-600)]");
+    expect(cn).not.toContain("text-[var(--color-terracotta-500)]");
+  });
 });

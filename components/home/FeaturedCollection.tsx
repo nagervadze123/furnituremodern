@@ -102,7 +102,7 @@ export async function FeaturedCollection() {
 
           <Link
             href={productHref}
-            className="mt-2 inline-flex items-center text-sm font-medium text-[var(--color-ink-900)] transition-colors duration-300 hover:text-[var(--color-terracotta-500)] focus-visible:outline-none focus-visible:text-[var(--color-terracotta-500)]"
+            className="mt-2 inline-flex items-center text-sm font-medium text-[var(--color-ink-900)] transition-colors duration-300 hover:text-[var(--color-terracotta-600)] focus-visible:outline-none focus-visible:text-[var(--color-terracotta-600)]"
           >
             {t("cta")}
           </Link>
