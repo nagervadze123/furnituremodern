@@ -309,7 +309,7 @@ export function ProductForm({
             defaultChecked={defaults.is_new}
             className="size-4"
           />
-          New (renders the editorial "new" badge on the catalogue card)
+          New (renders the editorial &ldquo;new&rdquo; badge on the catalogue card)
         </label>
       </div>
 

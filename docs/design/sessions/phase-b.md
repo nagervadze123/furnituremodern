@@ -416,6 +416,107 @@ Slice 5).
    the bump in the PR description if it moves.
 7. `npm run lint` / `npm test` / `npm run build` clean.
 
+## Slice 7 — Product detail page (PDP) editorial port
+
+**Branch.** `phase-b/7-pdp-body`
+
+**The merge gate.** Product JSON-LD output is the most
+SEO-consequential structured-data block in the codebase. The slice
+ships *zero* edits to `lib/schema.ts`; the byte-identity contract
+is enforced by a new test block in `lib/schema.test.ts`
+("productJsonLd byte-identity (Slice 7 merge gate)") that pins the
+EN and KA outputs against literal fixture strings. Any drift —
+schema emitter, offer template, language map, @id format, key
+ordering — fails CI at the gate.
+
+**Visual port (ProductLayout.tsx only).**
+
+- Sticky info column offset moves from `md:top-24` (96 px) to
+  `md:top-[110px]`. Mirrors `_design-reference/components/page-product.jsx:50`
+  and clears the header chrome (sticky `top-0`, ~80 px expanded /
+  ~56 px on scroll) with a comfortable buffer.
+- Eyebrow back-to-category link: design ref paints this in
+  `brass-500` against `bone-50`. brass-500 measures **3.29:1** at
+  this surface — fails AA at 12 px eyebrow size, well under the
+  18.66 px / 24 px AA Large floor. Substituted for `ink-700`
+  (11.48:1, AAA-clear) with a 1 px ink-700 underline. The brass
+  swatch stays documented in `contrast.md` "Why brass-500 is
+  footer-only" with a paragraph noting the PDP substitution.
+- Page H1 swaps from `Heading variant={1}` to
+  `EditorialHeading variant={2} as="h1"` — display-2 scale fits
+  the 5/12 sticky info column without crowding; display-1 would
+  be too large for that width.
+- Italic Latin caption beneath the H1 — Fraunces 18 px italic
+  ink-500 — picks up the reference's "Alazani — N°SF-240"
+  treatment when an SKU is present; falls through cleanly when
+  the data layer doesn't ship one.
+- Price strip moves into a hairline-bordered band (1 px ink-200
+  top + bottom) with display-step price + caption. The band reads
+  as a deliberate stop, not a card.
+- Status pill: 8 × 8 px sage-500 dot + ink-700 caption when
+  availability is `InStock`. Other availability states paint a
+  muted ink-300 dot (decoration-only at 2.87:1, aria-hidden) +
+  ink-500 caption (5.59:1, AA-clear). No terracotta on text.
+- Specs `<dl>` — the editorial showpiece of the PDP. Two-column
+  grid (`1fr 1.2fr`), terms in eyebrow style (12 px / 0.18 em /
+  uppercase / weight 500 / ink-500), values in font-display 14 px
+  ink-900, hairline row separators (1 px ink-200). Drops the
+  prior rounded-card surround in favour of the editorial sharp-
+  edge contract. The existing label / value content (dimensions,
+  weight, material, color, sku) is unchanged.
+- Contact CTA visual: the editorial primary button variant from
+  Slice 2 (`buttonVariants({ variant: "editorialPrimary" })`)
+  replaces the legacy default shadcn variant. The mailto target,
+  subject template, and behaviour are unchanged — visual port only.
+- Long-form description, related-products strip, back-to-category
+  link: typography touches only (ink-900, EditorialHeading
+  variant 2 on the related-products heading). Layout untouched.
+
+**Behaviour preserved (no functional changes).**
+
+- `gallery-client.tsx` (Phase 5 Task 5.2 multi-image admin
+  uploads) is not in this PR's diff.
+- `mailto:` Contact CTA target, subject template, encoding all
+  unchanged.
+- The `productJsonLd` JSON output and every adjacent schema block
+  (`BreadcrumbList`, `Organization`, `LocalBusiness`) all unchanged.
+
+**Artifacts NOT ported (surface, don't add).**
+
+- Per-product **lead-time copy** (e.g. "4–6 weeks to ship" in the
+  reference at `page-product.jsx:92`) — the data layer has no
+  per-product lead-time field and the operator has no UI to set
+  one. Adding hardcoded copy or a default would lock the operator
+  into our guess. Defer until the operator decides what the field
+  is.
+- **WhatsApp CTA** in the reference (`page-product.jsx:100-102`)
+  — `siteConfig` has no WhatsApp-specific contact entry and the
+  operator's number is not currently exposed. Adding without a
+  config field would fork the source-of-truth.
+- Per-product **VAT-inclusion caption** ("GEL · დღგ-ით" in the
+  reference at `page-product.jsx:77`) — the catalogue's
+  prices-include-VAT policy is operator-controlled; adding a
+  hardcoded caption commits the site to a policy the data layer
+  doesn't capture.
+
+These three are listed here so a later slice (or a separate
+content/data initiative) doesn't have to re-audit the reference
+to find them.
+
+**Acceptance.**
+
+1. `productJsonLd` EN + KA byte-identity tests in
+   `lib/schema.test.ts` pass against the fixed `SAMPLE_PRODUCT_FULL`
+   + `NOW` inputs.
+2. `lib/schema.ts` is not in the slice's diff.
+3. `gallery-client.tsx` is not in the slice's diff.
+4. `bash scripts/phase-b-checks.sh` clean. `TC500_BASELINE` either
+   holds at 11 or bumps with the rationale documented.
+5. `npm run lint` / `npm test` / `npm run build` clean.
+6. Sticky info column does not collide with the sticky header
+   (manual smoke check on `/[locale]/[category]/[slug]` — the
+   info-column eyebrow stays visible below the chrome on scroll).
+
 ## Slices 5–8 — scope captured in this document
 
 Each remaining slice's scope, files-touched list, out-of-scope
