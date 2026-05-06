@@ -234,7 +234,32 @@ After Slice 4 the inventory stood at exactly **10 paints** across **8 source-cod
 
 **Decorative dots:**
 
-- `components/home/Hero.tsx:80` — 6 × 6 px filled circle prefixing the hero eyebrow. `aria-hidden="true"`; sits at the 4.25:1 graphic-element floor against bone-50 (SC 1.4.11 3:1 satisfied). Mirrors the design-reference treatment at `_design-reference/components/page-homepage.jsx:38-41`. Added in Phase 6 Slice 5; the precommit baseline (`TC500_BASELINE` in `scripts/phase-b-checks.sh`) was bumped 10 → 11 in the same commit.
+- `components/home/Hero.tsx:80` — 6 × 6 px filled circle prefixing the hero eyebrow. `aria-hidden="true"`; the surface is bone-50 (the homepage hero kept the Phase 5b light treatment in Slice 5 — note for any later slice that flips the hero to ink-900: a terracotta-500 dot on ink-900 measures **3.88:1**, which still clears the 3:1 floor for non-text under SC 1.4.11). Measured ratio on the current bone-50 surface: **4.25:1** (computed in this document's Results table). Mirrors the design-reference treatment at `_design-reference/components/page-homepage.jsx:38-41`. Added in Phase 6 Slice 5; the precommit baseline (`TC500_BASELINE` in `scripts/phase-b-checks.sh`) was bumped 10 → 11 in the same commit.
+
+### Rule — when a future decorative element justifies a baseline bump
+
+The Hero dot is the first such bump; the precedent it sets, distilled so future PRs can derive the rule without re-reading this section, is:
+
+A new `var(--color-terracotta-500)` paint MAY raise `TC500_BASELINE` if **every** condition below holds:
+
+1. **Non-text.** A graphic, dot, hairline, fill, ring, border, or shape — never characters. Text at any size routes back to the canonical use rule above.
+2. **`aria-hidden`.** The element must be excluded from the accessibility tree as content (`aria-hidden="true"`, `role="presentation"`, or an SVG that asserts presentation-only). If a screen reader announces it, it conveys information and the rule below disqualifies it.
+3. **Decorative role.** The element conveys no information that adjacent text doesn't already carry. A dot before an eyebrow is decorative; a dot that means "available now" is informational and disqualifies. Information-bearing elements need to remain perceivable without colour, so colour-contrast alone is not the right test for them.
+4. **Measured ≥3:1 against the actual rendered surface.** SC 1.4.11 sets the floor at 3:1 for non-text and active UI. Below that, even pure decoration fails. The PR MUST log the measured ratio in this document — the actual number, not a verdict.
+
+**Required PR artifacts when a bump qualifies:**
+
+- A new entry under the matching subsection of "Remaining intentional `terracotta-500` paints" above ("Filled-button surfaces" / "Decorative focus rings or borders" / "Decorative dots" / etc., or a new subsection if the role is genuinely new). The entry MUST cite the file and line, the rendered surface, the measured ratio, and the role.
+- `TC500_BASELINE` in `scripts/phase-b-checks.sh` bumped to match the new total in the **same commit** as the new paint.
+- The PR description references the bump and the rationale, so a reviewer doesn't have to derive it from the diff alone.
+
+**Disqualifying signals (the bump is the wrong move; either fix the design or use a different colour token):**
+
+- The element is text.
+- The element is functional UI that conveys information (status badge, error icon, "new" tag — these need to stay perceivable without colour, so colour-contrast alone isn't the right gate).
+- The element is announced to assistive tech.
+- The measured ratio is below 3:1 against the rendered surface.
+- The element exists only because the design reference uses it; "the mock has it" is not a justification — the rule above is.
 
 **Token definition (no paint):**
 
