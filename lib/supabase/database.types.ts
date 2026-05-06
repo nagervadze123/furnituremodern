@@ -88,6 +88,7 @@ export type Database = {
           price: number;
           currency: string;
           is_featured: boolean;
+          is_new: boolean;
           is_published: boolean;
           sort_order: number;
           created_at: string;
@@ -105,6 +106,7 @@ export type Database = {
           price: number;
           currency?: string;
           is_featured?: boolean;
+          is_new?: boolean;
           is_published?: boolean;
           sort_order?: number;
           created_at?: string;

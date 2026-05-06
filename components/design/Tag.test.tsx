@@ -2,7 +2,7 @@
 // Locks both variant paint contracts and the `isNewProduct`
 // predicate boundary cases.
 
-import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
+import { describe, it, expect } from "vitest";
 import type { ReactElement } from "react";
 
 import { Tag, isNewProduct } from "./Tag";
@@ -80,35 +80,30 @@ describe("Tag", () => {
 });
 
 describe("isNewProduct", () => {
-  // Freeze "now" so the 30-day boundary tests are deterministic.
-  const NOW = new Date("2026-06-01T12:00:00Z").getTime();
-
-  beforeEach(() => {
-    vi.useFakeTimers();
-    vi.setSystemTime(NOW);
+  // Operator-controlled flag (Supabase `products.is_new` column).
+  // The predicate reads the boolean directly — no date arithmetic,
+  // no auto-expiry. Toggling the flag in /admin is the only way
+  // to control the badge.
+  it("returns true when isNew is explicitly true", () => {
+    expect(isNewProduct({ isNew: true })).toBe(true);
   });
 
-  afterEach(() => {
-    vi.useRealTimers();
+  it("returns false when isNew is explicitly false", () => {
+    expect(isNewProduct({ isNew: false })).toBe(false);
   });
 
-  it("returns true for a product created today", () => {
-    expect(isNewProduct({ createdAt: "2026-06-01T08:00:00Z" })).toBe(true);
-  });
-
-  it("returns true for a product created 29 days ago", () => {
-    expect(isNewProduct({ createdAt: "2026-05-03T12:00:00Z" })).toBe(true);
-  });
-
-  it("returns false for a product created 31 days ago", () => {
-    expect(isNewProduct({ createdAt: "2026-05-01T12:00:00Z" })).toBe(false);
-  });
-
-  it("returns false for a product with no createdAt", () => {
+  it("returns false when isNew is undefined (e.g., offline TS catalogue rows)", () => {
     expect(isNewProduct({})).toBe(false);
   });
 
-  it("returns false for an invalid createdAt value", () => {
-    expect(isNewProduct({ createdAt: "not-a-date" })).toBe(false);
+  // Strict-equality check: anything other than the boolean true reads
+  // as not-new. Guards against accidental coercion (a stray string
+  // from a migration, a 1 from a different DB driver) silently
+  // tipping a product into the "new" badge.
+  it("returns false for truthy non-boolean values", () => {
+    expect(
+      isNewProduct({ isNew: "true" as unknown as boolean })
+    ).toBe(false);
+    expect(isNewProduct({ isNew: 1 as unknown as boolean })).toBe(false);
   });
 });

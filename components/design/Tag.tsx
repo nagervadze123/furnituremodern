@@ -63,20 +63,16 @@ export function Tag({ variant = "neutral", className, children }: TagProps) {
   );
 }
 
-// Predicate for the "new" variant. A product counts as new if its
-// `createdAt` ISO timestamp is within the last 30 days. Returns
-// false when `createdAt` is missing — the offline TS catalogue
-// doesn't ship timestamps, so those products are treated as not-new
-// rather than always-new. The window is intentionally short:
-// "new" should remain a meaningful editorial signal, not the
-// default state for half the catalogue.
-const NEW_WINDOW_MS = 30 * 24 * 60 * 60 * 1000;
-
-export function isNewProduct(product: {
-  createdAt?: string;
-}): boolean {
-  if (!product.createdAt) return false;
-  const created = new Date(product.createdAt).getTime();
-  if (Number.isNaN(created)) return false;
-  return Date.now() - created < NEW_WINDOW_MS;
+// Predicate for the "new" variant. Reads the operator-controlled
+// `isNew` flag straight off the product (sourced from the Supabase
+// `products.is_new` column added in Slice 6's follow-up migration
+// `add_is_new_to_products`). Editorial control is intentional:
+// "new" stays meaningful only when the operator can decide what
+// counts and when it stops counting — a date-derived heuristic
+// would auto-graduate items out of the badge regardless of CMS
+// intent. The offline TS catalogue does not set the field, so its
+// products read as not-new — the manual flag has no offline
+// equivalent and that asymmetry is deliberate.
+export function isNewProduct(product: { isNew?: boolean }): boolean {
+  return product.isNew === true;
 }

@@ -30,7 +30,7 @@ export default async function EditProductPage({ params, searchParams }: Props) {
     supabase
       .from("products")
       .select(
-        "id, slug, category_id, name_ka, name_en, description_ka, description_en, price, currency, is_featured, is_published, sort_order"
+        "id, slug, category_id, name_ka, name_en, description_ka, description_en, price, currency, is_featured, is_new, is_published, sort_order"
       )
       .eq("id", id)
       .single(),
@@ -60,6 +60,7 @@ export default async function EditProductPage({ params, searchParams }: Props) {
     price: number | string;
     currency: string;
     is_featured: boolean;
+    is_new: boolean;
     is_published: boolean;
     sort_order: number;
   };
@@ -118,6 +119,7 @@ export default async function EditProductPage({ params, searchParams }: Props) {
             description_en: product.description_en,
             price: product.price,
             is_featured: product.is_featured,
+            is_new: product.is_new,
             is_published: product.is_published,
             sort_order: product.sort_order,
           }}
