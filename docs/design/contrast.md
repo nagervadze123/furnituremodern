@@ -37,6 +37,8 @@ Thresholds:
 | `bone-100`/`α=0.55` ≈ `#938f8a` | `ink-900` `#1c1816` | **5.49** | ✅ pass | ✅ pass | ❌ FAIL |
 | `bone-100`/`α=0.14` ≈ `#3a3633` | `ink-900` `#1c1816` | **1.47** | ❌ decoration only | ❌ | ❌ |
 | `brass-500` `#a08555` | `bone-50` `#faf7f2` | **3.29** | ❌ FAIL | ✅ pass | ❌ FAIL |
+| `sage-500` `#6f7a6b` | `bone-50` `#faf7f2` | **4.21** | ❌ FAIL | ✅ pass | ❌ FAIL |
+| `ink-300` `#9b9285` | `bone-50` `#faf7f2` | **2.87** | ❌ decoration only | ❌ | ❌ |
 
 ## Findings
 
@@ -183,6 +185,29 @@ decoration on the light surface. On the dark `ink-900` footer it
 flips to 5.02:1 — the same swatch becomes a legitimate inline-text
 accent. This is why the brass link colour appears on the footer
 only and not elsewhere in the editorial chrome.
+
+The PDP design reference at
+`_design-reference/components/page-product.jsx:51-52` paints the
+back-to-category eyebrow link in `brass-500` against `bone-50` at
+12 px (eyebrow size). That paint cannot ship: 3.29:1 fails AA, and
+the eyebrow is well under the 18.66 px / 24 px AA Large floor. The
+Slice 7 port substitutes `ink-700` (11.48:1, AAA-clear) for the
+eyebrow text and the underline; the brass swatch stays in the
+ratios table here so a future surface that *does* clear AA Large
+(a display-step inline accent, for example) has a documented
+reference.
+
+### Why sage-500 is decorative-only on bone-50
+
+`sage-500` (`#6f7a6b`) measures **4.21:1 on `bone-50`** — fails AA
+at body size, clears AA Large, and clears the SC 1.4.11 3:1 floor
+for non-text graphics and active UI components. Used in Slice 7 as
+the 8 × 8 px availability dot beside the in-stock caption: the dot
+is `aria-hidden`, the actual status text reads in `ink-700`
+(11.48:1) so the information path is AAA-clear regardless of
+colour. Sage stays in the decoration column with the same
+discipline as `terracotta-500`'s decorative uses (focus rings,
+eyebrow hairline, hero dot).
 
 ## Phase 6 Slice 4 — terracotta-500 contrast sweep
 

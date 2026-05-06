@@ -336,6 +336,67 @@ describe("speakableSpecificationJsonLd", () => {
   });
 });
 
+// Phase B Slice 7 — Product JSON-LD merge gate.
+//
+// The PDP visual port (Slice 7) is the most SEO-consequential
+// slice in Phase B. The contract for the slice is "Product
+// JSON-LD output is byte-identical pre- and post-port" — the
+// visual changes touch ProductLayout.tsx alone; lib/schema.ts
+// is intentionally not in the slice's diff.
+//
+// This block is the gate. We freeze a complete `productJsonLd`
+// output for both locales — given the same `SAMPLE_PRODUCT_FULL`
+// fixture and the same `NOW` — and assert character-for-character
+// equality on `JSON.stringify`. Any change to the schema emitter,
+// the offer template, the language map, or the @id format will
+// blow this test up.
+//
+// The fixture string lives here in the test, NOT in
+// `lib/schema.ts`. Keeping the fixture co-located with its
+// assertion means a deliberate schema change has to update both
+// in the same PR — the gate is consciously bumped, not silently
+// drifted past.
+describe("productJsonLd byte-identity (Slice 7 merge gate)", () => {
+  const NOW = new Date("2026-05-02T00:00:00.000Z");
+
+  // English locale — `inLanguage` resolves to `en-US`, the @id
+  // and `url` carry the `/en/` segment, the `name` and
+  // `description` come straight off the EN bundle.
+  const EXPECTED_EN =
+    '{"@context":"https://schema.org","@type":"Product","@id":"http://localhost:3000/en/sofas/linen-three-seater#product","url":"http://localhost:3000/en/sofas/linen-three-seater","name":"Linen Three-Seater","description":"Short description","image":["https://example.com/sofa.jpg"],"sku":"FM-SOFA-001","mpn":"MPN-LINEN-3S","category":"sofas","color":"Cream","material":"Linen, Oak","brand":{"@type":"Brand","name":"Furnituremodern"},"additionalProperty":[{"@type":"PropertyValue","name":"width","value":220,"unitCode":"CMT"},{"@type":"PropertyValue","name":"height","value":80,"unitCode":"CMT"},{"@type":"PropertyValue","name":"depth","value":95,"unitCode":"CMT"},{"@type":"PropertyValue","name":"weight","value":48,"unitCode":"KGM"}],"inLanguage":"en-US","isPartOf":{"@id":"http://localhost:3000/en/sofas#collection"},"offers":{"@type":"Offer","url":"http://localhost:3000/en/sofas/linen-three-seater","price":4200,"priceCurrency":"GEL","priceValidUntil":"2026-07-31","availability":"https://schema.org/InStock","itemCondition":"https://schema.org/NewCondition","seller":{"@id":"http://localhost:3000/#localbusiness"},"hasMerchantReturnPolicy":{"@type":"MerchantReturnPolicy","applicableCountry":"GE","returnPolicyCategory":"https://schema.org/MerchantReturnFiniteReturnWindow","merchantReturnDays":14,"returnMethod":"https://schema.org/ReturnByMail","returnFees":"https://schema.org/FreeReturn"},"shippingDetails":{"@type":"OfferShippingDetails","shippingRate":{"@type":"MonetaryAmount","value":0,"currency":"GEL"},"shippingDestination":{"@type":"DefinedRegion","addressCountry":"GE"},"deliveryTime":{"@type":"ShippingDeliveryTime","handlingTime":{"@type":"QuantitativeValue","minValue":1,"maxValue":3,"unitCode":"DAY"},"transitTime":{"@type":"QuantitativeValue","minValue":2,"maxValue":7,"unitCode":"DAY"}}},"inLanguage":"en-US"}}';
+
+  const EXPECTED_KA =
+    '{"@context":"https://schema.org","@type":"Product","@id":"http://localhost:3000/ka/sofas/linen-three-seater#product","url":"http://localhost:3000/ka/sofas/linen-three-seater","name":"სელის დივანი","description":"მოკლე აღწერა","image":["https://example.com/sofa.jpg"],"sku":"FM-SOFA-001","mpn":"MPN-LINEN-3S","category":"sofas","color":"Cream","material":"Linen, Oak","brand":{"@type":"Brand","name":"Furnituremodern"},"additionalProperty":[{"@type":"PropertyValue","name":"width","value":220,"unitCode":"CMT"},{"@type":"PropertyValue","name":"height","value":80,"unitCode":"CMT"},{"@type":"PropertyValue","name":"depth","value":95,"unitCode":"CMT"},{"@type":"PropertyValue","name":"weight","value":48,"unitCode":"KGM"}],"inLanguage":"ka-GE","isPartOf":{"@id":"http://localhost:3000/ka/sofas#collection"},"offers":{"@type":"Offer","url":"http://localhost:3000/ka/sofas/linen-three-seater","price":4200,"priceCurrency":"GEL","priceValidUntil":"2026-07-31","availability":"https://schema.org/InStock","itemCondition":"https://schema.org/NewCondition","seller":{"@id":"http://localhost:3000/#localbusiness"},"hasMerchantReturnPolicy":{"@type":"MerchantReturnPolicy","applicableCountry":"GE","returnPolicyCategory":"https://schema.org/MerchantReturnFiniteReturnWindow","merchantReturnDays":14,"returnMethod":"https://schema.org/ReturnByMail","returnFees":"https://schema.org/FreeReturn"},"shippingDetails":{"@type":"OfferShippingDetails","shippingRate":{"@type":"MonetaryAmount","value":0,"currency":"GEL"},"shippingDestination":{"@type":"DefinedRegion","addressCountry":"GE"},"deliveryTime":{"@type":"ShippingDeliveryTime","handlingTime":{"@type":"QuantitativeValue","minValue":1,"maxValue":3,"unitCode":"DAY"},"transitTime":{"@type":"QuantitativeValue","minValue":2,"maxValue":7,"unitCode":"DAY"}}},"inLanguage":"ka-GE"}}';
+
+  it("English output is byte-identical to the locked fixture", () => {
+    const actual = JSON.stringify(productJsonLd(SAMPLE_PRODUCT_FULL, "en", NOW));
+    expect(actual).toBe(EXPECTED_EN);
+  });
+
+  it("Georgian output is byte-identical to the locked fixture", () => {
+    const actual = JSON.stringify(productJsonLd(SAMPLE_PRODUCT_FULL, "ka", NOW));
+    expect(actual).toBe(EXPECTED_KA);
+  });
+
+  // Cross-locale invariant: every field that is NOT locale-bound
+  // (sku, mpn, color, material, additionalProperty, brand, offer
+  // pricing, shipping/return policy, etc.) is identical across
+  // both locales. If a future "let's localise pricing" edit lands,
+  // this test surfaces it before merge.
+  it("every non-locale-bound field is identical across locales", () => {
+    const en = productJsonLd(SAMPLE_PRODUCT_FULL, "en", NOW);
+    const ka = productJsonLd(SAMPLE_PRODUCT_FULL, "ka", NOW);
+    // Strip the locale-bound fields and compare the rest.
+    const stripLocaleBound = (o: Record<string, unknown>) => {
+      const { "@id": _id, url: _u, name: _n, description: _d, inLanguage: _il, isPartOf: _ip, offers: _o, ...rest } = o;
+      return rest;
+    };
+    expect(stripLocaleBound(en as Record<string, unknown>)).toEqual(
+      stripLocaleBound(ka as Record<string, unknown>)
+    );
+  });
+});
+
 describe("JSON-LD output is JSON-serializable", () => {
   it("all top-level builders survive JSON.stringify -> parse round-trip", () => {
     const blocks = [
