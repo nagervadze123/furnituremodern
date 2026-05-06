@@ -70,7 +70,7 @@ type RevealProps = {
 export function Reveal({
   children,
   variant = "slideUp",
-  threshold = 0.2,
+  threshold = 0.01,
   className,
   style,
   as = "div",
@@ -116,7 +116,7 @@ type RevealStaggerProps = {
  */
 export function RevealStagger({
   children,
-  threshold = 0.2,
+  threshold = 0.01,
   className,
   as = "div",
 }: RevealStaggerProps) {

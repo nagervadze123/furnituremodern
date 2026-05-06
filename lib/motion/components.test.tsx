@@ -88,6 +88,23 @@ describe("Reveal", () => {
     expect(transition).toMatch(/transform/);
     expect(transition).toMatch(/clip-path/);
   });
+
+  // Phase B Slice 8 — homepage gap fix. The earlier 0.2 default
+  // delayed reveal until 20% of the section was scrolled into view,
+  // which read as a beat of dead space after the hero on tall
+  // panels (FeaturedCategories). Lock the new "first pixel"
+  // default at 0.01 so any revert is caught here.
+  it("defaults threshold to 0.01 (fire on first pixel) when caller passes none", () => {
+    vi.mocked(hooks.useInViewOnce).mockClear();
+    Reveal({ children: "x" });
+    expect(hooks.useInViewOnce).toHaveBeenCalledWith(0.01);
+  });
+
+  it("forwards an explicit threshold prop to useInViewOnce", () => {
+    vi.mocked(hooks.useInViewOnce).mockClear();
+    Reveal({ children: "x", threshold: 0.15 });
+    expect(hooks.useInViewOnce).toHaveBeenCalledWith(0.15);
+  });
 });
 
 describe("RevealStagger", () => {
@@ -117,6 +134,16 @@ describe("RevealStagger", () => {
     expect(flatText(tree)).toBe("items");
     expect(tree.props.className).toBe("list");
     expect(tree.props.style).toBeUndefined();
+  });
+
+  // Phase B Slice 8 — symmetric guard against the homepage gap. If
+  // RevealStagger's default threshold drifts back to 0.2, the
+  // FeaturedCategories cascade fires too late again and the dead
+  // space after the hero returns.
+  it("defaults threshold to 0.01 (fire on first pixel) when caller passes none", () => {
+    vi.mocked(hooks.useInViewOnce).mockClear();
+    RevealStagger({ children: "x" });
+    expect(hooks.useInViewOnce).toHaveBeenCalledWith(0.01);
   });
 });
 

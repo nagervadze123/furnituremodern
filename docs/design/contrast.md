@@ -142,6 +142,32 @@ merging, that it has not introduced a terracotta-500 paint on text
 at body size or smaller. Slice 0 (the eyebrow contrast fix) is the
 first place this is enforced; subsequent slices inherit the rule.
 
+### Post-Phase-B enforcement (canonical going forward)
+
+Phase B closed at Slice 8. The terracotta-500 paint-count baseline
+in `scripts/phase-b-checks.sh` (check #6, locked at 11) was a
+port-specific scaffolding guard — its job was to catch creep
+during 7 slices of editorial churn. With the port closed, the
+check was retired: a count guard rejects legitimate new uses that
+respect the rule above and never actually verifies contrast.
+
+Going forward, **this document is the canonical guard.** Any
+future change that paints terracotta-500 on a new surface must
+defend itself against the Permitted/Forbidden lists above —
+display-step `<em>` accents, `.btn-primary` fill, decorative
+non-text graphics, and the `.eyebrow ::before` hairline are
+allowed; body-size text, links, captions, and eyebrow text are
+forbidden. The five remaining Phase-B precommit checks
+(googleapis, data-screen-label, _design-reference imports,
+inline mouse handlers, no PascalCase Button.tsx) survive as
+long-term anti-pattern guards because each encodes an invariant
+that's true regardless of whether the editorial port is live.
+
+If terracotta-500 use grows in a way that warrants automated
+enforcement again, the right tool is a contrast-aware lint rule
+(token-aware, size-aware, AA/AALarge-aware) rather than a string
+count. That's a separate scope from anything Phase B introduced.
+
 ## Phase 6 Slice 3 — dark surface (footer)
 
 The footer is the only `ink-900`-on-`bone-100` surface in Phase 6.

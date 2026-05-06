@@ -60,6 +60,41 @@ const CATEGORY_STOCK_KEYS: Record<string, string> = {
 export const CATEGORY_CTA_LINK_CLASS =
   "mt-2 inline-flex items-center self-start text-sm font-medium text-[var(--color-ink-900)] transition-colors duration-300 hover:text-[var(--color-terracotta-600)] focus-visible:outline-none focus-visible:text-[var(--color-terracotta-600)]";
 
+/**
+ * Italic Latin caption that sits between the localized category
+ * heading and the intro paragraph — the bilingual editorial pairing
+ * from `_design-reference/components/page-homepage.jsx:CategoryText`.
+ *
+ * Only renders when `name.en` differs from the heading text on the
+ * current locale: on /ka the heading is Georgian and the caption
+ * adds the Latin pairing; on /en the heading is already the Latin
+ * name, so a duplicate caption would be noise.
+ *
+ * This is a different semantic than the PDP caption (Slice 7), which
+ * is always shown because there `name.en + sku` is a globally fixed
+ * editorial signature (the SKU keeps the pairing meaningful even on
+ * /en). On the homepage row, `name.en` is just the English
+ * translation of the heading, so suppressing-when-equal is the
+ * locale-aware right thing.
+ *
+ * Lifted to a module-level export so the element-tree test can
+ * exercise the conditional matrix without rendering the full row
+ * (CategoryRow is a private internal that vitest can't enter; the
+ * Slice 4 / Slice 7 constant-export pattern applies).
+ */
+export function getCategoryRowCaption(name: {
+  en: string;
+  ka: string;
+}, locale: "en" | "ka"): string | null {
+  const headingText = name[locale];
+  if (!name.en) return null;
+  if (name.en === headingText) return null;
+  return name.en;
+}
+
+export const CATEGORY_ROW_CAPTION_CLASS =
+  "font-display text-sm italic font-light text-[var(--color-ink-500)]";
+
 function categoryImageUrl(category: DataCategory): string {
   const supabaseBase = process.env.NEXT_PUBLIC_SUPABASE_URL;
   const path = category.imageUrl ?? CATEGORY_STOCK_KEYS[category.slug];
@@ -188,9 +223,22 @@ function CategoryRow({
       {/* TEXT */}
       <div className={`flex min-w-0 flex-col gap-5 ${textCols}`}>
         <SectionMarker label={positionLabel} />
-        <EditorialHeading variant={2} as="h3" className="break-words">
-          {category.name[locale]}
-        </EditorialHeading>
+        <div className="flex flex-col gap-1.5">
+          <EditorialHeading variant={2} as="h3" className="break-words">
+            {category.name[locale]}
+          </EditorialHeading>
+          {/* Italic Latin caption — bilingual editorial pairing
+              from the design reference. Hidden on /en where it
+              would duplicate the heading. See the
+              `getCategoryRowCaption` doc above for the full
+              semantic. */}
+          {(() => {
+            const caption = getCategoryRowCaption(category.name, locale);
+            return caption ? (
+              <p className={CATEGORY_ROW_CAPTION_CLASS}>{caption}</p>
+            ) : null;
+          })()}
+        </div>
         <Body variant="lg" className="text-[var(--color-ink-700)]">
           {intro}
         </Body>

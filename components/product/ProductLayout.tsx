@@ -58,10 +58,6 @@ import { buttonVariants } from "@/components/ui/button";
 import { formatPrice } from "@/lib/format";
 import { getProducts } from "@/lib/data/products";
 import { siteConfig } from "@/lib/site-config";
-import {
-  formatLastUpdated,
-  LAST_UPDATED_LABEL,
-} from "@/lib/aeo/summary";
 import type {
   DataProduct,
   ProductAvailability,
@@ -341,23 +337,20 @@ export async function ProductLayout({
                 </Reveal>
               ) : null}
 
-              {/* Last-updated freshness signal — a real <time>
-                  element so crawlers pick it up as a structured
-                  timestamp. Sourced from updated_at, fallback to
-                  created_at; emitted only when at least one is
-                  available. */}
-              {(() => {
-                const ts = product.updatedAt ?? product.createdAt;
-                if (!ts) return null;
-                const formatted = formatLastUpdated(ts, locale);
-                if (!formatted) return null;
-                return (
-                  <p className="text-xs uppercase tracking-[0.14em] text-[var(--color-ink-500)]">
-                    {LAST_UPDATED_LABEL[locale]}:{" "}
-                    <time dateTime={ts}>{formatted}</time>
-                  </p>
-                );
-              })()}
+              {/* Phase B Slice 8 — the visible last-updated <time>
+                  element that lived here in Phase 5b was removed.
+                  The editorial design reference at
+                  _design-reference/components/page-product.jsx has
+                  no such timestamp; it read as Phase 5 admin
+                  metadata leaking into the public PDP. The product
+                  JSON-LD (lib/schema.ts > productJsonLd) emitted by
+                  the route is the structured freshness signal that
+                  matters for crawlers; the visible element was a
+                  belt-and-suspenders signal whose editorial cost
+                  (admin-y eyebrow at the bottom of the info column)
+                  outweighed the small SEO upside. The category-page
+                  last-updated stays — that's a category-freshness
+                  signal at a different surface, not flagged. */}
             </div>
           </article>
         </Container>
