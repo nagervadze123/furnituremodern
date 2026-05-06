@@ -12,7 +12,8 @@
 //   • Text column with caption-type "01 / 03" eyebrow, display-2 name
 //     (locale-correct serif via the Display primitive), body-lg from
 //     category.intro (truncated to a sensible visible length), and an
-//     anchor-style "View category →" link in ink-900 → terracotta-500.
+//     anchor-style "View category →" link in ink-900 → terracotta-600
+//     (5.80:1 on bone-50, AA-clear; per docs/design/contrast.md).
 //
 // Mobile: each row collapses to single column (image first, text second),
 // full-width, generous gap between rows.
@@ -47,6 +48,15 @@ const CATEGORY_STOCK_KEYS: Record<string, string> = {
   bedrooms: "stock/bed-platform-minimal-001.jpg",
   "tables-chairs": "stock/dining-oak-table-001.jpg",
 };
+
+// "View category →" CTA link styling for each row. Exported so the
+// element-tree test can assert the painted token directly without
+// reaching into the private CategoryRow function (which the harness
+// can't enter — vitest runs in node, no React renderer). Phase B
+// Slice 4 swept this from terracotta-500 to terracotta-600 (5.80:1
+// on bone-50, AA-clear); see docs/design/contrast.md.
+export const CATEGORY_CTA_LINK_CLASS =
+  "mt-2 inline-flex items-center self-start text-sm font-medium text-[var(--color-ink-900)] transition-colors duration-300 hover:text-[var(--color-terracotta-600)] focus-visible:outline-none focus-visible:text-[var(--color-terracotta-600)]";
 
 function categoryImageUrl(category: DataCategory): string {
   const supabaseBase = process.env.NEXT_PUBLIC_SUPABASE_URL;
@@ -184,7 +194,7 @@ function CategoryRow({
         </Body>
         <Link
           href={`/${category.slug}`}
-          className="mt-2 inline-flex items-center self-start text-sm font-medium text-[var(--color-ink-900)] transition-colors duration-300 hover:text-[var(--color-terracotta-500)] focus-visible:outline-none focus-visible:text-[var(--color-terracotta-500)]"
+          className={CATEGORY_CTA_LINK_CLASS}
         >
           {viewLinkLabel}
         </Link>

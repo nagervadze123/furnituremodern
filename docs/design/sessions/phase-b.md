@@ -30,10 +30,11 @@ transcripts.
 | 1 | Breadcrumbs visual port | `phase-b/1-breadcrumbs` |
 | 2 | Header + IssueRibbon (deletes EyebrowNav) | `phase-b/2-header-issue-ribbon` |
 | 3 | Footer | `phase-b/3-footer` |
-| 4 | Homepage body | `phase-b/4-homepage-body` |
-| 5 | Category body | `phase-b/5-category-body` |
-| 6 | PDP body | `phase-b/6-product-body` |
-| 7 | Polish + delete `_design-reference/` | `phase-b/7-polish` |
+| 4 | terracotta-500 contrast sweep | `phase-b/4-terracotta-sweep` |
+| 5 | Homepage body | `phase-b/5-homepage-body` |
+| 6 | Category body | `phase-b/6-category-body` |
+| 7 | PDP body | `phase-b/7-product-body` |
+| 8 | Polish + delete `_design-reference/` | `phase-b/8-polish` |
 
 ## Decisions taken before Slice 0
 
@@ -44,10 +45,10 @@ lands in the same PR as its first consumer:
 
 - **EditorialButton variants** (CVA-extended `components/ui/button.tsx`) → Slice 2
 - **SectionMarker** → Slice 2 (consumed by IssueRibbon)
-- **EditorialHeading** with `variant: 'hero' | 1 | 2 | 3'` → Slice 4
-- **AspectFrame** → Slice 4
-- **Tag** with `variant: 'new' | 'neutral'` → Slice 5
-- **Specs** (if extracted) → Slice 6
+- **EditorialHeading** with `variant: 'hero' | 1 | 2 | 3'` → Slice 5
+- **AspectFrame** → Slice 5
+- **Tag** with `variant: 'new' | 'neutral'` → Slice 6
+- **Specs** (if extracted) → Slice 7
 
 ### D2 — one Button file, multiple visual contracts
 
@@ -91,10 +92,10 @@ Featured / Recent works keys added.
 is a distinct step (not an override prop): it applies a new
 `.display-hero` CSS class with `font-size: clamp(3.5rem, 7vw, 6.5rem)`
 and `font-variation-settings: "opsz" 144`. The class lands in
-`app/globals.css` in the same Slice 4 PR that introduces
+`app/globals.css` in the same Slice 5 PR that introduces
 `EditorialHeading`.
 
-API shape (Slice 4):
+API shape (Slice 5):
 
 ```ts
 type EditorialHeadingProps = {
@@ -112,11 +113,11 @@ No `sizeOverride` escape hatch. New sizes get new variant values.
 - **Issue number** in IssueRibbon — hardcoded behind a
   `messages/{ka,en}.json` key (e.g.
   `home.issue_ribbon.issue: "№06 · 2026"`). No `siteConfig` field.
-- **Hero image** in Slice 4 — picked from
+- **Hero image** in Slice 5 — picked from
   `scripts/stock-photos-prepared/` curated library. Selection
-  documented in the Slice 4 PR description.
+  documented in the Slice 5 PR description.
 - **`_design-reference/` lifetime** — `git rm -r _design-reference/`
-  in Slice 7, alongside an `_design-reference/` entry in `.gitignore`
+  in Slice 8, alongside an `_design-reference/` entry in `.gitignore`
   that stays permanently.
 
 ## Per-PR checklist
@@ -126,7 +127,7 @@ Every Phase B PR must check off every item before merge:
 - [ ] `npm run lint` clean
 - [ ] `npm test` clean (all suites)
 - [ ] `npm run build` clean (only the expected Sentry-auth-token warning)
-- [ ] `bash scripts/phase-b-checks.sh` clean (zero matches across all 5 checks)
+- [ ] `bash scripts/phase-b-checks.sh` clean (all 6 checks pass)
 - [ ] No new visual-variant `*Button.tsx` file added (D2)
 - [ ] No production component imports from `_design-reference/`
 - [ ] No new `<link>` to fonts.googleapis.com / fonts.gstatic.com
@@ -153,8 +154,8 @@ Every Phase B PR must check off every item before merge:
 
 ## Precommit script
 
-`scripts/phase-b-checks.sh` runs five static checks. Zero matches
-required across all five before any commit on a Phase B branch.
+`scripts/phase-b-checks.sh` runs six static checks. All must pass
+before any commit on a Phase B branch.
 
 | # | Check | Why |
 | --- | --- | --- |
@@ -163,6 +164,7 @@ required across all five before any commit on a Phase B branch.
 | 3 | imports from `_design-reference/` in production code | The folder is a visual reference only; importing pulls hardcoded Georgian, plain `<img>`, and inline event handlers. |
 | 4 | inline `onMouseEnter` / `onMouseLeave` handlers | Hover styling must come from CSS `:hover` so it survives SSR + the strict CSP. |
 | 5 | PascalCase `*Button.tsx` files | Single Button source-of-truth (D2). |
+| 6 | `var(--color-terracotta-500)` paint count exceeds baseline | Slice 4 sweep documented exactly 10 permitted production paints (filled-button surfaces, decorative focus rings, display em accent, eyebrow ::before hairline) in `docs/design/contrast.md`. New growth fails CI so the diff surfaces in code review and either gets fixed or consciously bumped against the inventory in the same PR. Baseline lives in the script as `TC500_BASELINE`; bump it deliberately when the inventory legitimately changes. |
 
 ## Standing protected-surface contract (every slice)
 
@@ -186,7 +188,7 @@ that touches one is a bug.
   endpoints, the `/api/vitals` endpoint.
 - **Performance** — LCP element on home / category / PDP keeps its
   `priority` flag on `next/image`; CSS bundle does not balloon
-  (delta tracked in Slice 7).
+  (delta tracked in Slice 8).
 - **Server-component default** — pages stay server components; new
   `'use client'` boundaries only where genuinely required (scroll
   listeners, IntersectionObserver, form state).
@@ -209,12 +211,15 @@ that touches one is a bug.
 **Out of scope for Slice 0.**
 
 - Hover-state terracotta-500 on inline links (`FeaturedCategories.tsx:187`,
-  `FeaturedCollection.tsx:101`, `EyebrowNav.tsx`). These are
-  separate components; their fixes ride along when those components
-  port in Slices 2 / 4.
+  `FeaturedCollection.tsx:105`, `EyebrowNav.tsx`). These are
+  separate components; the inline-link offenders + the latent
+  `.text-link:hover` class primitive in `globals.css` consolidate
+  into the dedicated **Slice 4 — terracotta-500 contrast sweep**
+  (`phase-b/4-terracotta-sweep`); EyebrowNav was deleted entirely
+  in Slice 2 alongside IssueRibbon's introduction.
 - Adding the `.eyebrow` class hairline rule to the React Eyebrow
   component. The hairline lives in `app/globals.css` (Phase A); it
-  arrives in the React component when section ports in Slice 4
+  arrives in the React component when section ports in Slice 5
   switch to the editorial treatment.
 - OG-image eyebrows (`lib/og/templates/base.tsx`) — they paint
   `siteConfig.brand.muted` (#7a6f5e, 4.7:1 on bone), already
@@ -229,14 +234,101 @@ that touches one is a bug.
 4. `bash scripts/phase-b-checks.sh` clean.
 5. `npm run lint` / `npm test` / `npm run build` clean.
 
-## Slices 1–7 — see plan delivered in conversation
+## Slice 4 — terracotta-500 contrast sweep
 
-Each slice's full per-component plan was delivered in conversation
-during the Phase B planning round and is referenced here in
-abbreviated form. The detailed acceptance criteria, citations,
-and protected-surface concerns expand back from the plan when each
-slice opens its own branch.
+**Branch.** `phase-b/4-terracotta-sweep`
 
-(Slice plan documents land alongside each PR description so future
-agents working from the repo alone have the full context — see
-`docs/design/sessions/phase-b-slice-<n>.md` once each opens.)
+**Why a separate slice.** Accessibility fixes and visual ports are
+different concerns: bundling them muddies the audit trail and makes
+git bisect harder. Slice 0 set the precedent for an isolated
+~20-line accessibility fix; the three remaining body-size
+terracotta-500 paints deserve the same treatment so the contrast
+fix lands ahead of the homepage port (formerly Slice 4, now
+Slice 5).
+
+**Files touched.**
+
+- `components/home/FeaturedCategories.tsx:187` — link hover/focus
+  `text-[var(--color-terracotta-500)]` →
+  `text-[var(--color-terracotta-600)]` (5.80:1 on bone-50, AA-clear).
+- `components/home/FeaturedCollection.tsx:105` — same substitution.
+- `app/globals.css` `.text-link:hover` — `color` and
+  `border-bottom-color` from `var(--color-terracotta-500)` →
+  `var(--color-ink-900)`. Verified zero production consumers via
+  grep before changing; the resting state is already ink-900, so
+  the practical effect is "no color shift on hover, gap + arrow
+  animations remain." Class kept available for future homepage /
+  category consumers.
+- `components/home/FeaturedCategories.test.tsx` (new) +
+  `components/home/FeaturedCollection.test.tsx` (extended) —
+  token-anchored regression guards following the Slice 0 pattern:
+  positive `text-[var(--color-terracotta-600)]` substring assertion
+  and negative `text-[var(--color-terracotta-500)]` substring
+  assertion on each link's resolved className.
+- `docs/design/contrast.md` — new "Phase 6 Slice 4 sweep" section
+  cataloguing the substitutions made and the remaining intentional
+  decorative terracotta-500 occurrences (display em accents, btn
+  fills, eyebrow hairline, focus rings) so Slice 8 has a reference
+  to verify against.
+
+**Out of scope.**
+
+- The visual port of `FeaturedCategories` and `FeaturedCollection`
+  (typography, layout, eyebrows, image treatment) — that work
+  belongs to Slice 5 (homepage body).
+- Removing the `.text-link` class definition. It stays as a class
+  primitive; Slice 5 / 6 may consume it.
+
+**Acceptance.**
+
+1. `grep -rn "hover:text-\[var(--color-terracotta-500)\]"` returns
+   zero matches across `app/` and `components/`.
+2. `grep -rn "var(--color-terracotta-500)"` in `app/globals.css`
+   inside any `:hover` block returns zero matches.
+3. Per-link element-tree tests assert the new color token
+   (`terracotta-600` for inline-text links, `ink-900` for
+   `.text-link:hover`) and explicitly negate `terracotta-500`.
+4. Final repo-wide grep documented in `docs/design/contrast.md`
+   under Phase 6 Slice 4 — every remaining `terracotta-500` mention
+   is either a comment, a token definition, a permitted decorative
+   surface, or a permitted display-step accent.
+5. `bash scripts/phase-b-checks.sh` clean.
+6. `npm run lint` / `npm test` / `npm run build` clean.
+
+## Slices 5–8 — scope captured in this document
+
+Each remaining slice's scope, files-touched list, out-of-scope
+items, and acceptance criteria land directly as a section in **this
+document** when the branch opens. Earlier slices (`phase-b-slice-2.md`,
+`phase-b-slice-4.md`) used a separate per-slice scope file; that
+pattern stops here. A single `phase-b.md` keeps the audit trail in
+one place and removes the awkward "where is this slice's scope?"
+lookup. The PR description carries the slice's summary; the section
+in this document carries the contract.
+
+## Post-Phase-B artifact retention (placeholder — decide after Slice 8)
+
+When Slice 8 lands and the editorial port is closed, evaluate every
+process artifact this phase introduced for retention vs archival.
+Not a decision for now — just a placeholder so it doesn't get
+forgotten when the port is done. Items to revisit:
+
+- **The 6 precommit checks in `scripts/phase-b-checks.sh`.** Which
+  encode long-term invariants (no `googleapis` fetches under strict
+  CSP; single Button source-of-truth; no inline mouse handlers;
+  the terracotta-500 paint baseline) vs which were port-specific
+  scaffolding (`data-screen-label` / `_design-reference/` import
+  guards stop being meaningful once the reference folder is
+  deleted in Slice 8)?
+- **`docs/design/contrast.md`** — long-term living document.
+  Keeps growing as the palette evolves.
+- **`docs/design/sessions/phase-b.md`** — the decision log.
+  Archive (or move into `docs/design/sessions/_archive/`) once
+  Phase B closes; future phases get their own session document.
+- **Per-slice scope docs** (`phase-b-slice-2.md`, `phase-b-slice-4.md`)
+  — archive alongside `phase-b.md`.
+- **Exported design-contract constants** like
+  `CATEGORY_CTA_LINK_CLASS` — long-term, but reconsider if they
+  proliferate beyond ~3-4 instances. At that point a single
+  `lib/design/contracts.ts` module is more maintainable than a
+  scattered set of named exports across component files.
