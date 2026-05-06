@@ -98,6 +98,12 @@ fi
 #    _design-reference/ + *.test.* files. Comments that reference
 #    the colour by *name* don't include the CSS variable syntax so
 #    they don't inflate the count.
+# The canonical inventory for this baseline lives in
+# docs/design/contrast.md ("Phase 6 Slice 4 — terracotta-500
+# contrast sweep" → "Remaining intentional terracotta-500
+# paints"). Bumping this number without updating that document
+# silently widens the permitted-paint envelope; the two MUST stay
+# synchronised in the same PR.
 TC500_BASELINE=10
 # Markdown / mdx prose that references the CSS variable inside
 # inline code blocks is documentation, not a paint — exclude .md

@@ -14,6 +14,14 @@ import { join } from "node:path";
 
 import { describe, it, expect } from "vitest";
 
+// Reads the SOURCE `app/globals.css` directly off the filesystem,
+// not Next's bundled / minified output. Vitest runs this test
+// outside the Next compiler, so `process.cwd()` points at the
+// repo root and the path resolves to the file you'd see in a
+// `git diff`. The contract is "the source rule body must paint
+// AA-clear colours" — Tailwind / Lightning CSS minification
+// doesn't change the resolved values, just whitespace, so the
+// source assertion guards both the dev and prod stylesheets.
 const globalsCss = readFileSync(
   join(process.cwd(), "app/globals.css"),
   "utf8"

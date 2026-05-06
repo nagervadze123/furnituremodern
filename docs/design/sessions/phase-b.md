@@ -305,3 +305,30 @@ pattern stops here. A single `phase-b.md` keeps the audit trail in
 one place and removes the awkward "where is this slice's scope?"
 lookup. The PR description carries the slice's summary; the section
 in this document carries the contract.
+
+## Post-Phase-B artifact retention (placeholder — decide after Slice 8)
+
+When Slice 8 lands and the editorial port is closed, evaluate every
+process artifact this phase introduced for retention vs archival.
+Not a decision for now — just a placeholder so it doesn't get
+forgotten when the port is done. Items to revisit:
+
+- **The 6 precommit checks in `scripts/phase-b-checks.sh`.** Which
+  encode long-term invariants (no `googleapis` fetches under strict
+  CSP; single Button source-of-truth; no inline mouse handlers;
+  the terracotta-500 paint baseline) vs which were port-specific
+  scaffolding (`data-screen-label` / `_design-reference/` import
+  guards stop being meaningful once the reference folder is
+  deleted in Slice 8)?
+- **`docs/design/contrast.md`** — long-term living document.
+  Keeps growing as the palette evolves.
+- **`docs/design/sessions/phase-b.md`** — the decision log.
+  Archive (or move into `docs/design/sessions/_archive/`) once
+  Phase B closes; future phases get their own session document.
+- **Per-slice scope docs** (`phase-b-slice-2.md`, `phase-b-slice-4.md`)
+  — archive alongside `phase-b.md`.
+- **Exported design-contract constants** like
+  `CATEGORY_CTA_LINK_CLASS` — long-term, but reconsider if they
+  proliferate beyond ~3-4 instances. At that point a single
+  `lib/design/contracts.ts` module is more maintainable than a
+  scattered set of named exports across component files.
